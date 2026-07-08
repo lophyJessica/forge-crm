@@ -51,12 +51,12 @@
 | 字段 | 控件 | 展示要求 |
 | :--- | :--- | :--- |
 | FL 单号 | `Input` | 占位文案：`输入FL单号` |
-| 仓库 | `SelectWithSearch` | 展示 `{warehouse_code} {warehouse_name}`，按权限过滤 |
+| 仓库 | `SelectWithSearch` | 展示 `{warehouseCode} {warehouseName}`，按权限过滤 |
 | 库区 | `SelectWithSearch` | 选择仓库后级联；未选仓库时展示全部可见库区 |
 | 货位 | `Input` / `ScanInput` | PDA 支持扫码录入 |
 | 商品 | `SelectWithSearch` | 支持商品编码、名称、条码检索 |
 | 时间段 | `DateTimeRange` | 默认最近 90 天；跨度超过 365 天时提示 |
-| 变动类型 | `Select` | 选项来自字段清单 `change_type` |
+| 变动类型 | `Select` | 选项来自字段清单 `changeType` |
 | 变动方向 | `Select` | `ALL` / `INCREASE` / `DECREASE` |
 | 来源单号 | `Input` | 支持模糊查询，不触发来源单据动作 |
 
@@ -86,7 +86,7 @@
 
 | 行为 | 规格 |
 | :--- | :--- |
-| 默认排序 | `occurred_at DESC` |
+| 默认排序 | `occurredAt DESC` |
 | 分页 | PC 默认 20 条/页 |
 | 行选择 | 不支持批量勾选 |
 | 行操作 | 不提供行操作按钮 |
@@ -97,20 +97,20 @@
 
 | 列名 | 字段编码 | 宽度 | 固定 | 展示说明 |
 | :--- | :--- | :---: | :---: | :--- |
-| FL 单号 | `flow_no` | 220px | 左固定 | `FL{YYYYMMDD}-{8位序号}` |
-| 发生时间 | `occurred_at` | 170px | - | `YYYY-MM-DD HH:mm:ss` |
-| 仓库 | `warehouse_name` | 160px | - | `{warehouse_code} {warehouse_name}` |
-| 库区 | `zone_name` | 150px | - | 空值展示 `-` |
-| 货位 | `location_code` | 120px | - | 货位编码 |
-| 商品编码 | `product_code` | 120px | - | SKU 编码 |
-| 商品名称 | `product_name` | 180px | - | 商品名称快照 |
-| 规格型号 | `product_spec` | 140px | - | 空值展示 `-` |
+| FL 单号 | `flNo` | 220px | 左固定 | `FL{YYYYMMDD}-{8位序号}` |
+| 发生时间 | `occurredAt` | 170px | - | `YYYY-MM-DD HH:mm:ss` |
+| 仓库 | `warehouseName` | 160px | - | `{warehouseCode} {warehouseName}` |
+| 库区 | `zoneName` | 150px | - | 空值展示 `-` |
+| 货位 | `locationCode` | 120px | - | 货位编码 |
+| 商品编码 | `productCode` | 120px | - | SKU 编码 |
+| 商品名称 | `productName` | 180px | - | 商品名称快照 |
+| 规格型号 | `productSpec` | 140px | - | 空值展示 `-` |
 | 单位 | `unit` | 80px | - | 计量单位 |
-| 变动类型 | `change_type` | 120px | - | 入库+、出库-、调拨+、调拨- 等 |
-| 变动数量 | `change_qty` | 110px | - | 正数带 `+`，负数带 `-` |
-| 变动后现存 | `qty_on_hand_after` | 120px | - | 本次变动后的现存快照 |
-| 来源单号 | `source_order_no` | 180px | - | 只读，可复制 |
-| 操作人 | `operator_name` | 120px | - | 用户姓名或系统任务名 |
+| 变动类型 | `changeType` | 120px | - | 入库+、出库-、调拨+、调拨- 等 |
+| 变动数量 | `changeQty` | 110px | - | 正数带 `+`，负数带 `-` |
+| 变动后现存 | `qtyOnHandAfter` | 120px | - | 本次变动后的现存快照 |
+| 来源单号 | `sourceOrderNo` | 180px | - | 只读，可复制 |
+| 操作人 | `operatorName` | 120px | - | 用户姓名或系统任务名 |
 
 ---
 
@@ -154,6 +154,6 @@
 | 是否无新增/编辑/详情/调整入口 | 是 |
 | FL 单号是否为新格式 | 是，使用 `FL{YYYYMMDD}-{8位序号}` |
 | 变动数量是否带正负号 | 是 |
-| 冻结/占用类是否不误改现存展示 | 是，`qty_on_hand_after` 按快照展示 |
+| 冻结/占用类是否不误改现存展示 | 是，`qtyOnHandAfter` 按快照展示 |
 | 空状态是否无新增引导 | 是 |
 | 无数据时导出是否隐藏 | 是 |

@@ -47,21 +47,21 @@
 
 | 列名 | 字段编码 | PC 展示 | PDA 展示 | 说明 |
 |:--|:--|:--:|:--:|:--|
-| 仓库 | warehouse_name | 是 | 否 | PDA 可在顶部摘要展示 |
-| 库区 | zone_name | 是 | 否 | - |
-| 货位 | location_code | 是 | 是 | PDA 主信息 |
-| SKU | sku_code | 是 | 是 | 商品编码 |
-| 商品 | sku_name | 是 | 是 | 商品名称 |
+| 仓库 | warehouseName | 是 | 否 | PDA 可在顶部摘要展示 |
+| 库区 | zoneName | 是 | 否 | - |
+| 货位 | locationCode | 是 | 是 | PDA 主信息 |
+| SKU | productCode | 是 | 是 | 商品编码 |
+| 商品 | productName | 是 | 是 | 商品名称 |
 | 规格 | spec | 是 | 否 | 无值展示 `-` |
 | 单位 | unit | 是 | 是 | - |
-| 批次 | batch_no | 是 | 是 | 无批次展示 `-` |
-| 现存 | current_qty | 是 | 是 | 数量右对齐 |
-| 占用 | occupied_qty | 是 | 是 | 数量右对齐 |
-| 可用 | available_qty | 是 | 是 | 数量右对齐，公式校验 |
-| 冻结 | frozen_qty | 是 | 是 | 数量右对齐 |
-| 在途 | in_transit_qty | 是 | 是 | 数量右对齐 |
-| 最近流水 | last_flow_no | 是 | 否 | `FL` 单号 |
-| 最近变动时间 | last_changed_at | 是 | 否 | `YYYY-MM-DD HH:mm:ss` |
+| 批次 | batchNo | 是 | 是 | 无批次展示 `-` |
+| 现存 | currentQty | 是 | 是 | 数量右对齐 |
+| 占用 | occupiedQty | 是 | 是 | 数量右对齐 |
+| 可用 | availableQty | 是 | 是 | 数量右对齐，公式校验 |
+| 冻结 | frozenQty | 是 | 是 | 数量右对齐 |
+| 在途 | inTransitQty | 是 | 是 | 数量右对齐 |
+| 最近流水 | lastFlNo | 是 | 否 | `FL` 单号 |
+| 最近变动时间 | lastChangedAt | 是 | 否 | `YYYY-MM-DD HH:mm:ss` |
 
 列表不设置操作列。
 

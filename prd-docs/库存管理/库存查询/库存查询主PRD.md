@@ -44,7 +44,7 @@
 |:--|:--|
 | 页面定位 | 即时库存只读查询页 |
 | 单据属性 | 不属于业务单据，不生成库存查询单号 |
-| 数据粒度 | 默认按 `warehouse_code + zone_code + location_code + sku_code + batch_no` 聚合拆行 |
+| 数据粒度 | 默认按 `warehouseCode + zoneCode + locationCode + productCode + batchNo` 聚合拆行 |
 | 数据来源 | 库存余额聚合结果 + 库存流水 `FL` + 仓库/库区/货位/商品主数据快照 |
 | 上游影响 | 入库上架、包装出库、盘点调整、调拨确认、报损等动作改变库存 |
 | 下游用途 | 为出库占用校验、PDA 找货、库存盘点前核对、产品/测试复核提供只读依据 |

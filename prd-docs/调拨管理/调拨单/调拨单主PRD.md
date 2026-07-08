@@ -88,9 +88,9 @@ stateDiagram-v2
 
 | 条件 | 处理 |
 |:--|:--|
-| `actual_receive_qty = transfer_out_qty` | 调入仓现存增加调出数量，调拨在途消减调出数量，TR 完成 |
-| `actual_receive_qty < transfer_out_qty` | 调入仓按实收数量入库，调拨在途消减调出数量，系统生成 BL，原因固定为 `调拨损耗` |
-| `actual_receive_qty > transfer_out_qty` | context 未定义；二期 Demo 阻断提交，不生成 BL，需后续补超收规则 |
+| `actualReceiveQty = transferOutQty` | 调入仓现存增加调出数量，调拨在途消减调出数量，TR 完成 |
+| `actualReceiveQty < transferOutQty` | 调入仓按实收数量入库，调拨在途消减调出数量，系统生成 BL，原因固定为 `调拨损耗` |
+| `actualReceiveQty > transferOutQty` | context 未定义；二期 Demo 阻断提交，不生成 BL，需后续补超收规则 |
 
 ## 6. 规则摘要
 

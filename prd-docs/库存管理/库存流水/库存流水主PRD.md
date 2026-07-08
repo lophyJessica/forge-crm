@@ -114,8 +114,8 @@ flowchart LR
 
 | 分组 | 核心字段 |
 | :--- | :--- |
-| 查询条件 | `flow_no`、`warehouse_code`、`zone_code`、`location_code`、`product_keyword`、`occurred_range`、`change_type`、`source_order_no` |
-| 列表展示 | `flow_no`、`occurred_at`、`warehouse_name`、`location_code`、`product_code`、`product_name`、`change_type`、`change_qty`、`qty_on_hand_after`、`source_order_no`、`operator_name` |
+| 查询条件 | `flNo`、`warehouseCode`、`zoneCode`、`locationCode`、`productKeyword`、`occurredRange`、`changeType`、`sourceOrderNo` |
+| 列表展示 | `flNo`、`occurredAt`、`warehouseName`、`locationCode`、`productCode`、`productName`、`changeType`、`changeQty`、`qtyOnHandAfter`、`sourceOrderNo`、`operatorName` |
 | 系统字段 | 来源单据行、变动后三口径快照、创建时间、创建人、权限仓库范围 |
 
 ---
@@ -129,8 +129,8 @@ flowchart LR
 | FL-R03 | 每次库存变动至少生成一条流水；按货位、商品、来源单据行粒度记录 |
 | FL-R04 | 每条流水必须记录：时间、仓库、货位、商品、变动类型、变动数量、变动后现存 |
 | FL-R05 | 变动类型枚举固定为：`INBOUND=入库+`、`OUTBOUND=出库-`、`TRANSFER_IN=调拨+`、`TRANSFER_OUT=调拨-`、`STOCK_GAIN=盘盈+`、`STOCK_LOSS=盘亏-`、`FREEZE=冻结`、`UNFREEZE=解冻`、`ALLOCATE=占用`、`RELEASE=释放` |
-| FL-R06 | 现存型变动影响 `qty_on_hand_after`；冻结、解冻、占用、释放不改变现存，但必须记录变动后的占用/冻结/可用快照用于按公式复核 |
-| FL-R07 | 默认按 `occurred_at` 降序展示；PC 表格分页默认 20 条 |
+| FL-R06 | 现存型变动影响 `qtyOnHandAfter`；冻结、解冻、占用、释放不改变现存，但必须记录变动后的占用/冻结/可用快照用于按公式复核 |
+| FL-R07 | 默认按 `occurredAt` 降序展示；PC 表格分页默认 20 条 |
 | FL-R08 | 查询时间跨度不得超过 365 天，日期时间格式为 `YYYY-MM-DD HH:mm:ss` |
 | FL-R09 | 空值展示为 `-`；数量字段为整数，变动数量必须带正负号 |
 
