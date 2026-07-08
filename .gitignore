@@ -1,0 +1,48 @@
+# ===== 系统文件 =====
+.DS_Store
+.AppleDouble
+Thumbs.db
+Desktop.ini
+._*
+.Spotlight-V100
+.Trashes
+
+# ===== 编辑器 / IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Cursor 相关 =====
+.cursor/
+.specstory/
+
+# ===== 依赖 & 构建产物（前端原型 Demo 用得上）=====
+node_modules/
+dist/
+dist-ssr/
+.output/
+.nuxt/
+.next/
+.cache/
+coverage/
+*.local
+
+# ===== 日志 =====
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+*.log
+
+# ===== 环境变量 =====
+.env
+.env.local
+.env.*.local
+
+# ===== 临时草稿（视需要放开）=====
+# 00-草稿对话/ 内部临时对话如涉密可取消下一行注释
+# 00-草稿对话/
