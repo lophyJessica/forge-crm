@@ -55,11 +55,11 @@
 | 规格 | spec | 是 | 否 | 无值展示 `-` |
 | 单位 | unit | 是 | 是 | - |
 | 批次 | batchNo | 是 | 是 | 无批次展示 `-` |
-| 现存 | currentQty | 是 | 是 | 数量右对齐 |
-| 占用 | occupiedQty | 是 | 是 | 数量右对齐 |
-| 可用 | availableQty | 是 | 是 | 数量右对齐，公式校验 |
-| 冻结 | frozenQty | 是 | 是 | 数量右对齐 |
-| 在途 | inTransitQty | 是 | 是 | 数量右对齐 |
+| 现存 | qtyOnHand | 是 | 是 | 数量右对齐 |
+| 占用 | qtyAllocated | 是 | 是 | 数量右对齐 |
+| 可用 | qtyAvailable | 是 | 是 | 数量右对齐，公式校验 |
+| 冻结 | qtyFrozen | 是 | 是 | 数量右对齐 |
+| 在途 | qtyInTransit | 是 | 是 | 数量右对齐 |
 | 最近流水 | lastFlNo | 是 | 否 | `FL` 单号 |
 | 最近变动时间 | lastChangedAt | 是 | 否 | `YYYY-MM-DD HH:mm:ss` |
 
