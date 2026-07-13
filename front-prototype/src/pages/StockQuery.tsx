@@ -6,22 +6,37 @@ import { InventoryStock } from '../types/inventory';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Search, RotateCcw, Download, AlertTriangle, Layers } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function StockQuery() {
   // --- 状态定义 ---
   const [stocks, setStocks] = useState<InventoryStock[]>([]);
   const [warehouseCode, setWarehouseCode] = useState('');
+  const [zoneCode, setZoneCode] = useState('');
+  const [locationCode, setLocationCode] = useState('');
   const [productCodeOrName, setProductCodeOrName] = useState('');
   const [batchNo, setBatchNo] = useState('');
   const [hideZero, setHideZero] = useState(false);
 
   // 基础档案
   const warehouses = useLiveQuery(() => db.warehouses.toArray()) || [];
+  const allZones = useLiveQuery(() => db.zones.toArray()) || [];
+  const allLocations = useLiveQuery(() => db.locations.toArray()) || [];
+
+  const filteredZones = warehouseCode
+    ? allZones.filter(z => z.warehouseCode === warehouseCode && z.status === 'ENABLED')
+    : [];
+
+  const filteredLocations = zoneCode
+    ? allLocations.filter(l => l.zoneCode === zoneCode && l.status === 'ENABLED')
+    : [];
 
   const loadData = async () => {
     try {
       const res = await inventoryApi.getStocks({
         warehouseCode: warehouseCode || undefined,
+        zoneCode: zoneCode || undefined,
+        locationCode: locationCode || undefined,
         productCodeOrName: productCodeOrName || undefined,
         batchNo: batchNo || undefined,
         hideZero
@@ -34,10 +49,23 @@ export default function StockQuery() {
 
   useEffect(() => {
     loadData();
-  }, [warehouseCode, productCodeOrName, batchNo, hideZero]);
+  }, [warehouseCode, zoneCode, locationCode, productCodeOrName, batchNo, hideZero]);
+
+  const handleWarehouseChange = (code: string) => {
+    setWarehouseCode(code);
+    setZoneCode('');
+    setLocationCode('');
+  };
+
+  const handleZoneChange = (code: string) => {
+    setZoneCode(code);
+    setLocationCode('');
+  };
 
   const handleReset = () => {
     setWarehouseCode('');
+    setZoneCode('');
+    setLocationCode('');
     setProductCodeOrName('');
     setBatchNo('');
     setHideZero(false);
@@ -78,18 +106,45 @@ export default function StockQuery() {
 
       {/* 查询卡片 */}
       <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">选择仓库</label>
             <select
               value={warehouseCode}
-              onChange={e => setWarehouseCode(e.target.value)}
+              onChange={e => handleWarehouseChange(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="">全部仓库</option>
               {warehouses.map(w => <option key={w.code} value={w.code}>{w.name}</option>)}
             </select>
           </div>
+
+          <div className="space-y-1">
+            <label className="font-semibold text-slate-500">选择库区</label>
+            <select
+              value={zoneCode}
+              onChange={e => handleZoneChange(e.target.value)}
+              disabled={!warehouseCode}
+              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 focus-visible:outline-none focus-visible:ring-2 disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">全部库区</option>
+              {filteredZones.map(z => <option key={z.code} value={z.code}>{z.name}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-semibold text-slate-500">选择货位</label>
+            <select
+              value={locationCode}
+              onChange={e => setLocationCode(e.target.value)}
+              disabled={!zoneCode}
+              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 focus-visible:outline-none focus-visible:ring-2 disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">全部货位</option>
+              {filteredLocations.map(l => <option key={l.code} value={l.code}>{l.code}</option>)}
+            </select>
+          </div>
+
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">商品编码 / 名称</label>
             <Input 
@@ -99,6 +154,7 @@ export default function StockQuery() {
               className="h-9"
             />
           </div>
+
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">库存批次号</label>
             <Input 
@@ -146,6 +202,9 @@ export default function StockQuery() {
                 <th className="p-3">名称 / 规格</th>
                 <th className="p-3">计量单位</th>
                 <th className="p-3">库存仓库</th>
+                <th className="p-3">库区</th>
+                <th className="p-3">货位</th>
+                <th className="p-3 font-mono">最近FL单号</th>
                 <th className="p-3">入库批次</th>
                 <th className="p-3 text-right">现存量</th>
                 <th className="p-3 text-right">可用量</th>
@@ -160,7 +219,7 @@ export default function StockQuery() {
             <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
               {stocks.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="p-8 text-center text-slate-400">
+                  <td colSpan={16} className="p-8 text-center text-slate-400">
                     暂无符合条件的库存记录
                   </td>
                 </tr>
@@ -178,6 +237,21 @@ export default function StockQuery() {
                       </td>
                       <td className="p-3">{row.unit}</td>
                       <td className="p-3">{row.warehouseName}</td>
+                      <td className="p-3">
+                        {(row as any).zoneName ? `${(row as any).zoneName} (${row.zoneCode})` : row.zoneCode || '-'}
+                      </td>
+                      <td className="p-3">
+                        {row.locationCode || '-'}
+                      </td>
+                      <td className="p-3 font-mono text-slate-500">
+                        {row.recentFlowId && row.recentFlowId !== '-' ? (
+                          <Link to={`/inventory/flows?id=${row.recentFlowId}`} className="text-primary hover:underline font-bold">
+                            {row.recentFlowId}
+                          </Link>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
                       <td className="p-3 font-mono text-slate-500">{row.batchNo}</td>
                       <td className={`p-3 text-right font-mono font-bold ${
                         isNegativeTotal ? 'text-red-600' : 'text-slate-800'

@@ -1,23 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { damageApi } from '../api/damage';
 import { inventoryOperationsApi } from '../api/inventoryOperations';
+import { DamageStatus } from '../types/damage';
 import { TRANSFER_STATUS_LABELS, TransferOrder, TransferStatus } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
-import { ArrowDownToLine, ArrowLeft, ArrowRightLeft, ArrowUpFromLine, Calendar, Edit, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Calendar, CheckCircle2, Edit, Send, XCircle } from 'lucide-react';
+
+const currentUser: { role: 'supervisor' | 'operator' } = {
+  role: 'supervisor',
+};
 
 const statusClasses: Record<TransferStatus, string> = {
   DRAFT: 'bg-zinc-100 text-zinc-800 border-zinc-200',
+  PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+  CONFIRMED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   OUTBOUND: 'bg-orange-50 text-orange-700 border-orange-200',
   INBOUND: 'bg-blue-50 text-blue-700 border-blue-200',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   VOIDED: 'bg-rose-50 text-rose-700 border-rose-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 export default function TransferDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [order, setOrder] = useState<TransferOrder | null>(null);
+  const [blStatus, setBlStatus] = useState<DamageStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const isSupervisor = currentUser.role === 'supervisor';
 
   const loadData = async () => {
     if (!id) return;
@@ -25,6 +36,8 @@ export default function TransferDetail() {
     try {
       const detail = await inventoryOperationsApi.getTransferById(id);
       setOrder(detail || null);
+      const linkedDamage = detail?.blNo ? await damageApi.getDamageById(detail.blNo) : null;
+      setBlStatus(linkedDamage?.status || null);
     } catch (err) {
       console.error(err);
       alert('加载调拨单详情失败');
@@ -56,6 +69,53 @@ export default function TransferDetail() {
       alert('调拨单已确认入库，调入仓库存已更新');
     } catch (err: any) {
       alert(err.message || '确认入库失败');
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!order || !window.confirm(`确定要提交调拨单 ${order.id} 进行审核吗？`)) return;
+    try {
+      await inventoryOperationsApi.submitTransferForReview(order.id, 'WmsOperator01');
+      await loadData();
+      alert('调拨单已成功提交审核');
+    } catch (err: any) {
+      alert(err.message || '提交审核失败');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!order || !window.confirm(`确定要审核通过调拨单 ${order.id} 吗？通过后才可确认出库。`)) return;
+    try {
+      await inventoryOperationsApi.approveTransfer(order.id, 'WmsOperator01');
+      await loadData();
+      alert('调拨单已审核通过');
+    } catch (err: any) {
+      alert(err.message || '审核失败');
+    }
+  };
+
+  const handleReject = async () => {
+    if (!order) return;
+    const rejectedReason = window.prompt(`请输入驳回调拨单 ${order.id} 的原因`);
+    if (rejectedReason === null) return;
+    try {
+      await inventoryOperationsApi.rejectTransfer(order.id, rejectedReason, 'WmsOperator01');
+      await loadData();
+      alert('调拨单已驳回，已回退为草稿态');
+    } catch (err: any) {
+      alert(err.message || '驳回失败');
+    }
+  };
+
+  const handleApproveDamage = async () => {
+    if (!order?.blNo || blStatus !== 'PENDING_REVIEW') return;
+    if (!window.confirm(`确定要审核通过报损单 ${order.blNo} 吗？审核后将核销调拨差异待核销量并生成 FL，不重复扣减现存。`)) return;
+    try {
+      await damageApi.confirmDamage(order.blNo, 'WmsOperator01');
+      await loadData();
+      alert('报损单已审核通过，调拨差异已核销并生成库存流水 FL');
+    } catch (err: any) {
+      alert(err.message || '审核失败');
     }
   };
 
@@ -98,7 +158,37 @@ export default function TransferDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          {(order.status === 'DRAFT' || order.status === 'OUTBOUND') && (
+          {isSupervisor && order.blNo && blStatus === 'PENDING_REVIEW' && (
+            <Button size="sm" onClick={handleApproveDamage} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
+              <CheckCircle2 size={14} />
+              <span>审核差异BL</span>
+            </Button>
+          )}
+          {order.status === 'DRAFT' && (
+            <>
+              <Button size="sm" onClick={() => navigate(`/inventory/transfers/${order.id}/edit`)} className="bg-primary hover:bg-primary/95 text-white flex items-center gap-1.5 font-bold">
+                <Edit size={14} />
+                <span>编辑</span>
+              </Button>
+              <Button size="sm" onClick={handleSubmitForReview} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 font-bold">
+                <Send size={14} />
+                <span>提交审核</span>
+              </Button>
+            </>
+          )}
+          {isSupervisor && order.status === 'PENDING_REVIEW' && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleReject} className="text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1.5 font-bold">
+                <XCircle size={14} />
+                <span>驳回</span>
+              </Button>
+              <Button size="sm" onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
+                <CheckCircle2 size={14} />
+                <span>通过</span>
+              </Button>
+            </>
+          )}
+          {(order.status === 'CONFIRMED' || order.status === 'OUTBOUND') && (
             <Button size="sm" onClick={() => navigate(`/inventory/transfers/${order.id}/edit`)} className="bg-primary hover:bg-primary/95 text-white flex items-center gap-1.5 font-bold">
               <Edit size={14} />
               <span>进入执行页</span>
@@ -150,7 +240,7 @@ export default function TransferDetail() {
                     <td className="p-3 text-right font-mono text-slate-500">{item.availableQty}</td>
                     <td className="p-3 text-right font-mono font-bold text-orange-600 bg-orange-50/10">{item.transferQty}</td>
                     <td className="p-3 text-right font-mono font-bold text-emerald-600">
-                      {item.inboundQty || (order.status === 'COMPLETED' ? item.transferQty : 0)}
+                      {item.inboundQty ?? (order.status === 'COMPLETED' ? item.transferQty : 0)}
                     </td>
                   </tr>
                 ))}
@@ -176,15 +266,35 @@ export default function TransferDetail() {
                 <span className="font-mono font-bold text-slate-700">{order.itemCount}</span>
               </div>
               <div className="flex justify-between gap-3">
+                <span className="text-slate-400 font-semibold">关联报损单</span>
+                {order.blNo ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/inventory/damages/${order.blNo}`)}
+                    className="font-mono font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    {order.blNo}
+                  </button>
+                ) : (
+                  <span className="text-slate-400">-</span>
+                )}
+              </div>
+              <div className="flex justify-between gap-3">
                 <span className="text-slate-400 font-semibold">建单人</span>
                 <span className="font-semibold text-slate-700">{order.createdBy}</span>
               </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-slate-400 font-semibold flex items-center gap-1"><Calendar size={12} />更新时间</span>
-                <span className="font-mono text-slate-500">{order.updatedAt || '-'}</span>
-              </div>
-            </div>
-          </div>
+	              <div className="flex justify-between gap-3">
+	                <span className="text-slate-400 font-semibold flex items-center gap-1"><Calendar size={12} />更新时间</span>
+	                <span className="font-mono text-slate-500">{order.updatedAt || '-'}</span>
+	              </div>
+	              {order.rejectedReason && (
+	                <div className="flex justify-between gap-3">
+	                  <span className="text-slate-400 font-semibold">驳回原因</span>
+	                  <span className="font-semibold text-amber-700 text-right">{order.rejectedReason}</span>
+	                </div>
+	              )}
+	            </div>
+	          </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-2">
             <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">备注</h3>

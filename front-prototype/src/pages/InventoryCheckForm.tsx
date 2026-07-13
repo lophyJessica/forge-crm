@@ -121,7 +121,7 @@ export default function InventoryCheckForm() {
       }
 
       await inventoryOperationsApi.submitInventoryDifference(targetId, items, remark, 'WmsOperator01');
-      alert('差异报告已提交，系统已按差异生成盘盈/盘亏流水');
+      alert('差异报告已提交，待审核过账');
       navigate(`/inventory/checks/${targetId}`);
     } catch (err: any) {
       alert(err.message || '提交差异报告失败');

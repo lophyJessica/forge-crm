@@ -287,15 +287,22 @@ export const outboundApi = {
     });
   },
 
-  // 包装完成 (保存包裹列表)
-  async completePacking(waveId: string, packages: { weight: number; trackingNumber: string }[]) {
+  // 包装完成 (保存包裹列表) + 物理扣减库存 (扣除占用) + 生成 FL 流水
+  async completePacking(waveId: string, packages: { weight: number; trackingNumber: string }[], operator: string) {
     const wave = await db.wave_orders.get(waveId);
     if (!wave) throw new Error('波次单不存在');
     if (wave.status !== 'CHECKED') throw new Error('只有已复核的波次单可以包装');
 
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-    await db.transaction('rw', [db.wave_orders, db.pkg_records], async () => {
+    await db.transaction('rw', [
+      db.wave_orders,
+      db.pkg_records,
+      db.inventory_stocks,
+      db.inventory_flows
+    ], async () => {
+      let sourcePkgId = '';
+
       // 1. 删除旧的包裹（如果有）
       const oldPkgs = await db.pkg_records.where('waveId').equals(waveId).toArray();
       for (const op of oldPkgs) {
@@ -305,6 +312,7 @@ export const outboundApi = {
       // 2. 插入新包裹记录
       for (const p of packages) {
         const pkgId = await generatePKGNumber();
+        sourcePkgId ||= pkgId;
         await db.pkg_records.add({
           id: pkgId,
           waveId: waveId,
@@ -315,45 +323,8 @@ export const outboundApi = {
         });
       }
 
-      // 3. 更新波次单状态 -> 这里保持为已复核或流转到可以进行交运确认
-      // 在 PackageForm 描述中：“全部包装完成→波次→已交运前期的待交运状态”（我们在下一环节通过 ShipForm “确认交运” 变为最终的 SHIPPED 并扣减库存）
-      // 故此处我们依然把状态改为 CHECKED 状态内部的一个标记，或者把状态变更为待交运（为对齐PRD，我们保持 CHECKED，只是标记已包装；
-      // 或者直接更新状态为 SHIPPED？但 SHIP 还有一个确认交运操作，所以包装完成把状态改为 CHECKED 的特殊子状态，或者直接把波次更新为已复核且已保存包裹。）
-      // 这里为了让流转更清楚，包装完成后将状态变更为 CHECKED (且允许进入 SHIPPING)。
-      // 我们可以让前端页面在 CHECKED 且有包裹的情况下允许跳转至 Shipping 页。
-    });
-  },
-
-  // 获取波次包裹
-  async getPackagesByWaveId(waveId: string): Promise<PackageRecord[]> {
-    return await db.pkg_records.where('waveId').equals(waveId).toArray();
-  },
-
-  // 确认交运 -> 物理扣减库存 (扣除占用) + 生成 FL 流水 + 生成交运单 DSH + 回写 SO 为 SHIPPED
-  async confirmShipping(waveId: string, operator: string) {
-    const wave = await db.wave_orders.get(waveId);
-    if (!wave) throw new Error('波次单不存在');
-    
-    // 我们允许从已复核 (CHECKED) 流转至交运状态
-    if (wave.status !== 'CHECKED') {
-      throw new Error('只有已复核包装完毕的波次可以确认交运');
-    }
-
-    const dshId = await generateDSHNumber();
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
-
-    await db.transaction('rw', [
-      db.wave_orders,
-      db.sales_orders,
-      db.inventory_stocks,
-      db.inventory_flows,
-      db.pkg_records
-    ], async () => {
-      // 1. 物理扣减库存的占用量qtyAllocated与总现存量qtyTotal
+      // 3. 物理扣减库存的占用量qtyAllocated与总现存量qtyTotal
       for (const item of wave.items) {
-        // 由于波次单可能聚合了来自不同仓库的订单，但在原型中我们假设都在波次默认发货仓（例如北京主仓 WH001 或者上海分仓 WH002，我们根据订单信息来判断）
-        // 我们可以找这个波次中关联销售订单的第一笔的仓库。
-        // 原型简化：我们直接对波次商品推荐货位所在仓库（LOC-A01 属 WH001，LOC-B01 属 WH002）进行扣减
         const isWh002 = item.recommendLocation.startsWith('LOC-B') || item.recommendLocation.startsWith('LOC-C');
         const whCode = isWh002 ? 'WH002' : 'WH001';
 
@@ -372,7 +343,7 @@ export const outboundApi = {
             lastModified: nowStr
           });
 
-          // 生成交运 FL 流水
+          // 生成包裹完成 FL 流水
           const flId = await generateFLNumber();
           await db.inventory_flows.add({
             id: flId,
@@ -386,26 +357,49 @@ export const outboundApi = {
             flowType: '销售出库',
             qtyChange: -item.qtyChecked,
             qtyAfter: newTotal,
-            sourceOrderId: dshId,
+            sourceOrderId: sourcePkgId,
             operator: operator
           });
         }
       }
+    });
+  },
 
-      // 2. 更新关联销售订单 SO 状态为 SHIPPED
+  // 获取波次包裹
+  async getPackagesByWaveId(waveId: string): Promise<PackageRecord[]> {
+    return await db.pkg_records.where('waveId').equals(waveId).toArray();
+  },
+
+  // 确认交运 -> 完结订单并回传状态，不再触发库存过账
+  async confirmShipping(waveId: string, _operator: string) {
+    const wave = await db.wave_orders.get(waveId);
+    if (!wave) throw new Error('波次单不存在');
+
+    if (wave.status !== 'CHECKED') {
+      throw new Error('只有已复核包装完毕的波次可以确认交运');
+    }
+
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    await db.transaction('rw', [
+      db.wave_orders,
+      db.sales_orders,
+      db.pkg_records
+    ], async () => {
+      // 1. 更新关联销售订单 SO 状态为 SHIPPED
       for (const soId of wave.orderIds) {
         await db.sales_orders.update(soId, {
           status: 'SHIPPED'
         });
       }
 
-      // 3. 更新波次状态为已交运 SHIPPED
+      // 2. 更新波次状态为已交运 SHIPPED
       await db.wave_orders.update(waveId, {
         status: 'SHIPPED',
         updatedAt: nowStr
       });
 
-      // 4. 更新包裹状态为已交运
+      // 3. 更新包裹状态为已交运
       const pkgs = await db.pkg_records.where('waveId').equals(waveId).toArray();
       for (const p of pkgs) {
         await db.pkg_records.update(p.id, {

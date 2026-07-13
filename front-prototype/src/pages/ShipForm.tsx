@@ -57,7 +57,7 @@ export default function ShipForm() {
     if (!wid) return;
     try {
       await outboundApi.confirmShipping(wid, 'WmsScheduler');
-      alert('交运交接确认成功！已真实完成 IndexedDB 物理库存扣减，生成销售出库流水，并回传进销存销售订单！');
+      alert('交运交接确认成功！订单已完结并回传进销存销售订单！');
       navigate('/outbound');
     } catch (err: any) {
       alert(err.message || '交运确认失败');

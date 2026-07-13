@@ -42,7 +42,7 @@ export default function TransferForm() {
             navigate('/inventory/transfers');
             return;
           }
-          if (detail.status !== 'DRAFT' && detail.status !== 'OUTBOUND') {
+          if (detail.status !== 'DRAFT' && detail.status !== 'CONFIRMED' && detail.status !== 'OUTBOUND') {
             navigate(`/inventory/transfers/${detail.id}`);
             return;
           }
@@ -152,7 +152,7 @@ export default function TransferForm() {
           await inventoryOperationsApi.saveTransferInboundQty(order.id, items, 'WmsOperator01');
           alert('调拨单实收数量暂存成功');
           navigate(`/inventory/transfers/${order.id}`);
-        } else {
+        } else if (order.status === 'DRAFT') {
           await inventoryOperationsApi.saveTransferDraft(order.id, buildPayload(), 'WmsOperator01');
           alert('调拨草稿保存成功');
           navigate(`/inventory/transfers/${order.id}`);
@@ -167,7 +167,7 @@ export default function TransferForm() {
     }
   };
 
-  const confirmOutbound = async () => {
+  const submitForReview = async () => {
     try {
       let targetId = order?.id;
       if (!targetId) {
@@ -175,9 +175,23 @@ export default function TransferForm() {
       } else {
         await inventoryOperationsApi.saveTransferDraft(targetId, buildPayload(), 'WmsOperator01');
       }
-      await inventoryOperationsApi.confirmTransferOutbound(targetId, 'WmsOperator01');
-      alert('调拨单已确认出库，调拨数量已从调出仓现存转入在途');
+      await inventoryOperationsApi.submitTransferForReview(targetId, 'WmsOperator01');
+      alert('调拨单已提交审核');
       navigate(`/inventory/transfers/${targetId}`);
+    } catch (err: any) {
+      alert(err.message || '提交审核失败');
+    }
+  };
+
+  const confirmOutbound = async () => {
+    if (!order) return;
+    try {
+      if (order.status !== 'CONFIRMED') {
+        throw new Error('只有已审核调拨单可以确认出库');
+      }
+      await inventoryOperationsApi.confirmTransferOutbound(order.id, 'WmsOperator01');
+      alert('调拨单已确认出库，调拨数量已从调出仓现存转入在途');
+      navigate(`/inventory/transfers/${order.id}`);
     } catch (err: any) {
       alert(err.message || '确认出库失败');
     }
@@ -196,6 +210,9 @@ export default function TransferForm() {
   };
 
   const totalQty = items.reduce((sum, item) => sum + Number(item.transferQty || 0), 0);
+  const canEditDraft = !order || order.status === 'DRAFT';
+  const isInboundStage = order?.status === 'OUTBOUND';
+  const tableColSpan = isInboundStage || canEditDraft ? 7 : 6;
 
   if (loading) {
     return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析调拨单数据...</div>;
@@ -208,7 +225,7 @@ export default function TransferForm() {
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{order ? `编辑调拨单 ${order.id}` : '新建调拨单'}</h1>
+	          <h1 className="text-xl font-bold text-slate-900">{order ? `${order.status === 'OUTBOUND' ? '调入确认' : order.status === 'CONFIRMED' ? '执行调拨单' : '编辑调拨单'} ${order.id}` : '新建调拨单'}</h1>
           <p className="text-xs text-slate-500 mt-1">调拨商品来自调出仓当前现存库存，调拨数量不能大于现存量</p>
         </div>
       </div>
@@ -220,7 +237,7 @@ export default function TransferForm() {
             <select
               value={outWarehouseCode}
               onChange={e => handleOutWarehouseChange(e.target.value)}
-              disabled={order?.status === 'OUTBOUND'}
+	              disabled={!canEditDraft}
               className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-75 disabled:bg-slate-50"
             >
               <option value="">请选择调出仓</option>
@@ -232,7 +249,7 @@ export default function TransferForm() {
             <select
               value={inWarehouseCode}
               onChange={e => setInWarehouseCode(e.target.value)}
-              disabled={order?.status === 'OUTBOUND'}
+	              disabled={!canEditDraft}
               className={`w-full h-9 rounded-md border bg-background px-3 py-1 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-75 disabled:bg-slate-50 ${
                 outWarehouseCode && outWarehouseCode === inWarehouseCode ? 'border-red-400 text-red-700 bg-red-50' : 'border-input'
               }`}
@@ -266,7 +283,7 @@ export default function TransferForm() {
             placeholder="录入调拨用途、交接说明或异常备注..." 
             value={remark} 
             onChange={e => setRemark(e.target.value)} 
-            disabled={order?.status === 'OUTBOUND'}
+	            disabled={!canEditDraft}
             className="min-h-[68px] text-xs disabled:opacity-75 disabled:bg-slate-50" 
           />
         </div>
@@ -275,8 +292,8 @@ export default function TransferForm() {
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-800">商品明细</h3>
-          {order?.status !== 'OUTBOUND' && (
-            <Button type="button" variant="outline" size="sm" onClick={addRow} disabled={!outWarehouseCode || productOptions.length === 0} className="flex items-center gap-1.5 disabled:opacity-50">
+	          {canEditDraft && (
+	            <Button type="button" variant="outline" size="sm" onClick={addRow} disabled={!outWarehouseCode || productOptions.length === 0} className="flex items-center gap-1.5 disabled:opacity-50">
               <Plus size={14} />
               <span>新增行</span>
             </Button>
@@ -292,14 +309,14 @@ export default function TransferForm() {
                 <th className="p-3">单位</th>
                 <th className="p-3 text-right">当前现存</th>
                 <th className="p-3 w-44 text-right">出库数量</th>
-                {order?.status === 'OUTBOUND' && <th className="p-3 w-44 text-right">实收数量</th>}
-                {order?.status !== 'OUTBOUND' && <th className="p-3 text-center">操作</th>}
+	                {isInboundStage && <th className="p-3 w-44 text-right">实收数量</th>}
+	                {canEditDraft && <th className="p-3 text-center">操作</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={order?.status === 'OUTBOUND' ? 8 : 7} className="p-8 text-center text-slate-400">请先选择调出仓库并新增调拨商品行</td>
+	                  <td colSpan={tableColSpan} className="p-8 text-center text-slate-400">请先选择调出仓库并新增调拨商品行</td>
                 </tr>
               ) : items.map((item, index) => {
                 const rowError = hasRowError(item);
@@ -311,7 +328,7 @@ export default function TransferForm() {
                       <select
                         value={item.productCode}
                         onChange={e => handleProductChange(index, e.target.value)}
-                        disabled={order?.status === 'OUTBOUND'}
+	                        disabled={!canEditDraft}
                         className={`w-full h-8 rounded-md border bg-background px-2 py-1 font-mono focus-visible:outline-none focus-visible:ring-2 disabled:opacity-75 disabled:bg-slate-50 ${
                           duplicate ? 'border-red-400 bg-red-50 text-red-700' : 'border-input'
                         }`}
@@ -336,7 +353,7 @@ export default function TransferForm() {
                           max={item.availableQty}
                           value={item.transferQty}
                           onChange={e => handleQtyChange(index, e.target.value)}
-                          disabled={order?.status === 'OUTBOUND'}
+	                          disabled={!canEditDraft}
                           className={`w-32 h-8 text-right font-bold font-mono text-xs ${
                             rowError && order?.status !== 'OUTBOUND' ? 'border-red-500 focus-visible:ring-red-500 bg-red-50 text-red-700' : ''
                           }`}
@@ -348,7 +365,7 @@ export default function TransferForm() {
                         )}
                       </div>
                     </td>
-                    {order?.status === 'OUTBOUND' && (
+	                    {isInboundStage && (
                       <td className="p-3">
                         <div className="flex flex-col items-end gap-1">
                           <Input
@@ -361,7 +378,7 @@ export default function TransferForm() {
                               rowError && order?.status === 'OUTBOUND' ? 'border-red-500 focus-visible:ring-red-500 bg-red-50 text-red-700' : ''
                             }`}
                           />
-                          {rowError && order?.status === 'OUTBOUND' && (
+	                        {rowError && isInboundStage && (
                             <span className="text-[10px] text-red-500 font-semibold leading-tight text-right w-52">
                               实收数量必须大于等于 0 且不超过出库数量 {item.transferQty}
                             </span>
@@ -369,7 +386,7 @@ export default function TransferForm() {
                         </div>
                       </td>
                     )}
-                    {order?.status !== 'OUTBOUND' && (
+	                    {canEditDraft && (
                       <td className="p-3 text-center">
                         <Button type="button" variant="ghost" size="sm" onClick={() => removeRow(index)} className="h-7 text-red-600 hover:bg-red-50">
                           <Trash2 size={12} className="mr-1" />
@@ -390,21 +407,28 @@ export default function TransferForm() {
           返回
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={saveDraft} disabled={hasErrors} className="flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-            <Save size={14} />
-            <span>{order?.status === 'OUTBOUND' ? '暂存实收' : '保存草稿'}</span>
-          </Button>
-          {order?.status === 'OUTBOUND' ? (
-            <Button size="sm" onClick={confirmInbound} disabled={hasErrors} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
-              <CheckSquare size={14} />
-              <span>确认入库</span>
-            </Button>
-          ) : (
-            <Button size="sm" onClick={confirmOutbound} disabled={hasErrors} className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
-              <ArrowUpFromLine size={14} />
-              <span>确认出库</span>
-            </Button>
-          )}
+	          {(canEditDraft || isInboundStage) && (
+	            <Button variant="outline" size="sm" onClick={saveDraft} disabled={hasErrors} className="flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+	              <Save size={14} />
+	              <span>{isInboundStage ? '暂存实收' : '保存草稿'}</span>
+	            </Button>
+	          )}
+	          {isInboundStage ? (
+	            <Button size="sm" onClick={confirmInbound} disabled={hasErrors} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
+	              <CheckSquare size={14} />
+	              <span>确认入库</span>
+	            </Button>
+	          ) : order?.status === 'CONFIRMED' ? (
+	            <Button size="sm" onClick={confirmOutbound} disabled={hasErrors} className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
+	              <ArrowUpFromLine size={14} />
+	              <span>确认出库</span>
+	            </Button>
+	          ) : (
+	            <Button size="sm" onClick={submitForReview} disabled={hasErrors} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
+	              <ArrowUpFromLine size={14} />
+	              <span>提交审核</span>
+	            </Button>
+	          )}
         </div>
       </div>
     </div>

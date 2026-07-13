@@ -146,6 +146,7 @@ export const damageApi = {
       itemCount: items.length,
       totalQty: items.reduce((sum, item) => sum + item.damageQty, 0),
       remark: data.remark || '',
+      rejectedReason: undefined,
       createdAt: nowStr,
       createdBy: operator,
       items,
@@ -154,35 +155,85 @@ export const damageApi = {
     return damageId;
   },
 
+  async saveDamageDraft(id: string, data: {
+    warehouseCode: string;
+    reason: DamageReason;
+    remark?: string;
+    items: DamageItem[];
+  }, operator: string) {
+    const order = await db.damage_orders.get(id);
+    if (!order) throw new Error('报损单不存在');
+    if (order.status !== 'DRAFT') throw new Error('只有草稿状态的报损单可以编辑');
+
+    await this.assertDamageDraft(data);
+
+    const warehouseName = await getWarehouseName(data.warehouseCode);
+    const items = data.items.map((item, index) => ({
+      ...item,
+      id: item.id || String(index + 1),
+      damageQty: Number(item.damageQty || 0),
+    }));
+
+    await db.damage_orders.update(id, {
+      warehouseCode: data.warehouseCode,
+      warehouseName,
+      reason: data.reason,
+      remark: data.remark || '',
+      itemCount: items.length,
+      totalQty: items.reduce((sum, item) => sum + item.damageQty, 0),
+      items,
+      rejectedReason: undefined,
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
   async confirmDamage(id: string, operator: string) {
     const order = await db.damage_orders.get(id);
     if (!order) throw new Error('报损单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿态报损单可以确认报损');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核报损单可以确认过账');
 
-    await this.assertDamageDraft({
-      warehouseCode: order.warehouseCode,
-      reason: order.reason,
-      items: order.items,
-    });
+    if (order.reason !== 'TRANSFER_LOSS') {
+      await this.assertDamageDraft({
+        warehouseCode: order.warehouseCode,
+        reason: order.reason,
+        items: order.items,
+      });
+    }
 
     const nowStr = now();
-    await db.transaction('rw', [db.damage_orders, db.inventory_stocks, db.inventory_flows], async () => {
+    await db.transaction('rw', [db.damage_orders, db.inventory_stocks, db.inventory_flows, db.transfer_orders], async () => {
+      const writeOffFlowNos: string[] = [];
+
       for (const item of order.items) {
         const stock: InventoryStock | undefined = await getStockByWarehouseProduct(order.warehouseCode, item.productCode);
         if (!stock) throw new Error(`报损仓缺少商品 [${item.productCode}] 库存`);
 
         const damageQty = Number(item.damageQty || 0);
-        const nextAvailable = stock.qtyAvailable - damageQty;
-        const nextTotal = stock.qtyTotal - damageQty;
 
-        await db.inventory_stocks.update(stock.id!, {
-          qtyAvailable: nextAvailable,
-          qtyTotal: nextTotal,
-          lastModified: nowStr,
-        });
+        if (order.reason === 'TRANSFER_LOSS') {
+          const qtyPendingWriteOff = stock.qtyPendingWriteOff || 0;
+          if (damageQty > qtyPendingWriteOff) {
+            throw new Error(`商品 [${item.productCode}] 差异待核销量不足 (${qtyPendingWriteOff})`);
+          }
+          await db.inventory_stocks.update(stock.id!, {
+            qtyPendingWriteOff: qtyPendingWriteOff - damageQty,
+            lastModified: nowStr,
+          });
+        } else {
+          const nextAvailable = stock.qtyAvailable - damageQty;
+          const nextTotal = stock.qtyTotal - damageQty;
 
+          await db.inventory_stocks.update(stock.id!, {
+            qtyAvailable: nextAvailable,
+            qtyTotal: nextTotal,
+            lastModified: nowStr,
+          });
+        }
+
+        const flowNo = await generateFLNumber();
         await db.inventory_flows.add({
-          id: await generateFLNumber(),
+          id: flowNo,
           timestamp: nowStr,
           warehouseCode: order.warehouseCode,
           warehouseName: order.warehouseName,
@@ -192,41 +243,92 @@ export const damageApi = {
           unit: item.unit,
           flowType: '报损',
           qtyChange: -damageQty,
-          qtyAfter: nextTotal,
+          qtyAfter: order.reason === 'TRANSFER_LOSS' ? stock.qtyTotal : Math.max(0, stock.qtyTotal - damageQty),
           sourceOrderId: order.id,
           operator,
         });
+        writeOffFlowNos.push(flowNo);
       }
 
       await db.damage_orders.update(id, {
         status: 'CONFIRMED',
+        writeOffFlowNos,
         totalQty: order.items.reduce((sum, item) => sum + Number(item.damageQty || 0), 0),
         updatedAt: nowStr,
         updatedBy: operator,
       });
+
+      if (order.reason === 'TRANSFER_LOSS' && order.sourceTransferNo) {
+        const transfer = await db.transfer_orders.get(order.sourceTransferNo);
+        if (transfer) {
+          await db.transfer_orders.update(order.sourceTransferNo, {
+            blNo: order.id,
+            writeOffFlowNos: [...(transfer.writeOffFlowNos || []), ...writeOffFlowNos],
+            updatedAt: nowStr,
+            updatedBy: operator,
+          });
+        }
+      }
     });
   },
 
-  async createAndConfirmDamage(data: {
+  async submitDamageForReview(id: string, operator: string) {
+    const order = await db.damage_orders.get(id);
+    if (!order) throw new Error('报损单不存在');
+    if (order.status !== 'DRAFT') throw new Error('只有草稿状态的报损单可以提交审核');
+
+    await this.assertDamageDraft({
+      warehouseCode: order.warehouseCode,
+      reason: order.reason,
+      items: order.items,
+    });
+
+    const nowStr = now();
+    await db.damage_orders.update(id, {
+      status: 'PENDING_REVIEW',
+      updatedAt: nowStr,
+      updatedBy: operator,
+    });
+  },
+
+  async rejectDamage(id: string, rejectedReason: string, operator: string) {
+    const order = await db.damage_orders.get(id);
+    if (!order) throw new Error('报损单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核的报损单可以驳回');
+    if (!rejectedReason.trim()) throw new Error('请填写驳回原因');
+
+    const nowStr = now();
+    await db.damage_orders.update(id, {
+      status: 'DRAFT',
+      rejectedReason: rejectedReason.trim(),
+      updatedAt: nowStr,
+      updatedBy: operator,
+    });
+  },
+
+  async voidDamage(id: string, operator: string) {
+    const order = await db.damage_orders.get(id);
+    if (!order) throw new Error('报损单不存在');
+    if (order.status !== 'DRAFT' && order.status !== 'PENDING_REVIEW') {
+      throw new Error('只有草稿或待审核状态的报损单可以作废');
+    }
+
+    const nowStr = now();
+    await db.damage_orders.update(id, {
+      status: 'VOIDED',
+      updatedAt: nowStr,
+      updatedBy: operator,
+    });
+  },
+
+  async createAndSubmitDamage(data: {
     warehouseCode: string;
     reason: DamageReason;
     remark?: string;
     items: DamageItem[];
   }, operator: string): Promise<string> {
     const id = await this.createDamageDraft(data, operator);
-    await this.confirmDamage(id, operator);
+    await this.submitDamageForReview(id, operator);
     return id;
-  },
-
-  async voidDamage(id: string, operator: string) {
-    const order = await db.damage_orders.get(id);
-    if (!order) throw new Error('报损单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿态报损单可以作废');
-
-    await db.damage_orders.update(id, {
-      status: 'VOIDED',
-      updatedAt: now(),
-      updatedBy: operator,
-    });
   },
 };

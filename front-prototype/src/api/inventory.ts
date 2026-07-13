@@ -8,12 +8,22 @@ export const inventoryApi = {
     productCodeOrName?: string;
     batchNo?: string;
     hideZero?: boolean; // 默认 false
+    zoneCode?: string;
+    locationCode?: string;
   }): Promise<InventoryStock[]> {
     let list = await db.inventory_stocks.toArray();
 
     // 过滤仓库
     if (filters.warehouseCode) {
       list = list.filter(item => item.warehouseCode === filters.warehouseCode);
+    }
+    // 过滤库区
+    if (filters.zoneCode) {
+      list = list.filter(item => (item as any).zoneCode === filters.zoneCode);
+    }
+    // 过滤货位
+    if (filters.locationCode) {
+      list = list.filter(item => (item as any).locationCode === filters.locationCode);
     }
     // 过滤商品 (编码或名称)
     if (filters.productCodeOrName) {
@@ -32,8 +42,38 @@ export const inventoryApi = {
       list = list.filter(item => item.qtyTotal > 0);
     }
 
+    // 异步拉取最近的 FL 流水记录填充 recentFlowId，并关联库区和货位名称
+    const stocksWithFlow = await Promise.all(list.map(async (item) => {
+      const flows = await db.inventory_flows
+        .where('productCode')
+        .equals(item.productCode)
+        .toArray();
+      const matchFlows = flows
+        .filter(f => f.warehouseCode === item.warehouseCode)
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      
+      let zoneName = '';
+      if (item.zoneCode) {
+        const zone = await db.zones.get(item.zoneCode);
+        zoneName = zone ? zone.name : '';
+      }
+
+      let locationName = '';
+      if (item.locationCode) {
+        const loc = await db.locations.get(item.locationCode);
+        locationName = loc ? loc.code : '';
+      }
+
+      return {
+        ...item,
+        recentFlowId: matchFlows[0]?.id || '-',
+        zoneName,
+        locationName
+      };
+    }));
+
     // 排序
-    return list.sort((a, b) => a.productCode.localeCompare(b.productCode));
+    return stocksWithFlow.sort((a, b) => a.productCode.localeCompare(b.productCode));
   },
 
   // 获取收发流水

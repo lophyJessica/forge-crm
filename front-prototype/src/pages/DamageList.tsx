@@ -6,12 +6,18 @@ import { damageApi } from '../api/damage';
 import { DAMAGE_REASON_LABELS, DAMAGE_STATUS_LABELS, DamageOrder, DamageReason, DamageStatus } from '../types/damage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { AlertTriangle, CheckCircle2, Download, Eye, Plus, RotateCcw, Search, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Download, Eye, Plus, RotateCcw, Search, XCircle, Send } from 'lucide-react';
+
+const currentUser: { role: 'supervisor' | 'operator' } = {
+  role: 'supervisor',
+};
 
 const statusClasses: Record<DamageStatus, string> = {
   DRAFT: 'bg-zinc-100 text-zinc-800 border-zinc-200',
+  PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
   CONFIRMED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   VOIDED: 'bg-rose-50 text-rose-700 border-rose-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 const reasonOptions: Array<DamageReason | 'ALL'> = ['ALL', 'TRANSFER_LOSS', 'DAMAGED', 'EXPIRED', 'SHORTAGE'];
@@ -19,6 +25,7 @@ const reasonOptions: Array<DamageReason | 'ALL'> = ['ALL', 'TRANSFER_LOSS', 'DAM
 export default function DamageList() {
   const navigate = useNavigate();
   const warehouses = useLiveQuery(() => db.warehouses.toArray()) || [];
+  const isSupervisor = currentUser.role === 'supervisor';
 
   const [activeTab, setActiveTab] = useState<DamageStatus | 'ALL'>('ALL');
   const [damages, setDamages] = useState<DamageOrder[]>([]);
@@ -42,7 +49,7 @@ export default function DamageList() {
     setDamages(list);
 
     const nextCounts: Record<string, number> = {};
-    for (const status of ['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const) {
+    for (const status of ['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'VOIDED', 'REJECTED'] as const) {
       const rows = await damageApi.getDamages({ ...filters, status });
       nextCounts[status] = rows.length;
     }
@@ -61,14 +68,14 @@ export default function DamageList() {
     setCreatedAtEnd('');
   };
 
-  const handleConfirm = async (id: string) => {
-    if (!window.confirm(`确定要确认报损单 ${id} 吗？确认后将立即扣减现存并生成 FL 流水。`)) return;
+  const handleSubmitForReview = async (id: string) => {
+    if (!window.confirm(`确定要提交报损单 ${id} 进行审核吗？`)) return;
     try {
-      await damageApi.confirmDamage(id, 'WmsOperator01');
+      await damageApi.submitDamageForReview(id, 'WmsOperator01');
       await loadData();
-      alert('报损单已确认，现存已扣减并生成库存流水 FL');
+      alert('报损单已成功提交审核');
     } catch (err: any) {
-      alert(err.message || '确认报损失败');
+      alert(err.message || '提交审核失败');
     }
   };
 
@@ -80,6 +87,18 @@ export default function DamageList() {
       alert('报损单已作废');
     } catch (err: any) {
       alert(err.message || '作废失败');
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const rejectedReason = window.prompt(`请输入驳回报损单 ${id} 的原因`);
+    if (rejectedReason === null) return;
+    try {
+      await damageApi.rejectDamage(id, rejectedReason, 'WmsOperator01');
+      await loadData();
+      alert('报损单已驳回，已回退为草稿态');
+    } catch (err: any) {
+      alert(err.message || '驳回失败');
     }
   };
 
@@ -161,8 +180,8 @@ export default function DamageList() {
 
       <div className="border-b border-slate-200">
         <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'CONFIRMED', 'VOIDED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', CONFIRMED: '已确认', VOIDED: '已作废' };
+          {(['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'VOIDED', 'REJECTED'] as const).map(tab => {
+            const labels = { ALL: '全部', DRAFT: '草稿', PENDING_REVIEW: '待审核', CONFIRMED: '已确认', VOIDED: '已作废', REJECTED: '已驳回' };
             const isActive = activeTab === tab;
             return (
               <button
@@ -224,10 +243,30 @@ export default function DamageList() {
                     </Button>
                     {row.status === 'DRAFT' && (
                       <>
-                        <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => handleConfirm(row.id)}>
-                          <CheckCircle2 size={12} className="mr-1" />
-                          <span>确认报损</span>
+                        <Button variant="ghost" size="sm" className="h-7 text-blue-600 hover:bg-blue-50 font-bold" onClick={() => handleSubmitForReview(row.id)}>
+                          <Send size={12} className="mr-1" />
+                          <span>提交审核</span>
                         </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-red-600 hover:bg-red-50" onClick={() => handleVoid(row.id)}>
+                          <XCircle size={12} className="mr-1" />
+                          <span>作废</span>
+                        </Button>
+                      </>
+                    )}
+                    {row.status === 'PENDING_REVIEW' && (
+                      <>
+                        {isSupervisor && (
+                          <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => navigate(`/inventory/damages/${row.id}`)}>
+                            <CheckCircle2 size={12} className="mr-1" />
+                            <span>审核</span>
+                          </Button>
+                        )}
+                        {isSupervisor && (
+                          <Button variant="ghost" size="sm" className="h-7 text-amber-600 hover:bg-amber-50 font-bold" onClick={() => handleReject(row.id)}>
+                            <XCircle size={12} className="mr-1" />
+                            <span>驳回</span>
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="h-7 text-red-600 hover:bg-red-50" onClick={() => handleVoid(row.id)}>
                           <XCircle size={12} className="mr-1" />
                           <span>作废</span>

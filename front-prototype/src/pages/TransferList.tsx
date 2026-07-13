@@ -6,19 +6,30 @@ import { inventoryOperationsApi } from '../api/inventoryOperations';
 import { TRANSFER_STATUS_LABELS, TransferOrder, TransferStatus } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowDownToLine, ArrowRightLeft, ArrowUpFromLine, Download, Eye, RotateCcw, Search, XCircle } from 'lucide-react';
+import { ArrowDownToLine, ArrowRightLeft, ArrowUpFromLine, CheckCircle2, Download, Eye, RotateCcw, Search, Send, XCircle } from 'lucide-react';
+
+const currentUser: { role: 'supervisor' | 'operator' } = {
+  role: 'supervisor',
+};
 
 const statusClasses: Record<TransferStatus, string> = {
   DRAFT: 'bg-zinc-100 text-zinc-800 border-zinc-200',
+  PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
+  CONFIRMED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   OUTBOUND: 'bg-orange-50 text-orange-700 border-orange-200',
   INBOUND: 'bg-blue-50 text-blue-700 border-blue-200',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   VOIDED: 'bg-rose-50 text-rose-700 border-rose-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 export default function TransferList() {
   const navigate = useNavigate();
   const warehouses = useLiveQuery(() => db.warehouses.toArray()) || [];
+  const pendingReviewDamages = useLiveQuery(
+    () => db.damage_orders.where('status').equals('PENDING_REVIEW').toArray()
+  ) || [];
+  const isSupervisor = currentUser.role === 'supervisor';
 
   const [activeTab, setActiveTab] = useState<TransferStatus | 'ALL'>('ALL');
   const [transfers, setTransfers] = useState<TransferOrder[]>([]);
@@ -41,7 +52,7 @@ export default function TransferList() {
     setTransfers(list);
 
     const nextCounts: Record<string, number> = {};
-    for (const status of ['ALL', 'DRAFT', 'OUTBOUND', 'INBOUND', 'COMPLETED', 'VOIDED'] as const) {
+    for (const status of ['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'OUTBOUND', 'INBOUND', 'COMPLETED', 'VOIDED', 'REJECTED'] as const) {
       const rows = await inventoryOperationsApi.getTransfers({
         id: transferId || undefined,
         outWarehouseCode: outWarehouseCode || undefined,
@@ -65,6 +76,17 @@ export default function TransferList() {
     setInWarehouseCode('');
     setCreatedAtStart('');
     setCreatedAtEnd('');
+  };
+
+  const handleSubmitForReview = async (id: string) => {
+    if (!window.confirm(`确定要提交调拨单 ${id} 进行审核吗？`)) return;
+    try {
+      await inventoryOperationsApi.submitTransferForReview(id, 'WmsOperator01');
+      await loadData();
+      alert('调拨单已成功提交审核');
+    } catch (err: any) {
+      alert(err.message || '提交审核失败');
+    }
   };
 
   const handleOutbound = async (id: string) => {
@@ -175,8 +197,8 @@ export default function TransferList() {
 
       <div className="border-b border-slate-200">
         <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'OUTBOUND', 'INBOUND', 'COMPLETED', 'VOIDED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', OUTBOUND: '已出库', INBOUND: '已入库', COMPLETED: '已完成', VOIDED: '已作废' };
+          {(['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'OUTBOUND', 'INBOUND', 'COMPLETED', 'VOIDED', 'REJECTED'] as const).map(tab => {
+            const labels = { ALL: '全部', DRAFT: '草稿', PENDING_REVIEW: '待审核', CONFIRMED: '已审核', OUTBOUND: '已出库', INBOUND: '已入库', COMPLETED: '已完成', VOIDED: '已作废', REJECTED: '已驳回' };
             const isActive = activeTab === tab;
             return (
               <button
@@ -229,9 +251,9 @@ export default function TransferList() {
                     </Button>
                     {row.status === 'DRAFT' && (
                       <>
-                        <Button variant="ghost" size="sm" className="h-7 text-orange-600 hover:bg-orange-50 font-bold" onClick={() => handleOutbound(row.id)}>
-                          <ArrowUpFromLine size={12} className="mr-1" />
-                          <span>确认出库</span>
+                        <Button variant="ghost" size="sm" className="h-7 text-blue-600 hover:bg-blue-50 font-bold" onClick={() => handleSubmitForReview(row.id)}>
+                          <Send size={12} className="mr-1" />
+                          <span>提交审核</span>
                         </Button>
                         <Button variant="ghost" size="sm" className="h-7 text-red-600 hover:bg-red-50" onClick={() => handleVoid(row.id)}>
                           <XCircle size={12} className="mr-1" />
@@ -239,10 +261,28 @@ export default function TransferList() {
                         </Button>
                       </>
                     )}
+                    {isSupervisor && row.status === 'PENDING_REVIEW' && (
+                      <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => navigate(`/inventory/transfers/${row.id}`)}>
+                        <CheckCircle2 size={12} className="mr-1" />
+                        <span>审核</span>
+                      </Button>
+                    )}
+                    {row.status === 'CONFIRMED' && (
+                      <Button variant="ghost" size="sm" className="h-7 text-orange-600 hover:bg-orange-50 font-bold" onClick={() => handleOutbound(row.id)}>
+                        <ArrowUpFromLine size={12} className="mr-1" />
+                        <span>确认出库</span>
+                      </Button>
+                    )}
                     {row.status === 'OUTBOUND' && (
                       <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => handleInbound(row.id)}>
                         <ArrowDownToLine size={12} className="mr-1" />
                         <span>确认入库</span>
+                      </Button>
+                    )}
+                    {isSupervisor && row.blNo && pendingReviewDamages.some(damage => damage.id === row.blNo) && (
+                      <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => navigate(`/inventory/damages/${row.blNo}`)}>
+                        <CheckCircle2 size={12} className="mr-1" />
+                        <span>审核</span>
                       </Button>
                     )}
                   </td>

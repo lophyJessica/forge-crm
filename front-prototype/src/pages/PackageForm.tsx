@@ -102,9 +102,9 @@ export default function PackageForm() {
       await outboundApi.completePacking(wid, packages.map(p => ({
         weight: Number(p.weight),
         trackingNumber: p.trackingNumber
-      })));
+      })), 'WmsOperator01');
       
-      alert('包裹包装记录保存成功！请前往交运确认页办理最终的物流出库与财务结算。');
+      alert('包裹包装已保存，库存已扣减并生成流水！请前往交运确认页办理完结与回传。');
       navigate('/outbound');
     } catch (err: any) {
       alert(err.message || '包装保存失败');

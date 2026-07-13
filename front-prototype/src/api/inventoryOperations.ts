@@ -1,8 +1,10 @@
 import { db } from '../db';
 import { InventoryStock } from '../types/inventory';
+import { DamageItem } from '../types/damage';
 import {
   InventoryCheckItem,
   InventoryCheckOrder,
+  InventoryCheckRole,
   InventoryCheckStatus,
   InventoryCheckType,
   TransferItem,
@@ -124,6 +126,7 @@ export const inventoryOperationsApi = {
       itemCount: data.items.length,
       checker: data.checker,
       remark: data.remark || '',
+      rejectedReason: undefined,
       createdAt: nowStr,
       createdBy: operator,
       items: data.items.map((item, index) => ({
@@ -158,6 +161,7 @@ export const inventoryOperationsApi = {
       remark: data.remark || '',
       itemCount: data.items.length,
       items: data.items.map(item => ({ ...item, countedQty: Number(item.countedQty || 0) })),
+      rejectedReason: undefined,
       updatedAt: nowStr,
       updatedBy: operator,
     });
@@ -199,14 +203,47 @@ export const inventoryOperationsApi = {
     }
 
     const nowStr = now();
+    await db.inventory_checks.update(id, {
+      status: 'PENDING_REVIEW',
+      remark,
+      items: items.map(item => ({ ...item, countedQty: Number(item.countedQty || 0) })),
+      rejectedReason: undefined,
+      updatedAt: nowStr,
+      updatedBy: operator,
+    });
+  },
+
+  async approveInventoryCheck(id: string, operator: string, role: InventoryCheckRole) {
+    if (role !== 'SUPERVISOR') throw new Error('只有主管角色可以审核盘点单');
+
+    const order = await db.inventory_checks.get(id);
+    if (!order) throw new Error('盘点单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核的盘点单可以审核');
+
+    const hasHighDiff = order.items.some(item => {
+      const systemQty = item.systemQty;
+      const countedQty = Number(item.countedQty || 0);
+      if (systemQty === 0) {
+        return countedQty > 0;
+      }
+      const diffRate = Math.abs(countedQty - systemQty) / systemQty;
+      return diffRate > 0.05;
+    });
+    if (hasHighDiff) {
+      throw new Error('存在明细差异率超过5%，必须要求重盘，无法直接审核通过');
+    }
+
+    const nowStr = now();
     await db.transaction('rw', [db.inventory_checks, db.inventory_stocks, db.inventory_flows], async () => {
-      for (const item of items) {
+      for (const item of order.items) {
         const countedQty = Number(item.countedQty || 0);
         const diff = countedQty - item.systemQty;
         if (diff === 0) continue;
 
         const stock = await getStockByWarehouseProduct(order.warehouseCode, item.productCode);
-        if (!stock) continue;
+        if (!stock) {
+          throw new Error(`商品 [${item.productCode}] 未找到待调整库存，审核已取消`);
+        }
 
         const nextAvailable = stock.qtyAvailable + diff;
         const nextTotal = nextAvailable + (stock.qtyAllocated || 0) + (stock.qtyFrozen || 0);
@@ -236,11 +273,39 @@ export const inventoryOperationsApi = {
 
       await db.inventory_checks.update(id, {
         status: 'COMPLETED',
-        remark,
-        items: items.map(item => ({ ...item, countedQty: Number(item.countedQty || 0) })),
         updatedAt: nowStr,
         updatedBy: operator,
       });
+    });
+  },
+
+  async recountInventoryCheck(id: string, operator: string, role: InventoryCheckRole) {
+    if (role !== 'SUPERVISOR') throw new Error('只有主管角色可以要求重盘');
+
+    const order = await db.inventory_checks.get(id);
+    if (!order) throw new Error('盘点单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核的盘点单可以要求重盘');
+
+    await db.inventory_checks.update(id, {
+      status: 'COUNTING',
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
+  async rejectInventoryCheck(id: string, rejectedReason: string, operator: string, role: InventoryCheckRole) {
+    if (role !== 'SUPERVISOR') throw new Error('只有主管角色可以驳回盘点单');
+
+    const order = await db.inventory_checks.get(id);
+    if (!order) throw new Error('盘点单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核的盘点单可以驳回');
+    if (!rejectedReason.trim()) throw new Error('请填写驳回原因');
+
+    await db.inventory_checks.update(id, {
+      status: 'DRAFT',
+      rejectedReason: rejectedReason.trim(),
+      updatedAt: now(),
+      updatedBy: operator,
     });
   },
 
@@ -319,6 +384,7 @@ export const inventoryOperationsApi = {
       status: 'DRAFT',
       itemCount: data.items.length,
       remark: data.remark || '',
+      rejectedReason: undefined,
       createdAt: nowStr,
       createdBy: operator,
       items: data.items.map((item, index) => ({
@@ -352,6 +418,7 @@ export const inventoryOperationsApi = {
       remark: data.remark || '',
       itemCount: data.items.length,
       items: data.items.map(item => ({ ...item, transferQty: Number(item.transferQty || 0) })),
+      rejectedReason: undefined,
       updatedAt: now(),
       updatedBy: operator,
     });
@@ -401,10 +468,55 @@ export const inventoryOperationsApi = {
     }
   },
 
+  async submitTransferForReview(id: string, operator: string) {
+    const order = await db.transfer_orders.get(id);
+    if (!order) throw new Error('调拨单不存在');
+    if (order.status !== 'DRAFT') throw new Error('只有草稿态调拨单可以提交审核');
+
+    await this.assertTransferDraft({
+      outWarehouseCode: order.outWarehouseCode,
+      inWarehouseCode: order.inWarehouseCode,
+      items: order.items,
+    });
+
+    await db.transfer_orders.update(id, {
+      status: 'PENDING_REVIEW',
+      rejectedReason: undefined,
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
+  async approveTransfer(id: string, operator: string) {
+    const order = await db.transfer_orders.get(id);
+    if (!order) throw new Error('调拨单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核调拨单可以审核通过');
+
+    await db.transfer_orders.update(id, {
+      status: 'CONFIRMED',
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
+  async rejectTransfer(id: string, rejectedReason: string, operator: string) {
+    const order = await db.transfer_orders.get(id);
+    if (!order) throw new Error('调拨单不存在');
+    if (order.status !== 'PENDING_REVIEW') throw new Error('只有待审核调拨单可以驳回');
+    if (!rejectedReason.trim()) throw new Error('请填写驳回原因');
+
+    await db.transfer_orders.update(id, {
+      status: 'DRAFT',
+      rejectedReason: rejectedReason.trim(),
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
   async confirmTransferOutbound(id: string, operator: string) {
     const order = await db.transfer_orders.get(id);
     if (!order) throw new Error('调拨单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿态调拨单可以确认出库');
+    if (order.status !== 'CONFIRMED') throw new Error('只有已审核调拨单可以确认出库');
 
     await this.assertTransferDraft({
       outWarehouseCode: order.outWarehouseCode,
@@ -461,13 +573,21 @@ export const inventoryOperationsApi = {
     if (order.status !== 'OUTBOUND') throw new Error('只有已出库调拨单可以确认入库');
 
     const nowStr = now();
-    await db.transaction('rw', [db.transfer_orders, db.inventory_stocks, db.inventory_flows], async () => {
-      for (const item of order.items) {
-        const inboundQty = Number(item.inboundQty || item.transferQty || 0);
+    await db.transaction('rw', [db.transfer_orders, db.inventory_stocks, db.inventory_flows, db.damage_orders], async () => {
+      const lossItems: DamageItem[] = [];
+
+      for (const [index, item] of order.items.entries()) {
+        const transferQty = Number(item.transferQty || 0);
+        const inboundQty = Number(item.inboundQty ?? transferQty);
+        if (!Number.isFinite(inboundQty) || inboundQty < 0 || inboundQty > transferQty) {
+          throw new Error(`商品 [${item.productCode}] 的实收数量必须在 0 到 ${transferQty} 之间`);
+        }
+        const lossQty = transferQty - inboundQty;
         const outStock = await getStockByWarehouseProduct(order.outWarehouseCode, item.productCode);
         if (outStock) {
+          const nextOnWay = Math.max(0, (outStock.qtyOnWay || 0) - transferQty);
           await db.inventory_stocks.update(outStock.id!, {
-            qtyOnWay: Math.max(0, (outStock.qtyOnWay || 0) - inboundQty),
+            qtyOnWay: nextOnWay,
             lastModified: nowStr,
           });
         }
@@ -476,14 +596,16 @@ export const inventoryOperationsApi = {
         if (inStock) {
           const nextAvailable = inStock.qtyAvailable + inboundQty;
           const nextTotal = nextAvailable + (inStock.qtyAllocated || 0) + (inStock.qtyFrozen || 0);
+          const nextPendingWriteOff = (inStock.qtyPendingWriteOff || 0) + lossQty;
           await db.inventory_stocks.update(inStock.id!, {
             qtyAvailable: nextAvailable,
             qtyTotal: nextTotal,
+            qtyPendingWriteOff: nextPendingWriteOff,
             lastModified: nowStr,
           });
-          inStock = { ...inStock, qtyTotal: nextTotal };
+          inStock = { ...inStock, qtyTotal: nextTotal, qtyPendingWriteOff: nextPendingWriteOff };
         } else {
-          await db.inventory_stocks.add({
+          const inStockId = await db.inventory_stocks.add({
             warehouseCode: order.inWarehouseCode,
             warehouseName: order.inWarehouseName,
             productCode: item.productCode,
@@ -495,33 +617,77 @@ export const inventoryOperationsApi = {
             qtyAllocated: 0,
             qtyFrozen: 0,
             qtyOnWay: 0,
+            qtyPendingWriteOff: lossQty,
             qtyTotal: inboundQty,
             safetyStock: 20,
             lastModified: nowStr,
           });
-          inStock = { qtyTotal: inboundQty } as InventoryStock;
+          inStock = { id: inStockId, qtyTotal: inboundQty, qtyPendingWriteOff: lossQty } as InventoryStock;
         }
 
-        await db.inventory_flows.add({
-          id: await generateFLNumber(),
-          timestamp: nowStr,
-          warehouseCode: order.inWarehouseCode,
+        if (inboundQty > 0) {
+          await db.inventory_flows.add({
+            id: await generateFLNumber(),
+            timestamp: nowStr,
+            warehouseCode: order.inWarehouseCode,
+            warehouseName: order.inWarehouseName,
+            productCode: item.productCode,
+            productName: item.productName,
+            productSpec: item.productSpec,
+            unit: item.unit,
+            flowType: '调拨入库',
+            qtyChange: inboundQty,
+            qtyAfter: inStock.qtyTotal,
+            sourceOrderId: order.id,
+            operator,
+          });
+        }
+
+        if (lossQty > 0) {
+          lossItems.push({
+            id: String(lossItems.length + 1),
+            productCode: item.productCode,
+            productName: item.productName,
+            productSpec: item.productSpec,
+            unit: item.unit,
+            currentQty: inStock.qtyTotal,
+            damageQty: lossQty,
+            sourceLineId: `${order.id}-L${index + 1}`,
+          });
+        }
+      }
+
+      let blNo: string | undefined;
+      if (lossItems.length > 0) {
+        const today = new Date();
+        const yyyymmdd = today.getFullYear() +
+          String(today.getMonth() + 1).padStart(2, '0') +
+          String(today.getDate()).padStart(2, '0');
+        const count = await db.damage_orders.where('id').startsWith(`BL${yyyymmdd}`).count();
+        const damageId = `BL${yyyymmdd}-${String(count + 1).padStart(4, '0')}`;
+
+        await db.damage_orders.add({
+          id: damageId,
+          warehouseCode: order.inWarehouseCode, // 差异报损挂入调入仓
           warehouseName: order.inWarehouseName,
-          productCode: item.productCode,
-          productName: item.productName,
-          productSpec: item.productSpec,
-          unit: item.unit,
-          flowType: '调拨入库',
-          qtyChange: inboundQty,
-          qtyAfter: inStock.qtyTotal,
-          sourceOrderId: order.id,
-          operator,
+          reason: 'TRANSFER_LOSS',
+          sourceType: 'TRANSFER_DIFF',
+          sourceTransferNo: order.id,
+          status: 'PENDING_REVIEW',
+          itemCount: lossItems.length,
+          totalQty: lossItems.reduce((sum, it) => sum + it.damageQty, 0),
+          remark: `自动生成：调拨单 ${order.id} 调入差异损耗`,
+          createdAt: nowStr,
+          createdBy: operator,
+          items: lossItems,
         });
+        blNo = damageId;
       }
 
       await db.transfer_orders.update(id, {
         status: 'COMPLETED',
-        items: order.items.map(item => ({ ...item, inboundQty: Number(item.inboundQty || item.transferQty || 0) })),
+        blNo,
+        items: order.items.map(item => ({ ...item, inboundQty: Number(item.inboundQty ?? item.transferQty ?? 0) })),
         updatedAt: nowStr,
         updatedBy: operator,
       });

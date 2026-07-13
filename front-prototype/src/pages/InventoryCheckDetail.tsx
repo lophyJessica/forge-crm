@@ -5,14 +5,21 @@ import {
   INVENTORY_CHECK_STATUS_LABELS,
   INVENTORY_CHECK_TYPE_LABELS,
   InventoryCheckOrder,
+  InventoryCheckRole,
   InventoryCheckStatus,
 } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Calendar, ClipboardCheck, PlayCircle, Send, UserCheck, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, ClipboardCheck, PlayCircle, Send, UserCheck, XCircle, CheckCircle } from 'lucide-react';
+
+const currentUser: { username: string; role: InventoryCheckRole } = {
+  username: 'WmsScheduler',
+  role: 'SUPERVISOR',
+};
 
 const statusClasses: Record<InventoryCheckStatus, string> = {
   DRAFT: 'bg-zinc-100 text-zinc-800 border-zinc-200',
   COUNTING: 'bg-blue-50 text-blue-700 border-blue-200',
+  PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   VOIDED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
@@ -22,6 +29,7 @@ export default function InventoryCheckDetail() {
   const { id } = useParams();
   const [order, setOrder] = useState<InventoryCheckOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const isSupervisor = currentUser.role === 'SUPERVISOR';
 
   const loadData = async () => {
     if (!id) return;
@@ -60,6 +68,30 @@ export default function InventoryCheckDetail() {
       alert('盘点单已作废');
     } catch (err: any) {
       alert(err.message || '作废失败');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!order || !window.confirm(`确定要审核通过盘点单 ${order.id} 并调整库存吗？`)) return;
+    try {
+      await inventoryOperationsApi.approveInventoryCheck(order.id, currentUser.username, currentUser.role);
+      await loadData();
+      alert('盘点单已审核通过，差异已过账');
+    } catch (err: any) {
+      alert(err.message || '审核失败');
+    }
+  };
+
+  const handleReject = async () => {
+    if (!order) return;
+    const rejectedReason = window.prompt(`请输入驳回盘点单 ${order.id} 的原因`);
+    if (rejectedReason === null) return;
+    try {
+      await inventoryOperationsApi.rejectInventoryCheck(order.id, rejectedReason, currentUser.username, currentUser.role);
+      await loadData();
+      alert('盘点单已驳回，已回退为草稿态');
+    } catch (err: any) {
+      alert(err.message || '驳回失败');
     }
   };
 
@@ -108,6 +140,18 @@ export default function InventoryCheckDetail() {
               <Send size={14} />
               <span>提交差异</span>
             </Button>
+          )}
+          {isSupervisor && order.status === 'PENDING_REVIEW' && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleReject} className="text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1.5 font-bold">
+                <XCircle size={14} />
+                <span>驳回</span>
+              </Button>
+              <Button size="sm" onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
+                <CheckCircle size={14} />
+                <span>审核通过</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -185,12 +229,18 @@ export default function InventoryCheckDetail() {
                 <span className="text-slate-400 font-semibold flex items-center gap-1"><UserCheck size={12} />盘点人</span>
                 <span className="font-semibold text-slate-700">{order.checker}</span>
               </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-slate-400 font-semibold flex items-center gap-1"><Calendar size={12} />更新时间</span>
-                <span className="font-mono text-slate-500">{order.updatedAt || '-'}</span>
-              </div>
-            </div>
-          </div>
+	              <div className="flex justify-between gap-3">
+	                <span className="text-slate-400 font-semibold flex items-center gap-1"><Calendar size={12} />更新时间</span>
+	                <span className="font-mono text-slate-500">{order.updatedAt || '-'}</span>
+	              </div>
+	              {order.rejectedReason && (
+	                <div className="flex justify-between gap-3">
+	                  <span className="text-slate-400 font-semibold">驳回原因</span>
+	                  <span className="font-semibold text-amber-700 text-right">{order.rejectedReason}</span>
+	                </div>
+	              )}
+	            </div>
+	          </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-2">
             <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">备注</h3>

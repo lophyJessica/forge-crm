@@ -11,11 +11,18 @@ import {
 } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ClipboardCheck, Download, Eye, PlayCircle, RotateCcw, Search, Send, XCircle } from 'lucide-react';
+import { ClipboardCheck, Download, Eye, PlayCircle, RotateCcw, Search, Send, XCircle, CheckCircle } from 'lucide-react';
+
+const currentUser: { username: string; role: 'supervisor' | 'operator'; inventoryRole: 'SUPERVISOR' | 'OPERATOR' } = {
+  username: 'WmsScheduler',
+  role: 'supervisor',
+  inventoryRole: 'SUPERVISOR',
+};
 
 const statusClasses: Record<InventoryCheckStatus, string> = {
   DRAFT: 'bg-zinc-100 text-zinc-800 border-zinc-200',
   COUNTING: 'bg-blue-50 text-blue-700 border-blue-200',
+  PENDING_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   VOIDED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
@@ -23,6 +30,7 @@ const statusClasses: Record<InventoryCheckStatus, string> = {
 export default function InventoryCheckList() {
   const navigate = useNavigate();
   const warehouses = useLiveQuery(() => db.warehouses.toArray()) || [];
+  const isSupervisor = currentUser.role === 'supervisor';
 
   const [activeTab, setActiveTab] = useState<InventoryCheckStatus | 'ALL'>('ALL');
   const [checks, setChecks] = useState<InventoryCheckOrder[]>([]);
@@ -45,7 +53,7 @@ export default function InventoryCheckList() {
     setChecks(list);
 
     const nextCounts: Record<string, number> = {};
-    for (const status of ['ALL', 'DRAFT', 'COUNTING', 'COMPLETED', 'VOIDED'] as const) {
+    for (const status of ['ALL', 'DRAFT', 'COUNTING', 'PENDING_REVIEW', 'COMPLETED', 'VOIDED'] as const) {
       const rows = await inventoryOperationsApi.getInventoryChecks({
         id: checkId || undefined,
         warehouseCode: warehouseCode || undefined,
@@ -90,6 +98,18 @@ export default function InventoryCheckList() {
     }
   };
 
+  const handleReject = async (id: string) => {
+    const rejectedReason = window.prompt(`请输入驳回盘点单 ${id} 的原因`);
+    if (rejectedReason === null) return;
+    try {
+      await inventoryOperationsApi.rejectInventoryCheck(id, rejectedReason, currentUser.username, currentUser.inventoryRole);
+      await loadData();
+      alert('盘点单已驳回，已回退为草稿态');
+    } catch (err: any) {
+      alert(err.message || '驳回失败');
+    }
+  };
+
   const handleExport = () => {
     if (checks.length === 0) return;
     const jsonStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(checks, null, 2));
@@ -108,7 +128,7 @@ export default function InventoryCheckList() {
   );
 
   return (
-    <div className="space-y-4 text-xs">
+    <div className="space-y-4 text-xs font-medium">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-slate-900">盘点管理</h1>
@@ -160,8 +180,8 @@ export default function InventoryCheckList() {
 
       <div className="border-b border-slate-200">
         <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'COUNTING', 'COMPLETED', 'VOIDED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', COUNTING: '盘点中', COMPLETED: '已完成', VOIDED: '已作废' };
+          {(['ALL', 'DRAFT', 'COUNTING', 'PENDING_REVIEW', 'COMPLETED', 'VOIDED'] as const).map(tab => {
+            const labels = { ALL: '全部', DRAFT: '草稿', COUNTING: '盘点中', PENDING_REVIEW: '待审核', COMPLETED: '已调整', VOIDED: '已作废' };
             const isActive = activeTab === tab;
             return (
               <button
@@ -230,6 +250,18 @@ export default function InventoryCheckList() {
                       <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => navigate(`/inventory/checks/${row.id}/edit`)}>
                         <Send size={12} className="mr-1" />
                         <span>提交差异</span>
+                      </Button>
+                    )}
+                    {isSupervisor && row.status === 'PENDING_REVIEW' && (
+                      <Button variant="ghost" size="sm" className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold" onClick={() => navigate(`/inventory/checks/${row.id}`)}>
+                        <CheckCircle size={12} className="mr-1" />
+                        <span>审核</span>
+                      </Button>
+                    )}
+                    {isSupervisor && row.status === 'PENDING_REVIEW' && (
+                      <Button variant="ghost" size="sm" className="h-7 text-amber-600 hover:bg-amber-50 font-bold" onClick={() => handleReject(row.id)}>
+                        <RotateCcw size={12} className="mr-1" />
+                        <span>驳回</span>
                       </Button>
                     )}
                   </td>

@@ -42,6 +42,8 @@ import DamageDetail from './pages/DamageDetail';
 import StockAlertList from './pages/StockAlertList';
 
 // 模块 4：基础资料
+import WarehouseList from './pages/WarehouseList';
+import WarehouseForm from './pages/WarehouseForm';
 import ZoneList from './pages/ZoneList';
 import ZoneForm from './pages/ZoneForm';
 import LocationList from './pages/LocationList';
@@ -103,10 +105,14 @@ const getBreadcrumbs = (path: string): [string, string] => {
   if (/\/inventory\/transfers\/[^/]+/.test(path)) return ['库存中心台账', '调拨单详情'];
   if (path === '/inventory/damages') return ['库存中心台账', '报损管理'];
   if (path === '/inventory/damages/new') return ['库存中心台账', '新建报损单'];
+  if (/\/inventory\/damages\/[^/]+\/edit/.test(path)) return ['库存中心台账', '编辑报损单'];
   if (/\/inventory\/damages\/[^/]+/.test(path)) return ['库存中心台账', '报损单详情'];
   if (path === '/inventory/alerts') return ['库存中心台账', '库存水位预警'];
 
   // 基础资料维护
+  if (path === '/base/warehouses') return ['基础资料维护', '仓库管理'];
+  if (path === '/base/warehouses/new') return ['基础资料维护', '新建仓库'];
+  if (/\/base\/warehouses\/[^/]+\/edit/.test(path)) return ['基础资料维护', '编辑仓库'];
   if (path === '/base/zones') return ['基础资料维护', '库区管理'];
   if (path === '/base/zones/new') return ['基础资料维护', '新建库区'];
   if (/\/base\/zones\/[^/]+\/edit/.test(path)) return ['基础资料维护', '编辑库区'];
@@ -512,6 +518,22 @@ function Layout({ children }: { children: React.ReactNode }) {
               <ul className="space-y-1 text-[10px] font-semibold">
                 <li>
                   <Link 
+                    to="/base/warehouses" 
+                    title={isCollapsed ? "仓库管理" : ""}
+                    className={`flex items-center rounded-md transition-colors cursor-pointer ${
+                      isCollapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5'
+                    } ${
+                      isMenuChecked('/base/warehouses')
+                        ? 'bg-primary text-white font-bold' 
+                        : 'hover:bg-slate-855 hover:text-white text-slate-300'
+                    }`}
+                  >
+                    <Building2 size={15} className="shrink-0" />
+                    {!isCollapsed && <span>仓库管理</span>}
+                  </Link>
+                </li>
+                <li>
+                  <Link 
                     to="/base/zones" 
                     title={isCollapsed ? "库区管理" : ""}
                     className={`flex items-center rounded-md transition-colors cursor-pointer ${
@@ -707,10 +729,14 @@ function AppContent() {
           <Route path="/inventory/transfers/:id" element={<TransferDetail />} />
           <Route path="/inventory/damages" element={<DamageList />} />
           <Route path="/inventory/damages/new" element={<DamageForm />} />
+          <Route path="/inventory/damages/:id/edit" element={<DamageForm />} />
           <Route path="/inventory/damages/:id" element={<DamageDetail />} />
           <Route path="/inventory/alerts" element={<StockAlertList />} />
 
           {/* 模块4：基础资料 */}
+        <Route path="/base/warehouses" element={<WarehouseList />} />
+        <Route path="/base/warehouses/new" element={<WarehouseForm />} />
+        <Route path="/base/warehouses/:code/edit" element={<WarehouseForm />} />
         <Route path="/base/zones" element={<ZoneList />} />
         <Route path="/base/zones/new" element={<ZoneForm />} />
         <Route path="/base/zones/:code/edit" element={<ZoneForm />} />

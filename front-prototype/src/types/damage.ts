@@ -1,4 +1,4 @@
-export type DamageStatus = 'DRAFT' | 'CONFIRMED' | 'VOIDED';
+export type DamageStatus = 'DRAFT' | 'PENDING_REVIEW' | 'CONFIRMED' | 'VOIDED' | 'REJECTED';
 export type DamageReason = 'TRANSFER_LOSS' | 'DAMAGED' | 'EXPIRED' | 'SHORTAGE';
 
 export interface DamageItem {
@@ -9,6 +9,7 @@ export interface DamageItem {
   unit: string;
   currentQty: number;
   damageQty: number;
+  sourceLineId?: string;
 }
 
 export interface DamageOrder {
@@ -24,13 +25,19 @@ export interface DamageOrder {
   createdBy: string;
   updatedAt?: string;
   updatedBy?: string;
+  sourceType?: 'MANUAL' | 'TRANSFER_DIFF';
+  sourceTransferNo?: string;
+  writeOffFlowNos?: string[];
+  rejectedReason?: string;
   items: DamageItem[];
 }
 
 export const DAMAGE_STATUS_LABELS: Record<DamageStatus, string> = {
   DRAFT: '草稿',
+  PENDING_REVIEW: '待审核',
   CONFIRMED: '已确认',
   VOIDED: '已作废',
+  REJECTED: '已驳回',
 };
 
 export const DAMAGE_REASON_LABELS: Record<DamageReason, string> = {

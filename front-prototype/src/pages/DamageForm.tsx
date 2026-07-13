@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { damageApi } from '../api/damage';
-import { DAMAGE_REASON_LABELS, DamageItem, DamageReason } from '../types/damage';
+import { DAMAGE_REASON_LABELS, DamageItem, DamageOrder, DamageReason } from '../types/damage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
@@ -13,8 +13,10 @@ const reasonOptions: DamageReason[] = ['TRANSFER_LOSS', 'DAMAGED', 'EXPIRED', 'S
 
 export default function DamageForm() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const warehouses = useLiveQuery(() => db.warehouses.where('status').equals('ENABLED').toArray()) || [];
 
+  const [order, setOrder] = useState<DamageOrder | null>(null);
   const [warehouseCode, setWarehouseCode] = useState('');
   const [reason, setReason] = useState<DamageReason>('DAMAGED');
   const [remark, setRemark] = useState('');
@@ -35,19 +37,40 @@ export default function DamageForm() {
     const load = async () => {
       setLoading(true);
       try {
-        const first = warehouses[0]?.code || '';
-        if (first && !warehouseCode) {
-          setWarehouseCode(first);
-          await loadOptions(first);
+        if (id) {
+          const detail = await damageApi.getDamageById(id);
+          if (!detail) {
+            alert('报损单不存在');
+            navigate('/inventory/damages');
+            return;
+          }
+          if (detail.status !== 'DRAFT') {
+            navigate(`/inventory/damages/${detail.id}`);
+            return;
+          }
+          setOrder(detail);
+          setWarehouseCode(detail.warehouseCode);
+          setReason(detail.reason);
+          setRemark(detail.remark || '');
+          setItems(detail.items);
+          await loadOptions(detail.warehouseCode);
+        } else {
+          setOrder(null);
+          const first = warehouses[0]?.code || '';
+          if (first && !warehouseCode) {
+            setWarehouseCode(first);
+            await loadOptions(first);
+          }
         }
       } catch (err: any) {
         alert(err.message || '加载报损表单失败');
+        navigate('/inventory/damages');
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [warehouses.length]);
+  }, [id, warehouses.length]);
 
   const handleWarehouseChange = async (nextCode: string) => {
     setWarehouseCode(nextCode);
@@ -107,22 +130,35 @@ export default function DamageForm() {
 
   const saveDraft = async () => {
     try {
-      const newId = await damageApi.createDamageDraft(buildPayload(), 'WmsOperator01');
-      alert(`报损单 ${newId} 已保存为草稿`);
-      navigate(`/inventory/damages/${newId}`);
+      if (order) {
+        await damageApi.saveDamageDraft(order.id, buildPayload(), 'WmsOperator01');
+        alert('报损草稿保存成功');
+        navigate(`/inventory/damages/${order.id}`);
+      } else {
+        const newId = await damageApi.createDamageDraft(buildPayload(), 'WmsOperator01');
+        alert(`报损单 ${newId} 已保存为草稿`);
+        navigate(`/inventory/damages/${newId}`);
+      }
     } catch (err: any) {
       alert(err.message || '保存失败');
     }
   };
 
-  const confirmDamage = async () => {
-    if (!window.confirm('确认报损后将立即扣减现存并生成库存流水 FL，是否继续？')) return;
+  const submitDamage = async () => {
+    if (!window.confirm('是否确定提交报损审核？提交后需由仓库管理员审核方可过账。')) return;
     try {
-      const newId = await damageApi.createAndConfirmDamage(buildPayload(), 'WmsOperator01');
-      alert(`报损单 ${newId} 已确认，现存已扣减并生成 FL 流水`);
-      navigate(`/inventory/damages/${newId}`);
+      if (order) {
+        await damageApi.saveDamageDraft(order.id, buildPayload(), 'WmsOperator01');
+        await damageApi.submitDamageForReview(order.id, 'WmsOperator01');
+        alert(`报损单 ${order.id} 已成功提交审核`);
+        navigate(`/inventory/damages/${order.id}`);
+      } else {
+        const newId = await damageApi.createAndSubmitDamage(buildPayload(), 'WmsOperator01');
+        alert(`报损单 ${newId} 已成功提交审核`);
+        navigate(`/inventory/damages/${newId}`);
+      }
     } catch (err: any) {
-      alert(err.message || '确认报损失败');
+      alert(err.message || '提交审核失败');
     }
   };
 
@@ -139,8 +175,8 @@ export default function DamageForm() {
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">新建报损单</h1>
-          <p className="text-xs text-slate-500 mt-1">报损数量不能大于当前现存量；确认报损后立即扣减现存并生成 FL 流水</p>
+          <h1 className="text-xl font-bold text-slate-900">{order ? `编辑报损单 ${order.id}` : '新建报损单'}</h1>
+          <p className="text-xs text-slate-500 mt-1">报损数量不能大于当前现存量；提交后进入待审核，审核通过后才扣现存并生成 FL 流水</p>
         </div>
       </div>
 
@@ -183,7 +219,7 @@ export default function DamageForm() {
         </div>
         <div className="flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-100 rounded px-3 py-2 font-semibold">
           <AlertTriangle size={14} />
-          <span>确认报损不是审批预占动作，会直接扣减该仓现存并写入库存流水 FL。</span>
+          <span>提交审核不是直接扣减库存，审核通过后方可正式核销扣除现存并写入库存流水 FL。</span>
         </div>
         <div className="space-y-1">
           <label className="font-semibold text-slate-500">备注</label>
@@ -284,9 +320,9 @@ export default function DamageForm() {
             <Save size={14} />
             <span>保存草稿</span>
           </Button>
-          <Button size="sm" onClick={confirmDamage} disabled={hasErrors} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
+          <Button size="sm" onClick={submitDamage} disabled={hasErrors} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer font-bold disabled:opacity-50">
             <CheckCircle2 size={14} />
-            <span>确认报损</span>
+            <span>提交审核</span>
           </Button>
         </div>
       </div>

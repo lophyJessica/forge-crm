@@ -451,10 +451,15 @@ export const inboundApi = {
           const newAvailable = stock.qtyAvailable + pi.qty;
           const newTotal = newAvailable + (stock.qtyAllocated || 0) + newFrozen;
 
+          const loc = await db.locations.get(pi.locationCode);
+          const zoneCode = loc ? loc.zoneCode : undefined;
+
           await db.inventory_stocks.update(stock.id!, {
             qtyFrozen: newFrozen,
             qtyAvailable: newAvailable,
             qtyTotal: newTotal,
+            zoneCode: zoneCode || stock.zoneCode,
+            locationCode: pi.locationCode || stock.locationCode,
             lastModified: nowStr
           });
 
