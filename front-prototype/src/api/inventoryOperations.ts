@@ -357,6 +357,27 @@ export const inventoryOperationsApi = {
     });
   },
 
+  async saveTransferInboundQty(id: string, items: TransferItem[], operator: string) {
+    const order = await db.transfer_orders.get(id);
+    if (!order) throw new Error('调拨单不存在');
+    if (order.status !== 'OUTBOUND') throw new Error('只有出库在途调拨单可以修改实收数量');
+
+    for (const item of items) {
+      const inQty = Number(item.inboundQty);
+      if (isNaN(inQty) || inQty < 0) throw new Error(`商品 [${item.productCode}] 的实收数量必须大于等于 0`);
+      if (inQty > item.transferQty) throw new Error(`商品 [${item.productCode}] 的实收数量不能大于调拨出库数量 (${item.transferQty})`);
+    }
+
+    await db.transfer_orders.update(id, {
+      items: items.map(item => ({ 
+        ...item, 
+        inboundQty: Number(item.inboundQty) 
+      })),
+      updatedAt: now(),
+      updatedBy: operator,
+    });
+  },
+
   async assertTransferDraft(data: { outWarehouseCode: string; inWarehouseCode: string; items: TransferItem[] }) {
     if (!data.outWarehouseCode) throw new Error('请选择调出仓库');
     if (!data.inWarehouseCode) throw new Error('请选择调入仓库');

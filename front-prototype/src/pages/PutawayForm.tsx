@@ -33,8 +33,8 @@ export default function PutawayForm() {
     try {
       const data = await inboundApi.getInboundById(id);
       if (data) {
-        if (data.status !== 'RECEIVED') {
-          alert('收货单未在已收货状态，无需执行上架！');
+        if (data.status !== 'PUTAWAY_PENDING' && data.status !== 'QC_PENDING' && data.status !== 'EXCEPTION') {
+          alert('收货单未在待上架状态，无需执行上架！');
           navigate(`/inbound/${id}`);
           return;
         }

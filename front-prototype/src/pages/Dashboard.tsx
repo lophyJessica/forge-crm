@@ -79,7 +79,7 @@ export default function Dashboard() {
 
     const activities: Activity[] = [
       ...inbounds
-        .filter(order => order.status === 'RECEIVED' || order.status === 'PUTAWAY')
+        .filter(order => order.status === 'QC_PENDING' || order.status === 'PUTAWAY_PENDING' || order.status === 'COMPLETED')
         .map(order => ({
           id: order.id,
           time: order.updatedAt || order.createdAt,

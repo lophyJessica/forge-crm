@@ -98,26 +98,16 @@ export default function TransferDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          {order.status === 'DRAFT' && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/inventory/transfers/${order.id}/edit`)} className="flex items-center gap-1.5">
-                <Edit size={14} />
-                <span>编辑草稿</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
-                <XCircle size={14} />
-                <span>作废</span>
-              </Button>
-              <Button size="sm" onClick={handleOutbound} className="bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1.5 font-bold">
-                <ArrowUpFromLine size={14} />
-                <span>确认出库</span>
-              </Button>
-            </>
+          {(order.status === 'DRAFT' || order.status === 'OUTBOUND') && (
+            <Button size="sm" onClick={() => navigate(`/inventory/transfers/${order.id}/edit`)} className="bg-primary hover:bg-primary/95 text-white flex items-center gap-1.5 font-bold">
+              <Edit size={14} />
+              <span>进入执行页</span>
+            </Button>
           )}
-          {order.status === 'OUTBOUND' && (
-            <Button size="sm" onClick={handleInbound} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
-              <ArrowDownToLine size={14} />
-              <span>确认入库</span>
+          {order.status === 'DRAFT' && (
+            <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
+              <XCircle size={14} />
+              <span>作废</span>
             </Button>
           )}
         </div>

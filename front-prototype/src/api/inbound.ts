@@ -65,6 +65,7 @@ export const inboundApi = {
     receiveDateEnd?: string;
     updatedDateStart?: string;
     updatedDateEnd?: string;
+    productCode?: string;
   }) {
     let list = await db.inbound_orders.toArray();
 
@@ -83,6 +84,9 @@ export const inboundApi = {
     }
     if (filters.status && filters.status !== 'ALL') {
       list = list.filter(item => item.status === filters.status);
+    }
+    if (filters.productCode) {
+      list = list.filter(item => item.items.some(i => i.productCode.includes(filters.productCode!) || i.productName.includes(filters.productCode!)));
     }
     if (filters.receiveDateStart) {
       list = list.filter(item => item.receiveDate >= filters.receiveDateStart!);
@@ -133,7 +137,7 @@ export const inboundApi = {
       .where('purchaseOrderId')
       .equals(poId)
       .toArray();
-    const hasUnfinished = existingDrafts.some(r => r.status === 'DRAFT' || r.status === 'RECEIVED');
+    const hasUnfinished = existingDrafts.some(r => r.status === 'DRAFT' || r.status === 'RECEIVING' || r.status === 'QC_PENDING' || r.status === 'PUTAWAY_PENDING' || r.status === 'EXCEPTION');
     if (hasUnfinished) {
       throw new Error('该采购订单存在未完成的收货任务，请先处理已有收货单');
     }
@@ -187,7 +191,7 @@ export const inboundApi = {
   async saveInboundDraft(id: string, updatedItems: InboundItem[], remark: string, operator: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'DRAFT') throw new Error('非草稿状态收货单无法编辑');
+    if (order.status !== 'DRAFT' && order.status !== 'RECEIVING') throw new Error('非草稿状态收货单无法编辑');
 
     // 强控校验：实收数量 ≤ PO未收货数量
     for (const item of updatedItems) {
@@ -197,11 +201,14 @@ export const inboundApi = {
     }
 
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const totalRecv = updatedItems.reduce((sum, it) => sum + Number(it.receivedQuantity), 0);
+    const nextStatus = totalRecv > 0 ? 'RECEIVING' : 'DRAFT';
     
     await db.inbound_orders.update(id, {
+      status: nextStatus,
       items: updatedItems,
       remark: remark,
-      totalReceivedQuantity: updatedItems.reduce((sum, it) => sum + Number(it.receivedQuantity), 0),
+      totalReceivedQuantity: totalRecv,
       updatedBy: operator,
       updatedAt: nowStr
     });
@@ -211,7 +218,7 @@ export const inboundApi = {
   async confirmInboundReceipt(id: string, operator: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿态收货单能确认收货');
+    if (order.status !== 'DRAFT' && order.status !== 'RECEIVING') throw new Error('只有待收货或收货中状态能确认收货');
 
     // 强控校验：实收数量 ≤ PO未收货数量
     for (const item of order.items) {
@@ -224,9 +231,9 @@ export const inboundApi = {
 
     // 执行数据库事务：1. 更新收货单状态；2. 增加即时库存冻结量及现存量
     await db.transaction('rw', [db.inbound_orders, db.inventory_stocks, db.inventory_flows], async () => {
-      // 更新状态为 RECEIVED
+      // 更新状态为 QC_PENDING
       await db.inbound_orders.update(id, {
-        status: 'RECEIVED',
+        status: 'QC_PENDING',
         updatedBy: operator,
         updatedAt: nowStr
       });
@@ -246,7 +253,6 @@ export const inboundApi = {
         if (stock) {
           const qtyAllocated = stock.qtyAllocated || 0;
           const qtyFrozen = stock.qtyFrozen || 0;
-          const qtyOnWay = stock.qtyOnWay || 0;
           
           const newFrozen = qtyFrozen + item.receivedQuantity;
           const newTotal = stock.qtyAvailable + qtyAllocated + newFrozen;
@@ -298,7 +304,7 @@ export const inboundApi = {
 
     await integrationApi.applyInboundReceipt({
       ...order,
-      status: 'RECEIVED',
+      status: 'QC_PENDING',
       updatedBy: operator,
       updatedAt: nowStr
     }, operator);
@@ -308,20 +314,26 @@ export const inboundApi = {
   async handleQualityCheck(id: string, isPassed: boolean, operator: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'RECEIVED') throw new Error('只有已收货单据能进行质检判定');
+    if (order.status !== 'QC_PENDING') throw new Error('只有待质检单据能进行质检判定');
 
     if (isPassed) {
-      // 质检通过，无需特殊动作，继续等待上架
+      // 质检通过，状态转为 PUTAWAY_PENDING (待上架)
+      const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      await db.inbound_orders.update(id, {
+        status: 'PUTAWAY_PENDING',
+        updatedBy: operator,
+        updatedAt: nowStr
+      });
       return;
     } else {
-      // 质检不通过：扣减冻结库存，生成退货报损，单据作废
+      // 质检不通过：扣减冻结库存，生成退货报损，单据转为 EXCEPTION (异常)
       await db.transaction('rw', [db.inbound_orders, db.inventory_stocks, db.inventory_flows], async () => {
         const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
         
-        // 状态转为已作废
+        // 状态转为 EXCEPTION
         await db.inbound_orders.update(id, {
-          status: 'VOIDED',
-          remark: order.remark + ' | 质检判定不合格作废',
+          status: 'EXCEPTION',
+          remark: (order.remark || '') + ' | 质检判定不合格，转为异常等待退货',
           updatedBy: operator,
           updatedAt: nowStr
         });
@@ -372,7 +384,7 @@ export const inboundApi = {
   async putawayConfirm(id: string, putawayItems: { productCode: string; locationCode: string; qty: number }[], operator: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'RECEIVED') throw new Error('只有已收货待上架的单子能执行上架');
+    if (order.status !== 'PUTAWAY_PENDING') throw new Error('只有待上架的单子能执行上架');
 
     const putId = await generatePUTNumber();
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -420,7 +432,7 @@ export const inboundApi = {
       const isAllPutaway = updatedItems.every(i => i.putawayQuantity >= i.receivedQuantity);
 
       await db.inbound_orders.update(id, {
-        status: isAllPutaway ? 'PUTAWAY' : 'RECEIVED',
+        status: isAllPutaway ? 'COMPLETED' : 'PUTAWAY_PENDING',
         items: updatedItems,
         putawayRecords: updatedPutawayRecords,
         updatedBy: operator,
@@ -511,7 +523,7 @@ export const inboundApi = {
   async voidInbound(id: string, reason: string, operator: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿态可以作废');
+    if (order.status !== 'DRAFT' && order.status !== 'RECEIVING') throw new Error('只有待收货或收货中可以作废');
 
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
     await db.inbound_orders.update(id, {
@@ -526,7 +538,7 @@ export const inboundApi = {
   async deleteInbound(id: string) {
     const order = await db.inbound_orders.get(id);
     if (!order) throw new Error('收货单不存在');
-    if (order.status !== 'DRAFT') throw new Error('只有草稿状态可删除');
+    if (order.status !== 'DRAFT' && order.status !== 'RECEIVING') throw new Error('只有草稿状态可删除');
     
     await db.inbound_orders.delete(id);
   }

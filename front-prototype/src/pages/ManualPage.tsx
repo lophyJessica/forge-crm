@@ -69,7 +69,7 @@ function MermaidDiagram({ chart, chartId }: { chart: string; chartId: string }) 
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white p-4">
       {svg ? (
         <div
-          className="min-w-[720px] [&_svg]:mx-auto [&_svg]:max-w-none"
+          className="min-w-[720px] [&_svg]:mx-auto [&_svg]:!max-w-none [&_svg]:!w-auto"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (
@@ -90,7 +90,7 @@ const manualModules: ManualModule[] = [
         title: '收货单',
         source: 'prd-docs/入库管理/收货单/收货单_业务流程推演.md',
         purpose: '收货单用于把 ERP/采购系统下发的 PO 变成 WMS 现场收货任务，适合收货员到货清点、登记实收和质检结果时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["ERP 审核通过 PO<br/>PO20260705-0008"] --> B["WMS 接收 PO<br/>下推生成 RCV 待收货"]
     B --> C["仓管打开收货单<br/>选择仓库/库区"]
     C --> D["录入本次实收数量"]
@@ -123,7 +123,7 @@ const manualModules: ManualModule[] = [
         title: '上架单',
         source: 'prd-docs/入库管理/上架单/上架单_业务流程推演.md',
         purpose: '上架单用于把已经收货且质检合格的商品放到实际货位，适合上架员使用 PDA 扫货位、扫商品并确认上架数量时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["收货单 RCV 完成收货确认"] --> B["在 RCV 中登记质检结果"]
     B --> C{"合格数量 > 0?"}
     C -->|否| C1["RCV 状态转为异常<br/>不生成 PUT，不允许上架"]
@@ -169,7 +169,7 @@ const manualModules: ManualModule[] = [
         title: '波次',
         source: 'prd-docs/出库管理/波次/波次_业务流程推演.md',
         purpose: '波次用于把已审核出库需求按仓库、承运商、线路和优先级聚合成可执行任务，适合仓管安排拣货任务时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["ERP/销售系统下发已审核 SO"] --> B["WMS 形成待波次出库需求<br/>SO 审核已触发库存占用"]
     B --> C{"触发波次生成"}
     C -->|系统定时| D["按仓库+承运商+线路+优先级聚合"]
@@ -205,7 +205,7 @@ const manualModules: ManualModule[] = [
         title: '拣货单',
         source: 'prd-docs/出库管理/拣货单/拣货单_业务流程推演.md',
         purpose: '拣货单用于指导拣货员按货位路径取货，适合 PDA 领取任务、扫描货位、扫描商品并确认实拣数量时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["WAVE 下推生成 PICK<br/>PICK20260705-0001"] --> B["PDA 展示待领取任务"]
     B --> C["拣货员领取任务<br/>状态：待拣 → 拣货中"]
     B -->|上游波次关闭| X["任务作废/终止<br/>状态：已作废"]
@@ -252,7 +252,7 @@ const manualModules: ManualModule[] = [
         title: '复核单',
         source: 'prd-docs/出库管理/复核单/复核单_业务流程推演.md',
         purpose: '复核单用于检查拣货结果是否和订单一致，适合复核员扫描箱码、逐件扫商品并决定通过或退回拣货时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["PICK 已拣完<br/>PICK20260705-0001"] --> B["系统生成 CHECK<br/>CHECK20260705-0001<br/>状态：待复核"]
     B --> C["复核员领取/开始复核<br/>状态：待复核 → 复核中"]
     B -->|上游波次/拣货异常关闭| X["任务作废<br/>状态：已作废"]
@@ -297,7 +297,7 @@ const manualModules: ManualModule[] = [
         title: '包裹',
         source: 'prd-docs/出库管理/包裹/包裹_业务流程推演.md',
         purpose: '包裹用于把已复核通过的货品完成包装、称重、贴面单并触发库存实扣，适合包装员在包装台操作时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["CHECK 已复核<br/>CHECK20260705-0001"] --> B["系统生成 PKG<br/>PKG20260705-000001<br/>状态：待包装"]
     B --> C["包装员开始包装<br/>状态：待包装 → 包装中"]
     B -->|上游异常关闭| X["任务作废<br/>状态：已作废"]
@@ -336,7 +336,7 @@ const manualModules: ManualModule[] = [
         title: '交运单',
         source: 'prd-docs/出库管理/交运单/交运单_业务流程推演.md',
         purpose: '交运单用于把已包装包裹交给承运商并记录交接结果，适合发货员现场扫描包裹、核对数量和确认交运时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["PKG 已包装<br/>包裹已完成库存实扣"] --> B["按承运商/线路聚合生成 DSH<br/>DSH20260705-0001<br/>状态：待交运"]
     B --> C["发货员开始交运<br/>状态：待交运 → 交运中"]
     B -->|上游包裹异常关闭| X["任务作废<br/>状态：已作废"]
@@ -384,7 +384,7 @@ const manualModules: ManualModule[] = [
         title: '库存查询',
         source: 'prd-docs/库存管理/库存查询/库存查询_业务流程推演.md',
         purpose: '库存查询用于查看当前库存的现存、占用、冻结、在途和可用数量，适合仓管找货、盘点前核对或异常追溯时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["用户打开库存查询页"] --> B["系统读取账号权限范围"]
     B --> C["用户输入筛选条件<br/>仓库/库区/货位/商品/批次"]
     C --> D{"是否 PDA 扫码?"}
@@ -421,7 +421,7 @@ const manualModules: ManualModule[] = [
         title: '库存流水',
         source: 'prd-docs/库存管理/库存流水/库存流水_业务流程推演.md',
         purpose: '库存流水用于追溯每一次库存变动和变动后快照，适合查清某个商品为什么多了、少了、冻结或释放时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     Start["库存动作生效"] --> Type{"变动类型"}
 
     Type -->|"入库+ / 调拨+ / 盘盈+"| Inc["写入正向变动数量 +N"]
@@ -464,7 +464,7 @@ const manualModules: ManualModule[] = [
         title: '库存预警',
         source: 'prd-docs/库存管理/库存预警/库存预警_业务流程推演.md',
         purpose: '库存预警用于把当前现存和商品档案阈值做只读比对，适合仓管查看哪些商品低于安全库存或最低库存时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["用户进入库存预警页(PC/PDA)"] --> B["系统加载查询条件<br/>仓库/商品/预警等级"]
     B --> C["用户设置筛选条件"]
     C --> D["点击查询"]
@@ -505,7 +505,7 @@ const manualModules: ManualModule[] = [
         title: '盘点单',
         source: 'prd-docs/盘点管理/盘点单/盘点单_业务流程推演.md',
         purpose: '盘点单用于锁定指定范围并核对账实差异，适合仓管创建盘点任务、盘点员 PDA 实盘、主管审核差异时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["PC 创建盘点单 CK<br/>状态：草稿"] --> B["选择盘点类型、范围、盘点人、审核人"]
     B --> C["开始盘点<br/>锁定范围"]
     C --> D["货位进入冻结态<br/>禁止出入库"]
@@ -556,7 +556,7 @@ const manualModules: ManualModule[] = [
         title: '调拨单',
         source: 'prd-docs/调拨管理/调拨单/调拨单_业务流程推演.md',
         purpose: '调拨单用于把库存从一个仓库调到另一个仓库，适合仓管创建调拨、调出确认、调入清点和处理短收差异时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["WMS手动创建或ERP下发TR<br/>状态：草稿"] --> B["保存草稿<br/>校验调出仓/调入仓/商品/数量"]
     B --> C["确认调出"]
     C --> D{"调出仓可用库存足够?"}
@@ -601,7 +601,7 @@ const manualModules: ManualModule[] = [
         title: '报损单',
         source: 'prd-docs/报损管理/报损单/报损单_业务流程推演.md',
         purpose: '报损单用于处理现场手动报损或调拨短收差异，适合仓管提交报损、主管或财务审核核销时使用。',
-        diagram: `flowchart TD
+        diagram: `flowchart LR
     A["来源判断"] --> B{"报损来源?"}
     B -->|"手动"| C["PC 新建 BL<br/>状态：草稿"]
     C --> D["录入货位、商品、报损数量<br/>选择报损原因"]

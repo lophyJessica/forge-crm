@@ -1,4 +1,4 @@
-export type InboundStatus = 'DRAFT' | 'RECEIVED' | 'PUTAWAY' | 'VOIDED';
+export type InboundStatus = 'DRAFT' | 'RECEIVING' | 'QC_PENDING' | 'PUTAWAY_PENDING' | 'EXCEPTION' | 'COMPLETED' | 'VOIDED';
 
 export interface InboundItem {
   id: string;

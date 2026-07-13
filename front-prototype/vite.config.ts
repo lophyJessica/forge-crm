@@ -4,8 +4,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/project/forge-wms/',
   plugins: [react()],
-  base: '/wms/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

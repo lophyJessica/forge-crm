@@ -20,7 +20,6 @@ export default function InboundDetail() {
   const [voiding, setVoiding] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [qcPopup, setQcPopup] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReceipt, setConfirmReceipt] = useState(false);
 
   const loadData = async () => {
@@ -55,24 +54,13 @@ export default function InboundDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!id) return;
-    try {
-      await inboundApi.deleteInbound(id);
-      alert('收货草稿单已物理删除');
-      navigate('/inbound');
-    } catch (err: any) {
-      alert(err.message || '删除失败');
-    }
-  };
-
   const handleReceipt = async () => {
     if (!id) return;
     try {
       await inboundApi.confirmInboundReceipt(id, 'WmsOperator01');
       setConfirmReceipt(false);
       loadData();
-      alert('确认收货成功，库存转入冻结，已生成收货流水！');
+      alert('确认收货成功，库存转入冻结并提交质检，已生成收货流水！');
     } catch (err: any) {
       alert(err.message || '收货失败');
     }
@@ -105,12 +93,15 @@ export default function InboundDetail() {
   // --- 状态徽章与时间线标记 ---
   const getStatusConfig = (status: InboundStatus) => {
     const config: Record<InboundStatus, { label: string; bg: string; text: string; step: number }> = {
-      DRAFT: { label: '草稿', bg: 'bg-zinc-100 border-zinc-200', text: 'text-zinc-800', step: 1 },
-      RECEIVED: { label: '已收货', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700', step: 2 },
-      PUTAWAY: { label: '已上架', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', step: 3 },
-      VOIDED: { label: '已作废', bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', step: 4 }
+      DRAFT: { label: '待收货', bg: 'bg-zinc-100 border-zinc-200', text: 'text-zinc-800', step: 1 },
+      RECEIVING: { label: '收货中', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', step: 1 },
+      QC_PENDING: { label: '待质检', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700', step: 2 },
+      PUTAWAY_PENDING: { label: '待上架', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700', step: 3 },
+      EXCEPTION: { label: '异常', bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', step: 3 },
+      COMPLETED: { label: '已完成', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', step: 4 },
+      VOIDED: { label: '已作废', bg: 'bg-slate-100 border-slate-200', text: 'text-slate-400', step: 4 }
     };
-    return config[status];
+    return config[status] || { label: status, bg: 'bg-slate-100', text: 'text-slate-700', step: 0 };
   };
 
   const statusCfg = getStatusConfig(order.status);
@@ -334,7 +325,7 @@ export default function InboundDetail() {
           返回列表
         </Button>
         <div className="flex gap-2">
-          {order.status === 'DRAFT' && (
+          {(order.status === 'DRAFT' || order.status === 'RECEIVING') && (
             <>
               <Button
                 variant="outline"
@@ -343,7 +334,7 @@ export default function InboundDetail() {
                 onClick={() => navigate(`/inbound/${order.id}/edit`)}
               >
                 <Edit size={14} />
-                <span>编辑草稿</span>
+                <span>执行收货</span>
               </Button>
               <Button
                 variant="outline"
@@ -353,15 +344,6 @@ export default function InboundDetail() {
               >
                 <XCircle size={14} />
                 <span>作废单据</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 cursor-pointer text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 size={14} />
-                <span>物理删除</span>
               </Button>
               <Button
                 size="sm"
@@ -374,7 +356,7 @@ export default function InboundDetail() {
             </>
           )}
 
-          {order.status === 'RECEIVED' && (
+          {order.status === 'QC_PENDING' && (
             <>
               <Button
                 variant="outline"
@@ -384,6 +366,11 @@ export default function InboundDetail() {
               >
                 <span>质检判定</span>
               </Button>
+            </>
+          )}
+
+          {order.status === 'PUTAWAY_PENDING' && (
+            <>
               <Button
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer font-bold"
@@ -453,26 +440,6 @@ export default function InboundDetail() {
                 className="cursor-pointer disabled:opacity-50"
               >
                 确认作废
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 删除草稿确认 */}
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full shadow-lg p-5 text-xs">
-            <h3 className="text-sm font-bold text-slate-800">确认要物理删除此草稿收货单吗？</h3>
-            <p className="text-slate-600 mt-3 font-semibold leading-relaxed">
-              单号：{order.id}。此操作为物理删除且不可撤回，确认继续吗？
-            </p>
-            <div className="flex justify-end gap-2 mt-5">
-              <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)} className="cursor-pointer">
-                取消
-              </Button>
-              <Button variant="destructive" size="sm" onClick={handleDelete} className="cursor-pointer">
-                确定物理删除
               </Button>
             </div>
           </div>

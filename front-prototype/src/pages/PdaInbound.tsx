@@ -31,7 +31,7 @@ export default function PdaInbound() {
       return;
     }
 
-    if (data.status !== 'RECEIVED' && data.status !== 'PUTAWAY') {
+    if (data.status !== 'QC_PENDING' && data.status !== 'PUTAWAY_PENDING' && data.status !== 'EXCEPTION' && data.status !== 'COMPLETED') {
       setOrder(null);
       setMessage('仅已收货或已上架单据可在 PDA 查看');
       return;
@@ -165,7 +165,7 @@ export default function PdaInbound() {
                     </div>
                     <Button
                       type="button"
-                      disabled={qty === 0 || order.status === 'PUTAWAY'}
+                      disabled={qty === 0 || order.status === 'COMPLETED'}
                       onClick={() => handleOpenScan(item.productCode)}
                       className={`h-14 px-5 text-base font-black ${done ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                     >
@@ -184,7 +184,7 @@ export default function PdaInbound() {
           <Button
             type="button"
             onClick={confirmPutaway}
-            disabled={!allReady || order.status === 'PUTAWAY'}
+            disabled={!allReady || order.status === 'COMPLETED'}
             className="w-full h-14 text-lg font-black bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-500"
           >
             <Check size={22} className="mr-2" />
