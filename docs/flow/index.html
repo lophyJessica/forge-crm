@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Forge 产品结构图与交互流程</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      background: #0f172a;
+      color: #e2e8f0;
+      line-height: 1.8
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800
+    }
+
+    h2 {
+      font-size: 20px;
+      color: #38bdf8;
+      margin-top: 40px;
+      border-left: 3px solid #38bdf8;
+      padding-left: 12px
+    }
+
+    blockquote {
+      background: rgba(56, 189, 248, .08);
+      border-left: 3px solid #38bdf8;
+      padding: 12px 18px;
+      margin: 16px 0;
+      color: #94a3b8
+    }
+
+    pre {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      overflow: visible; /* 消除 pre 的嵌套滚动 */
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0
+    }
+
+    th {
+      background: #334155;
+      padding: 10px 14px;
+      text-align: left
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .mermaid-wrap {
+      position: relative;
+      margin: 16px 0;
+      background: #1e293b;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .mermaid-wrap .controls {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 4px;
+      padding: 8px;
+      background: rgba(30, 41, 59, .95);
+      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
+    }
+
+    .mermaid-wrap .controls button {
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .15);
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .mermaid-wrap .controls button:hover {
+      background: rgba(56, 189, 248, .2);
+      border-color: #38bdf8
+    }
+
+    /* LR 横向流程图的局部视口样式 */
+    .mermaid-wrap .svg-stage {
+      height: 600px; /* 锁定高度，窗口大小不变 */
+      overflow: auto; /* 统一在此处产生独立、并行的横纵滚动条 */
+      padding: 24px;
+      text-align: center
+    }
+
+    /* TD 纵向流程图样式隔离：保持原生显示，完全随内容垂直撑开，不设局部滚动条 */
+    .mermaid-wrap[data-is-td="true"] .svg-stage {
+      height: auto;
+      overflow: visible;
+      padding: 24px;
+      text-align: center
+    }
+
+    .mermaid-wrap .svg-stage svg {
+      max-width: none
+    }
+
+    a {
+      color: #38bdf8
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content"></div>
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#1e3a5f', primaryTextColor: '#e2e8f0', primaryBorderColor: '#38bdf8', lineColor: '#64748b', secondaryColor: '#1e293b', tertiaryColor: '#0f172a' } });
+    fetch('flowchart.md').then(r => r.text()).then(async md => {
+      document.getElementById('content').innerHTML = marked.parse(md);
+
+      // 动态包裹所有的 .language-mermaid 节点
+      const mermaidNodes = document.querySelectorAll('.language-mermaid');
+      
+      // 语法排错自检挂载
+      for (let i = 0; i < mermaidNodes.length; i++) {
+        const node = mermaidNodes[i];
+        const text = node.textContent || '';
+        try {
+          await mermaid.parse(text);
+        } catch (err) {
+          console.error("Syntax debug log caught:", err);
+          const errBox = document.createElement('pre');
+          errBox.style.color = '#f87171';
+          errBox.style.background = '#18181b';
+          errBox.style.border = '2px solid #ef4444';
+          errBox.style.padding = '16px';
+          errBox.style.borderRadius = '8px';
+          errBox.style.marginTop = '16px';
+          errBox.style.overflow = 'auto';
+          errBox.style.whiteSpace = 'pre-wrap';
+          
+          let errDetail = '';
+          try {
+            const propNames = Object.getOwnPropertyNames(err);
+            const detailObj = {};
+            propNames.forEach(name => {
+              if (name !== 'stack') {
+                detailObj[name] = err[name];
+              }
+            });
+            errDetail = JSON.stringify(detailObj, null, 2);
+          } catch (e) {
+            errDetail = String(err);
+          }
+
+          errBox.textContent = `[Mermaid 语法调试日志] 图表 #${i + 1} 发现底层解析错误：\n` + errDetail;
+          node.parentNode.insertBefore(errBox, node);
+        }
+      }
+
+      mermaidNodes.forEach(node => {
+        if (node.closest('.mermaid-wrap')) return;
+        const text = node.textContent || '';
+        const isTD = /^\s*(flowchart|graph)\s+TD/i.test(text);
+
+        const targetNode = node.tagName === 'CODE' && node.parentElement && node.parentElement.tagName === 'PRE' 
+          ? node.parentElement 
+          : node;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'mermaid-wrap';
+        if (isTD) {
+          wrap.setAttribute('data-is-td', 'true');
+        }
+        
+        const stage = document.createElement('div');
+        stage.className = 'svg-stage';
+
+        targetNode.parentNode.insertBefore(wrap, targetNode);
+        stage.appendChild(targetNode);
+        wrap.appendChild(stage);
+      });
+
+      mermaid.run({ querySelector: '.language-mermaid' })
+        .catch(err => console.error("Mermaid run failed:", err))
+        .finally(() => {
+          const wraps = document.querySelectorAll('.mermaid-wrap');
+          wraps.forEach(wrap => {
+            try {
+              if (wrap.getAttribute('data-is-td') === 'true') {
+                return; // TD 型保持原生显示，不加缩放控件
+              }
+              const stage = wrap.querySelector('.svg-stage');
+              if (!stage) return;
+              const svg = stage.querySelector('svg');
+              if (!svg) return;
+
+              let currentScale = 1.0;
+              let baseWidth = 0;
+              let aspectRatio = 1.0;
+
+              // 初始化宽高及比例
+              function initDimensions() {
+                if (!baseWidth) {
+                  const rect = svg.getBoundingClientRect();
+                  baseWidth = rect.width;
+                  
+                  const viewBox = svg.getAttribute('viewBox');
+                  if (viewBox) {
+                    const parts = viewBox.split(' ').map(Number);
+                    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+                      aspectRatio = parts[3] / parts[2];
+                    } else if (rect.width > 0) {
+                      aspectRatio = rect.height / rect.width;
+                    }
+                  } else if (rect.width > 0) {
+                    aspectRatio = rect.height / rect.width;
+                  }
+                }
+              }
+
+              // 2. 创建 controls 容器
+              const controls = document.createElement('div');
+              controls.className = 'controls';
+
+              const btnOut = document.createElement('button');
+              btnOut.textContent = '-';
+              
+              const btnReset = document.createElement('button');
+              btnReset.textContent = '1:1';
+
+              const btnIn = document.createElement('button');
+              btnIn.textContent = '+';
+
+              controls.appendChild(btnOut);
+              controls.appendChild(btnReset);
+              controls.appendChild(btnIn);
+
+              wrap.insertBefore(controls, stage);
+
+              function updateZoom(isReset = false) {
+                initDimensions();
+                if (isReset) {
+                  svg.style.width = '';
+                  svg.style.height = 'auto';
+                  btnReset.textContent = '1:1';
+                } else {
+                  const newWidth = baseWidth * currentScale;
+                  const newHeight = newWidth * aspectRatio;
+                  svg.style.width = newWidth + 'px';
+                  svg.style.height = newHeight + 'px'; // 显式等比缩放高度
+                  btnReset.textContent = currentScale.toFixed(1) + 'x';
+                }
+              }
+
+              btnOut.addEventListener('click', () => {
+                if (currentScale > 0.3) {
+                  currentScale = Math.max(0.3, currentScale - 0.2);
+                  updateZoom();
+                }
+              });
+
+              btnReset.addEventListener('click', () => {
+                currentScale = 1.0;
+                updateZoom(true);
+              });
+
+              btnIn.addEventListener('click', () => {
+                if (currentScale < 5.0) {
+                  currentScale = Math.min(5.0, currentScale + 0.2);
+                  updateZoom();
+                }
+              });
+            } catch (e) {
+              console.error("Zoom controls init failed for wrap:", e);
+            }
+          });
+        });
+    });
+  </script>
+</body>
+
+</html>
