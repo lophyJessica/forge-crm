@@ -1,18 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
-import { inboundApi } from '../api/inbound';
-import { InboundOrder, InboundStatus } from '../types/inbound';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { 
-  Search, RotateCcw, ChevronDown, ChevronUp, 
-  Download, Eye, Edit, Trash2, XCircle, CheckCircle, ArrowUpCircle 
-} from 'lucide-react';
-
-export default function InboundList() {
-  const navigate = useNavigate();
+export { default } from './InboundManagementPage';
+/*
+ * Kept as the stable route import for existing links and future inbound list variants.
+ */
+/*
 
   // --- 状态定义 ---
   const [activeTab, setActiveTab] = useState<InboundStatus | 'ALL'>('ALL');
@@ -255,7 +245,7 @@ export default function InboundList() {
 
   return (
     <div className="space-y-4">
-      {/* 面包屑 / 页头 */}
+      {/* 面包屑 / 页头 * /}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-slate-900">收货单管理</h1>
@@ -272,7 +262,7 @@ export default function InboundList() {
         </div>
       </div>
 
-      {/* 查询区 */}
+      {/* 查询区 * /}
       <form onSubmit={handleSearch} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-3">
           <div className="space-y-1">
@@ -351,7 +341,7 @@ export default function InboundList() {
           </div>
         </div>
 
-        {/* 展开/折叠最后修改时间 */}
+        {/* 展开/折叠最后修改时间 * /}
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
             <div className="space-y-1">
@@ -396,7 +386,7 @@ export default function InboundList() {
         </div>
       </form>
 
-      {/* Tab 栏切换 */}
+      {/* Tab 栏切换 * /}
       <div className="border-b border-slate-200 flex justify-between items-end">
         <div className="flex gap-1 text-sm font-medium">
           {(['ALL', 'DRAFT', 'RECEIVING', 'QC_PENDING', 'PUTAWAY_PENDING', 'EXCEPTION', 'COMPLETED', 'VOIDED'] as const).map(tab => {
@@ -560,7 +550,7 @@ export default function InboundList() {
         </div>
       </div>
 
-      {/* 质检模拟弹窗 */}
+      {/* 质检模拟弹窗 * /}
       {qcOrder && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full shadow-lg p-5">
@@ -590,7 +580,7 @@ export default function InboundList() {
         </div>
       )}
 
-      {/* 二次确认弹窗 */}
+      {/* 二次确认弹窗 * /}
       {confirmAction.type && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full shadow-lg p-5">
@@ -613,7 +603,7 @@ export default function InboundList() {
         </div>
       )}
 
-      {/* 作废弹窗 */}
+      {/* 作废弹窗 * /}
       {voidingId && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg border border-slate-200 max-w-md w-full shadow-lg p-5">
@@ -647,3 +637,4 @@ export default function InboundList() {
     </div>
   );
 }
+*/

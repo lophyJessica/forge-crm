@@ -5,8 +5,8 @@ import { db } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { InventoryStock } from '../types/inventory';
-import { ArrowLeft, Check, Minus, Plus, Search } from 'lucide-react';
-import { PdaHeader, PdaOfflineBar, PdaShell } from './PdaHome';
+import { ArrowLeft, Check, Minus, Plus } from 'lucide-react';
+import { PdaHeader, PdaLookupForm, PdaOfflineBar, PdaShell } from './PdaHome';
 
 type CheckRow = {
   productCode: string;
@@ -98,29 +98,22 @@ export default function PdaCheck() {
   return (
     <PdaShell>
       <PdaHeader title="盘点" subtitle="输入货位后逐行确认实盘数量" />
-      <main className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <main className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <Link to="/pda" className="inline-flex items-center gap-1 text-sm font-black text-slate-600">
           <ArrowLeft size={18} />
           返回主界面
         </Link>
 
-        <section className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-          <label className="text-sm font-black text-slate-600">货位编码</label>
-          <div className="flex gap-2 mt-2">
-            <Input
-              value={locationCode}
-              onChange={e => setLocationCode(e.target.value)}
-              placeholder="LOC-A01"
-              className="h-12 text-base font-mono font-bold"
-            />
-            <Button type="button" onClick={loadLocationStock} className="h-12 w-14 p-0">
-              <Search size={22} />
-            </Button>
-          </div>
-        </section>
+        <PdaLookupForm
+          label="货位编码"
+          value={locationCode}
+          placeholder="LOC-A01"
+          onChange={setLocationCode}
+          onSubmit={loadLocationStock}
+        />
 
         {message && (
-          <div className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('完成') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+          <div role="status" aria-live="polite" className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('完成') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
             {message}
           </div>
         )}
@@ -154,6 +147,8 @@ export default function PdaCheck() {
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <button
                       type="button"
+                      aria-label={`减少 ${item.productCode} 的实盘数量`}
+                      title="减少数量"
                       onClick={() => updateQty(item.productCode, qty - 1)}
                       className="w-14 h-14 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center"
                     >
@@ -161,12 +156,17 @@ export default function PdaCheck() {
                     </button>
                     <Input
                       type="number"
+                      min={0}
+                      inputMode="numeric"
+                      aria-label={`实盘数量 ${item.productCode}`}
                       value={qty}
                       onChange={e => updateQty(item.productCode, Number(e.target.value || 0))}
                       className="h-14 text-center text-2xl font-black font-mono"
                     />
                     <button
                       type="button"
+                      aria-label={`增加 ${item.productCode} 的实盘数量`}
+                      title="增加数量"
                       onClick={() => updateQty(item.productCode, qty + 1)}
                       className="w-14 h-14 rounded-md bg-slate-900 text-white flex items-center justify-center"
                     >
@@ -181,7 +181,7 @@ export default function PdaCheck() {
                   <Button
                     type="button"
                     onClick={() => confirmRow(item.productCode)}
-                    className={`w-full h-13 mt-4 text-base font-black ${done ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                    className={`w-full h-14 mt-4 text-base font-black ${done ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                   >
                     {done ? '已确认' : '逐行确认'}
                   </Button>

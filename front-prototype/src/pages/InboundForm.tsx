@@ -8,8 +8,9 @@ import { integrationApi } from '../api/integration';
 import { PurchaseOrderSync } from '../types/integration';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageHeader from '../components/shared/PageHeader';
 import { Textarea } from '../components/ui/Textarea';
-import { ArrowLeft, Save, CheckCircle, Info } from 'lucide-react';
+import { Save, CheckCircle, Info } from 'lucide-react';
 
 export default function InboundForm() {
   const navigate = useNavigate();
@@ -169,24 +170,17 @@ export default function InboundForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!inboundOrder) {
     return (
       <div className="space-y-4 text-xs">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/inbound')} 
-            className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">创建收货单 (ERP下发PO)</h1>
-            <p className="text-xs text-slate-500 mt-1">从 ERP integration_inbox 读取已下发采购订单并生成 WMS 收货草稿</p>
-          </div>
-        </div>
+        <PageHeader
+          onBack={() => navigate('/inbound')}
+          title="创建收货单 (ERP下发PO)"
+          description="从 ERP integration_inbox 读取已下发采购订单并生成 WMS 收货草稿"
+        />
 
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm max-w-3xl space-y-4">
           <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">选择来源采购订单</h3>
@@ -249,21 +243,11 @@ export default function InboundForm() {
 
   return (
     <div className="space-y-4">
-      {/* 页头导航 */}
-      <div className="flex items-center gap-3">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 transition-colors cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            {id ? `编辑收货单 ${inboundOrder.id}` : '创建收货单 (采购下推)'}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">核对到货商品实物数量并登记入库</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={id ? `编辑收货单 ${inboundOrder.id}` : '创建收货单 (采购下推)'}
+        description="核对到货商品实物数量并登记入库"
+      />
 
       {/* 基本信息只读卡片 */}
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
@@ -380,7 +364,7 @@ export default function InboundForm() {
       </div>
 
       {/* 底部按钮栏 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 

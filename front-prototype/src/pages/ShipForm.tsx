@@ -4,7 +4,8 @@ import { outboundApi } from '../api/outbound';
 import { WaveOrder, PackageRecord } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowLeft, Truck, Check, Landmark, ShieldCheck } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Truck, Check, Landmark, ShieldCheck } from 'lucide-react';
 
 export default function ShipForm() {
   const navigate = useNavigate();
@@ -65,11 +66,11 @@ export default function ShipForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!wave) {
-    return <div className="bg-red-50 text-red-700 p-5 rounded border border-red-200 text-center font-medium">该波次不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该波次不存在</div>;
   }
 
   const totalQty = wave.items.reduce((sum, i) => sum + i.qtyChecked, 0);
@@ -77,24 +78,11 @@ export default function ShipForm() {
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12 text-xs">
-      {/* 页头 */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <button 
-          onClick={() => navigate('/outbound')} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <Truck size={18} className="text-primary animate-bounce" />
-            <span>发货出库交运交接确认</span>
-          </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            波次单号：{wave.id} | 承运商：{wave.carrier}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound')}
+        title={<><Truck size={18} className="text-primary animate-bounce" /><span>发货出库交运交接确认</span></>}
+        description={<span className="font-mono">波次单号：{wave.id} | 承运商：{wave.carrier}</span>}
+      />
 
       {/* 2栏布局 (左侧明细，右侧交运资料) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -104,7 +92,7 @@ export default function ShipForm() {
             <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">发货包裹聚合列表</h3>
             <div className="space-y-2">
               {packages.map((pkg, idx) => (
-                <div key={pkg.id} className="p-3 bg-slate-50 border border-slate-150 rounded flex justify-between items-center">
+                <div key={pkg.id} className="p-3 bg-slate-50 border border-slate-200 rounded flex justify-between items-center">
                   <div>
                     <span className="font-mono text-slate-500 font-bold block">PKG {idx + 1}</span>
                     <strong className="font-mono text-slate-700 font-bold">{pkg.id}</strong>
@@ -186,7 +174,7 @@ export default function ShipForm() {
               />
             </div>
 
-            <div className="bg-yellow-50 text-yellow-700 p-3.5 rounded border border-yellow-150 space-y-1.5 leading-relaxed">
+            <div className="bg-yellow-50 text-yellow-700 p-3.5 rounded border border-yellow-200 space-y-1.5 leading-relaxed">
               <div className="font-bold flex items-center gap-1">
                 <ShieldCheck size={14} className="text-yellow-600" />
                 <span>交运终审防错规则</span>
@@ -205,7 +193,7 @@ export default function ShipForm() {
       </div>
 
       {/* 底部返回与交运 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 
@@ -217,7 +205,7 @@ export default function ShipForm() {
         
         <Button
           size="sm"
-          className="bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-1.5 cursor-pointer"
+          className="bg-primary hover:bg-primary/90 text-white font-bold flex items-center gap-1.5 cursor-pointer"
           onClick={handleConfirmShip}
         >
           <Check size={14} />

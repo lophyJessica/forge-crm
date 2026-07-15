@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import {
   BASE_STATUS_LABELS,
   BaseDataStatus,
@@ -18,7 +23,7 @@ const statusBadge = (status: BaseDataStatus) => {
     : 'bg-slate-100 text-slate-500 border-slate-200';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${classes}`}>
-      {BASE_STATUS_LABELS[status]}
+      {BASE_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 };
@@ -29,6 +34,7 @@ export default function WarehouseList() {
   const [keyword, setKeyword] = useState('');
   const [type, setType] = useState<WarehouseType | ''>('');
   const [status, setStatus] = useState<BaseDataStatus | 'ALL'>('ALL');
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
 
   const loadData = async () => {
     const data = await baseDataApi.getWarehouses({ keyword, type, status });
@@ -37,7 +43,7 @@ export default function WarehouseList() {
 
   useEffect(() => {
     loadData();
-  }, [type, status]);
+  }, [keyword, type, status]);
 
   const handleReset = () => {
     setKeyword('');
@@ -60,18 +66,17 @@ export default function WarehouseList() {
 
   return (
     <div className="space-y-4 text-xs font-medium">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">仓库档案</h1>
-          <p className="text-xs text-slate-500 mt-1">维护企业物理仓库主数据，停用后不允许在其下创建库区、货位和进行任何业务作业</p>
+          <PageTitle compact title="仓库档案" description="维护企业物理仓库主数据，停用后不允许在其下创建库区、货位和进行任何业务作业" />
         </div>
-        <Button size="sm" onClick={() => navigate('/base/warehouses/new')} className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5 font-bold">
+        <Button size="sm" onClick={() => navigate('/base/warehouses/new')} className="bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 font-bold">
           <Plus size={14} />
           <span>新增仓库</span>
         </Button>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">编码 / 名称 / 负责人</label>
@@ -103,11 +108,9 @@ export default function WarehouseList() {
             </Button>
           </div>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="980px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
                 <th className="p-3">仓库编码</th>
@@ -123,11 +126,11 @@ export default function WarehouseList() {
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {rows.length === 0 ? (
                 <tr><td colSpan={8} className="p-8 text-center text-slate-400">暂无仓库档案</td></tr>
-              ) : rows.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.code} className="hover:bg-slate-50/50">
                   <td className="p-3 font-mono font-semibold text-primary">{row.code}</td>
                   <td className="p-3 font-semibold">{row.name}</td>
-                  <td className="p-3">{WAREHOUSE_TYPE_LABELS[row.type]}</td>
+                  <td className="p-3">{WAREHOUSE_TYPE_LABELS[row.type] ?? row.type ?? '未知类型'}</td>
                   <td className="p-3">{row.manager}</td>
                   <td className="p-3 text-slate-500">{row.address}</td>
                   <td className="p-3 text-slate-500">{row.remark || '-'}</td>
@@ -150,9 +153,8 @@ export default function WarehouseList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

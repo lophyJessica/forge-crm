@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import {
   BASE_STATUS_LABELS,
   BaseDataStatus,
@@ -18,7 +23,7 @@ const statusBadge = (status: BaseDataStatus) => {
     : 'bg-slate-100 text-slate-500 border-slate-200';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${classes}`}>
-      {BASE_STATUS_LABELS[status]}
+      {BASE_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 };
@@ -32,6 +37,7 @@ export default function LocationList() {
   const [warehouseCode, setWarehouseCode] = useState('');
   const [zoneCode, setZoneCode] = useState('');
   const [status, setStatus] = useState<BaseDataStatus | 'ALL'>('ALL');
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
 
   const filteredZones = warehouseCode ? zones.filter(item => item.warehouseCode === warehouseCode) : zones;
 
@@ -47,7 +53,7 @@ export default function LocationList() {
 
   useEffect(() => {
     loadData();
-  }, [warehouseCode, zoneCode, status]);
+  }, [keyword, warehouseCode, zoneCode, status]);
 
   const handleWarehouseChange = (value: string) => {
     setWarehouseCode(value);
@@ -76,10 +82,9 @@ export default function LocationList() {
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">货位管理</h1>
-          <p className="text-xs text-slate-500 mt-1">维护仓库内可扫描货位，停用后不再进入上架、拣货等业务候选</p>
+          <PageTitle compact title="货位管理" description="维护仓库内可扫描货位，停用后不再进入上架、拣货等业务候选" />
         </div>
         <Button size="sm" onClick={() => navigate('/base/locations/new')} className="flex items-center gap-1.5">
           <Plus size={14} />
@@ -87,7 +92,7 @@ export default function LocationList() {
         </Button>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
           <div className="space-y-1 md:col-span-2">
             <label className="font-semibold text-slate-500">编码 / 条码 / 仓库 / 库区</label>
@@ -126,11 +131,9 @@ export default function LocationList() {
             </Button>
           </div>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="980px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
                 <th className="p-3">货位编码</th>
@@ -144,7 +147,7 @@ export default function LocationList() {
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {rows.length === 0 ? (
                 <tr><td colSpan={6} className="p-8 text-center text-slate-400">暂无货位档案</td></tr>
-              ) : rows.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.code} className="hover:bg-slate-50/50">
                   <td className="p-3 font-mono font-semibold text-primary">{row.code}</td>
                   <td className="p-3">{row.warehouseName}</td>
@@ -169,9 +172,8 @@ export default function LocationList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

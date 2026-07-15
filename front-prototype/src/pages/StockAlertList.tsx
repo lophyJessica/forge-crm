@@ -3,6 +3,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface StockAlertItem {
@@ -26,6 +32,7 @@ export default function StockAlertList() {
   // --- 状态定义 ---
   const [activeTab, setActiveTab] = useState<'ALL' | 'SAFETY_LOW' | 'MINIMUM_LOW'>('ALL');
   const [alertItems, setAlertItems] = useState<StockAlertItem[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(alertItems);
   
   // 筛选条件
   const [productKeyword, setProductKeyword] = useState('');
@@ -114,7 +121,7 @@ export default function StockAlertList() {
       SAFETY_LOW: { label: '低于安全库存', classes: 'bg-amber-50 text-amber-700 border-amber-200' },
       NORMAL: { label: '正常库存', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
-    const current = config[type];
+    const current = config[type] ?? { label: '未知预警', classes: 'bg-slate-100 text-slate-500 border-slate-200' };
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${current.classes}`}>
         {current.label}
@@ -125,15 +132,14 @@ export default function StockAlertList() {
   return (
     <div className="space-y-4 text-xs">
       {/* 页头 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">库存预警管理</h1>
-          <p className="text-xs text-slate-500 mt-1">系统对各仓库现存总量进行安全值监控。低于最低库存(≤安全值40%)标红，低于安全库存标黄</p>
+          <PageTitle compact title="库存预警管理" description="系统对各仓库现存总量进行安全值监控。低于最低库存(≤安全值40%)标红，低于安全库存标黄" />
         </div>
       </div>
 
       {/* 查询条件 */}
-      <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={(e) => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">商品编码 / 名称</label>
@@ -179,35 +185,22 @@ export default function StockAlertList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200 flex justify-between items-end">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'SAFETY_LOW', 'MINIMUM_LOW'] as const).map(tab => {
-            const labelMap = { ALL: '全部', SAFETY_LOW: '安全库存预警', MINIMUM_LOW: '最低库存预警' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2.5 px-4 border-b-2 font-semibold text-xs transition-colors cursor-pointer ${
-                  isActive 
-                    ? 'border-primary text-primary font-bold' 
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                {labelMap[tab]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={[
+          { key: 'ALL', label: '全部' },
+          { key: 'SAFETY_LOW', label: '安全库存预警' },
+          { key: 'MINIMUM_LOW', label: '最低库存预警' },
+        ]}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as 'ALL' | 'SAFETY_LOW' | 'MINIMUM_LOW')}
+        ariaLabel="库存预警级别筛选"
+      />
 
       {/* 表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1180px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3 w-12 text-center">#</th>
@@ -228,7 +221,7 @@ export default function StockAlertList() {
                   <td colSpan={10} className="p-8 text-center text-slate-400">暂无任何预警商品记录</td>
                 </tr>
               ) : (
-                alertItems.map((row, index) => {
+                pageRows.map((row, index) => {
                   let rowBg = '';
                   if (row.alertType === 'MINIMUM_LOW') {
                     rowBg = 'bg-rose-50/40 hover:bg-rose-50/70';
@@ -270,9 +263,8 @@ export default function StockAlertList() {
                 })
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={alertItems.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

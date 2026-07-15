@@ -4,8 +4,8 @@ import { outboundApi } from '../api/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { WaveOrder } from '../types/outbound';
-import { AlertTriangle, ArrowLeft, Check, Minus, Plus, Search } from 'lucide-react';
-import { PdaHeader, PdaOfflineBar, PdaShell } from './PdaHome';
+import { AlertTriangle, ArrowLeft, Check, Minus, Plus } from 'lucide-react';
+import { PdaHeader, PdaLookupForm, PdaOfflineBar, PdaShell } from './PdaHome';
 
 export default function PdaPicking() {
   const [waveNo, setWaveNo] = useState('');
@@ -105,29 +105,22 @@ export default function PdaPicking() {
   return (
     <PdaShell>
       <PdaHeader title="拣货出库" subtitle="输入 WAVE 单号加载待拣商品" />
-      <main className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <main className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <Link to="/pda" className="inline-flex items-center gap-1 text-sm font-black text-slate-600">
           <ArrowLeft size={18} />
           返回主界面
         </Link>
 
-        <section className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-          <label className="text-sm font-black text-slate-600">波次号 WAVE</label>
-          <div className="flex gap-2 mt-2">
-            <Input
-              value={waveNo}
-              onChange={e => setWaveNo(e.target.value)}
-              placeholder="WAVE20260704-0001"
-              className="h-12 text-base font-mono font-bold"
-            />
-            <Button type="button" onClick={loadWave} className="h-12 w-14 p-0">
-              <Search size={22} />
-            </Button>
-          </div>
-        </section>
+        <PdaLookupForm
+          label="波次号 WAVE"
+          value={waveNo}
+          placeholder="WAVE20260704-0001"
+          onChange={setWaveNo}
+          onSubmit={loadWave}
+        />
 
         {message && (
-          <div className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('失败') || message.includes('未') || message.includes('超') || message.includes('仅') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+          <div role="status" aria-live="polite" className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('失败') || message.includes('未') || message.includes('超') || message.includes('仅') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
             {message}
           </div>
         )}
@@ -162,6 +155,8 @@ export default function PdaPicking() {
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <button
                       type="button"
+                      aria-label={`减少 ${item.productCode} 的实拣数量`}
+                      title="减少数量"
                       disabled={wave.status !== 'PICKING'}
                       onClick={() => updateQty(item.productCode, qty - 1, item.qtyRequired)}
                       className="w-14 h-14 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center disabled:opacity-50"
@@ -170,6 +165,10 @@ export default function PdaPicking() {
                     </button>
                     <Input
                       type="number"
+                      min={0}
+                      max={item.qtyRequired}
+                      inputMode="numeric"
+                      aria-label={`实拣数量 ${item.productCode}`}
                       value={qty}
                       disabled={wave.status !== 'PICKING'}
                       onChange={e => updateQty(item.productCode, Number(e.target.value || 0), item.qtyRequired)}
@@ -177,6 +176,8 @@ export default function PdaPicking() {
                     />
                     <button
                       type="button"
+                      aria-label={`增加 ${item.productCode} 的实拣数量`}
+                      title="增加数量"
                       disabled={wave.status !== 'PICKING'}
                       onClick={() => updateQty(item.productCode, qty + 1, item.qtyRequired)}
                       className="w-14 h-14 rounded-md bg-slate-900 text-white flex items-center justify-center disabled:opacity-50"
@@ -196,7 +197,7 @@ export default function PdaPicking() {
                     type="button"
                     disabled={wave.status !== 'PICKING' || !!err}
                     onClick={() => confirmRow(item.productCode)}
-                    className={`w-full h-13 mt-4 text-base font-black ${done ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                    className={`w-full h-14 mt-4 text-base font-black ${done ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                   >
                     {done ? '已确认拣货' : '确认拣货'}
                   </Button>

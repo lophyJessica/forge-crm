@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, ClipboardCheck, PackageCheck, Signal, UserRound, Warehouse } from 'lucide-react';
+import { Archive, ClipboardCheck, PackageCheck, Search, Signal, UserRound, Warehouse } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
 export function PdaShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-900 flex justify-center">
-      <div className="w-full max-w-[375px] min-h-[812px] bg-slate-100 shadow-2xl flex flex-col overflow-hidden">
+    <div className="pda-shell flex min-h-[100dvh] justify-center bg-slate-950 text-slate-900">
+      <div className="flex min-h-[100dvh] w-full max-w-[375px] flex-col overflow-hidden bg-slate-100 shadow-2xl">
         {children}
       </div>
     </div>
@@ -14,13 +16,13 @@ export function PdaShell({ children }: { children: React.ReactNode }) {
 
 export function PdaHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="bg-slate-900 text-white px-5 pt-5 pb-4">
+    <header className="shrink-0 border-b border-slate-800 bg-slate-950 px-5 pb-4 pt-5 text-white">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black tracking-wide">{title}</h1>
           {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
         </div>
-        <div className="w-11 h-11 rounded-md bg-blue-600 flex items-center justify-center font-black text-lg">
+        <div className="flex h-11 w-11 items-center justify-center rounded-md bg-blue-600 text-lg font-black">
           PDA
         </div>
       </div>
@@ -28,17 +30,61 @@ export function PdaHeader({ title, subtitle }: { title: string; subtitle?: strin
   );
 }
 
+export function PdaLookupForm({
+  label,
+  value,
+  placeholder,
+  onChange,
+  onSubmit,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  const inputId = `pda-lookup-${label.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+    >
+      <label htmlFor={inputId} className="text-sm font-black text-slate-600">{label}</label>
+      <div className="mt-2 flex gap-2">
+        <Input
+          id={inputId}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          autoCapitalize="characters"
+          autoComplete="off"
+          className="h-12 text-base font-mono font-bold uppercase"
+        />
+        <Button type="submit" aria-label={`查询${label}`} title={`查询${label}`} className="h-12 w-14 shrink-0 p-0">
+          <Search size={22} />
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function PdaOfflineBar() {
   const [offline, setOffline] = useState(false);
 
   return (
-    <div className="px-5 py-4 bg-white border-t border-slate-200 flex items-center justify-between">
+    <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-5 py-4">
       <div className="flex items-center gap-2">
         <span className={`w-3 h-3 rounded-full ${offline ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
         <span className="text-sm font-bold text-slate-700">{offline ? '离线模拟' : '在线模拟'}</span>
       </div>
       <button
         type="button"
+        aria-label={offline ? '切换为在线模拟' : '切换为离线模拟'}
+        title={offline ? '切换为在线模拟' : '切换为离线模拟'}
         onClick={() => setOffline(prev => !prev)}
         className={`w-16 h-9 rounded-full p-1 transition-colors ${offline ? 'bg-amber-200' : 'bg-emerald-200'}`}
       >
@@ -58,7 +104,7 @@ export default function PdaHome() {
   return (
     <PdaShell>
       <PdaHeader title="移动作业台" subtitle="强盛科技 WMS 手持端" />
-      <main className="flex-1 p-5 space-y-5">
+      <main className="min-h-0 flex-1 space-y-5 p-5">
         <section className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-md bg-slate-900 text-white flex items-center justify-center">

@@ -4,7 +4,8 @@ import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { WarehouseType, WAREHOUSE_TYPE_LABELS } from '../types/baseData';
-import { ArrowLeft, Save } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Save } from 'lucide-react';
 
 export default function WarehouseForm() {
   const navigate = useNavigate();
@@ -59,23 +60,16 @@ export default function WarehouseForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在加载仓库档案...</div>;
+    return <div className="forge-state-panel">正在加载仓库档案...</div>;
   }
 
   return (
     <div className="space-y-4 max-w-3xl text-xs">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/base/warehouses')}
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{isEdit ? `编辑仓库 ${code}` : '新增仓库'}</h1>
-          <p className="text-xs text-slate-500 mt-1">仓库编码为主数据唯一标识，保存后不可修改</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/base/warehouses')}
+        title={isEdit ? `编辑仓库 ${code}` : '新增仓库'}
+        description="仓库编码为主数据唯一标识，保存后不可修改"
+      />
 
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,7 +133,7 @@ export default function WarehouseForm() {
 
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
           <Button type="button" variant="outline" size="sm" onClick={() => navigate('/base/warehouses')}>取消</Button>
-          <Button type="submit" size="sm" className="flex items-center gap-1.5 bg-primary text-white hover:bg-primary-hover font-bold">
+          <Button type="submit" size="sm" className="flex items-center gap-1.5 bg-primary text-white hover:bg-primary/90 font-bold">
             <Save size={14} />
             <span>保存</span>
           </Button>

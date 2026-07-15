@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { damageApi } from '../api/damage';
 import { DAMAGE_REASON_LABELS, DAMAGE_STATUS_LABELS, DamageOrder, DamageStatus } from '../types/damage';
 import { Button } from '../components/ui/Button';
-import { AlertTriangle, ArrowLeft, Calendar, CheckCircle2, ClipboardX, Edit, XCircle, Send } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { AlertTriangle, Calendar, CheckCircle2, ClipboardX, Edit, XCircle, Send } from 'lucide-react';
 
 const currentUser: { role: 'supervisor' | 'operator' } = {
   role: 'supervisor',
@@ -89,67 +90,32 @@ export default function DamageDetail() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析报损单详情...</div>;
+    return <div className="forge-state-panel">正在解析报损单详情...</div>;
   }
 
   if (!order) {
-    return <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">该报损单不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该报损单不存在</div>;
   }
 
   return (
     <div className="space-y-4 text-xs pb-8">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/inventory/damages')} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 font-mono">{order.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusClasses[order.status]}`}>
-                {DAMAGE_STATUS_LABELS[order.status]}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">创建时间：{order.createdAt}</p>
-          </div>
-        </div>
-        {order.status === 'DRAFT' && (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => navigate(`/inventory/damages/${order.id}/edit`)} className="bg-primary hover:bg-primary/95 text-white flex items-center gap-1.5 font-bold">
-              <Edit size={14} />
-              <span>编辑</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
-              <XCircle size={14} />
-              <span>作废</span>
-            </Button>
-            <Button size="sm" onClick={handleSubmitForReview} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 font-bold">
-              <Send size={14} />
-              <span>提交审核</span>
-            </Button>
-          </div>
-        )}
-        {order.status === 'PENDING_REVIEW' && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
-              <XCircle size={14} />
-              <span>作废</span>
-            </Button>
-            {isSupervisor && (
-              <>
-                <Button variant="outline" size="sm" onClick={handleReject} className="text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1.5 font-bold">
-                  <XCircle size={14} />
-                  <span>驳回</span>
-                </Button>
-                <Button size="sm" onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
-                  <CheckCircle2 size={14} />
-                  <span>审核通过</span>
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+      <PageHeader
+        onBack={() => navigate('/inventory/damages')}
+        title={<><span className="font-mono">{order.id}</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusClasses[order.status] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>{DAMAGE_STATUS_LABELS[order.status] ?? order.status ?? '未知状态'}</span></>}
+        description={<span className="font-mono">创建时间：{order.createdAt}</span>}
+        actions={order.status === 'DRAFT' ? (
+          <>
+            <Button size="sm" onClick={() => navigate(`/inventory/damages/${order.id}/edit`)} className="bg-primary hover:bg-primary/95 text-white flex items-center gap-1.5 font-bold"><Edit size={14} /><span>编辑</span></Button>
+            <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"><XCircle size={14} /><span>作废</span></Button>
+            <Button size="sm" onClick={handleSubmitForReview} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 font-bold"><Send size={14} /><span>提交审核</span></Button>
+          </>
+        ) : order.status === 'PENDING_REVIEW' ? (
+          <>
+            <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"><XCircle size={14} /><span>作废</span></Button>
+            {isSupervisor && <><Button variant="outline" size="sm" onClick={handleReject} className="text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1.5 font-bold"><XCircle size={14} /><span>驳回</span></Button><Button size="sm" onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold"><CheckCircle2 size={14} /><span>审核通过</span></Button></>}
+          </>
+        ) : undefined}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
@@ -204,7 +170,7 @@ export default function DamageDetail() {
                 <span className="text-slate-400 font-semibold">报损原因</span>
                 <span className="font-semibold text-amber-700 flex items-center gap-1">
                   <AlertTriangle size={12} />
-                  {DAMAGE_REASON_LABELS[order.reason]}
+                  {DAMAGE_REASON_LABELS[order.reason] ?? order.reason ?? '未知原因'}
                 </span>
               </div>
               <div className="flex justify-between gap-3">

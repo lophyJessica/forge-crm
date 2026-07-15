@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { db } from '../db';
 import { WaveOrder } from '../types/outbound';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, ArrowUpCircle, Calendar, Layers, Clipboard, ShieldCheck, Box } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { ArrowUpCircle, Calendar, Layers, Clipboard, ShieldCheck, Box } from 'lucide-react';
 
 interface ShipVirtualDetail {
   id: string;
@@ -92,11 +93,11 @@ export default function ShipDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析交运账单...</div>;
+    return <div className="forge-state-panel">正在解析交运账单...</div>;
   }
 
   if (!detail) {
-    return <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">该交运单不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该交运单不存在</div>;
   }
 
   const getStatusClasses = (status: string) => {
@@ -107,35 +108,17 @@ export default function ShipDetail() {
 
   return (
     <div className="space-y-4 text-xs pb-8">
-      {/* 页头 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/outbound/ships')} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 font-mono">{detail.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>
-                {detail.status === 'PENDING' ? '待交运确认' : '已完成交运'}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">关联出库波次：{detail.waveOrderId}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {detail.status === 'PENDING' && (
-            <Button 
-              size="sm" 
-              onClick={() => navigate(`/outbound/waves/${detail.waveOrderId}/ship`)} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold cursor-pointer"
-            >
-              <ArrowUpCircle size={14} />
-              <span>去确认交运</span>
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound/ships')}
+        title={<><span className="font-mono">{detail.id}</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>{detail.status === 'PENDING' ? '待交运确认' : '已完成交运'}</span></>}
+        description={<span className="font-mono">关联出库波次：<Link to={`/outbound/${detail.waveOrderId}`} className="text-primary hover:underline">{detail.waveOrderId}</Link></span>}
+        actions={detail.status === 'PENDING' ? (
+          <Button size="sm" onClick={() => navigate(`/outbound/${detail.waveOrderId}/shipping`)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold cursor-pointer">
+            <ArrowUpCircle size={14} />
+            <span>去确认交运</span>
+          </Button>
+        ) : undefined}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* 商品明细列表 */}

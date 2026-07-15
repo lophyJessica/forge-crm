@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import {
   BASE_STATUS_LABELS,
   BaseDataStatus,
@@ -19,7 +24,7 @@ const statusBadge = (status: BaseDataStatus) => {
     : 'bg-slate-100 text-slate-500 border-slate-200';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${classes}`}>
-      {BASE_STATUS_LABELS[status]}
+      {BASE_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 };
@@ -32,6 +37,7 @@ export default function ZoneList() {
   const [warehouseCode, setWarehouseCode] = useState('');
   const [type, setType] = useState<ZoneType | ''>('');
   const [status, setStatus] = useState<BaseDataStatus | 'ALL'>('ALL');
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(rows);
 
   const loadData = async () => {
     const data = await baseDataApi.getZones({ keyword, warehouseCode, type, status });
@@ -44,7 +50,7 @@ export default function ZoneList() {
 
   useEffect(() => {
     loadData();
-  }, [warehouseCode, type, status]);
+  }, [keyword, warehouseCode, type, status]);
 
   const handleReset = () => {
     setKeyword('');
@@ -68,10 +74,9 @@ export default function ZoneList() {
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">库区管理</h1>
-          <p className="text-xs text-slate-500 mt-1">维护仓库内部作业区域，停用后不再作为货位维护和业务作业候选</p>
+          <PageTitle compact title="库区管理" description="维护仓库内部作业区域，停用后不再作为货位维护和业务作业候选" />
         </div>
         <Button size="sm" onClick={() => navigate('/base/zones/new')} className="flex items-center gap-1.5">
           <Plus size={14} />
@@ -79,7 +84,7 @@ export default function ZoneList() {
         </Button>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">编码 / 名称</label>
@@ -118,11 +123,9 @@ export default function ZoneList() {
             </Button>
           </div>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="980px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
                 <th className="p-3">库区编码</th>
@@ -136,12 +139,12 @@ export default function ZoneList() {
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {rows.length === 0 ? (
                 <tr><td colSpan={6} className="p-8 text-center text-slate-400">暂无库区档案</td></tr>
-              ) : rows.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.code} className="hover:bg-slate-50/50">
                   <td className="p-3 font-mono font-semibold text-primary">{row.code}</td>
                   <td className="p-3 font-semibold">{row.name}</td>
                   <td className="p-3">{row.warehouseName}</td>
-                  <td className="p-3">{ZONE_TYPE_LABELS[row.type]}</td>
+                  <td className="p-3">{ZONE_TYPE_LABELS[row.type] ?? row.type ?? '未知类型'}</td>
                   <td className="p-3">{statusBadge(row.status)}</td>
                   <td className="p-3 text-center space-x-1">
                     <Button variant="ghost" size="sm" className="h-7 text-blue-600 hover:bg-blue-50" onClick={() => navigate(`/base/zones/${row.code}/edit`)}>
@@ -161,9 +164,8 @@ export default function ZoneList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

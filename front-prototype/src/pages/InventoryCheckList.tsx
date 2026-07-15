@@ -11,6 +11,12 @@ import {
 } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { ClipboardCheck, Download, Eye, PlayCircle, RotateCcw, Search, Send, XCircle, CheckCircle } from 'lucide-react';
 
 const currentUser: { username: string; role: 'supervisor' | 'operator'; inventoryRole: 'SUPERVISOR' | 'OPERATOR' } = {
@@ -34,6 +40,7 @@ export default function InventoryCheckList() {
 
   const [activeTab, setActiveTab] = useState<InventoryCheckStatus | 'ALL'>('ALL');
   const [checks, setChecks] = useState<InventoryCheckOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(checks);
   const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
   const [checkId, setCheckId] = useState('');
   const [warehouseCode, setWarehouseCode] = useState('');
@@ -68,7 +75,7 @@ export default function InventoryCheckList() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, warehouseCode, createdAtStart, createdAtEnd]);
+  }, [activeTab, checkId, warehouseCode, createdAtStart, createdAtEnd]);
 
   const handleReset = () => {
     setCheckId('');
@@ -122,31 +129,30 @@ export default function InventoryCheckList() {
   };
 
   const renderStatus = (status: InventoryCheckStatus) => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status]}`}>
-      {INVENTORY_CHECK_STATUS_LABELS[status]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+      {INVENTORY_CHECK_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 
   return (
     <div className="space-y-4 text-xs font-medium">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">盘点管理</h1>
-          <p className="text-xs text-slate-500 mt-1">创建仓库盘点任务，现场录入实盘数量并自动计算库存差异</p>
+          <PageTitle compact title="盘点管理" description="创建仓库盘点任务，现场录入实盘数量并自动计算库存差异" />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={checks.length === 0} className="flex items-center gap-1.5">
             <Download size={14} />
             <span>导出盘点单</span>
           </Button>
-          <Button size="sm" onClick={() => navigate('/inventory/checks/new')} className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5 font-bold">
+          <Button size="sm" onClick={() => navigate('/inventory/checks/new')} className="bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 font-bold">
             <ClipboardCheck size={14} />
             <span>新建盘点单</span>
           </Button>
         </div>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm grid grid-cols-1 md:grid-cols-6 gap-3">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="grid grid-cols-1 md:grid-cols-6 gap-3 !space-y-0">
         <div className="space-y-1">
           <label className="font-semibold text-slate-500">盘点单号</label>
           <Input placeholder="输入CK单号..." value={checkId} onChange={e => setCheckId(e.target.value)} className="h-9 font-mono" />
@@ -176,31 +182,23 @@ export default function InventoryCheckList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="border-b border-slate-200">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'COUNTING', 'PENDING_REVIEW', 'COMPLETED', 'VOIDED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', COUNTING: '盘点中', PENDING_REVIEW: '待审核', COMPLETED: '已调整', VOIDED: '已作废' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 border-b-2 font-bold text-xs cursor-pointer transition-colors ${
-                  isActive ? 'border-primary text-primary bg-white rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {labels[tab]} ({tabCounts[tab] || 0})
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={([
+          { key: 'ALL', label: '全部' },
+          { key: 'DRAFT', label: '草稿' },
+          { key: 'COUNTING', label: '盘点中' },
+          { key: 'PENDING_REVIEW', label: '待审核' },
+          { key: 'COMPLETED', label: '已调整' },
+          { key: 'VOIDED', label: '已作废' },
+        ] as const).map(tab => ({ ...tab, count: tabCounts[tab.key] || 0 }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as InventoryCheckStatus | 'ALL')}
+        ariaLabel="盘点单状态筛选"
+      />
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1180px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3">盘点单号CK</th>
@@ -218,7 +216,7 @@ export default function InventoryCheckList() {
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-slate-400">暂无符合条件的盘点单</td>
                 </tr>
-              ) : checks.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50/50">
                   <td className="p-3 font-semibold text-primary font-mono hover:underline">
                     <Link to={`/inventory/checks/${row.id}`}>{row.id}</Link>
@@ -268,9 +266,8 @@ export default function InventoryCheckList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={checks.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import PageTitle from '../components/shared/PageTitle';
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -41,7 +42,20 @@ const quickEntries = [
 ];
 
 export default function Dashboard() {
-  const today = getToday();
+  const demoDate = useLiveQuery(async () => {
+    const [inbounds, waves, checks] = await Promise.all([
+      db.inbound_orders.toArray(),
+      db.wave_orders.toArray(),
+      db.inventory_checks.toArray(),
+    ]);
+    const dates = [
+      ...inbounds.map(item => item.updatedAt || item.createdAt),
+      ...waves.map(item => item.updatedAt || item.createdAt),
+      ...checks.map(item => item.updatedAt || item.createdAt),
+    ].filter((value): value is string => Boolean(value));
+    return dates.sort().at(-1)?.slice(0, 10) || null;
+  }, []) || getToday();
+  const today = demoDate;
 
   const todayInboundCount = useLiveQuery(async () => {
     return await db.inbound_orders
@@ -141,10 +155,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 text-xs">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">WMS 控制台</h1>
-        <p className="text-xs text-slate-500 mt-1">实时汇总今日入库、出库波次、拣货任务与库存预警状态</p>
-      </div>
+      <PageTitle
+        eyebrow="主工作台"
+        title="WMS 控制台"
+        description="实时汇总今日入库、出库波次、拣货任务与库存预警状态"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         {statCards.map(card => {

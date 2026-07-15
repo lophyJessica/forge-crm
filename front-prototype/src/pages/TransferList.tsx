@@ -6,6 +6,12 @@ import { inventoryOperationsApi } from '../api/inventoryOperations';
 import { TRANSFER_STATUS_LABELS, TransferOrder, TransferStatus } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { ArrowDownToLine, ArrowRightLeft, ArrowUpFromLine, CheckCircle2, Download, Eye, RotateCcw, Search, Send, XCircle } from 'lucide-react';
 
 const currentUser: { role: 'supervisor' | 'operator' } = {
@@ -33,6 +39,7 @@ export default function TransferList() {
 
   const [activeTab, setActiveTab] = useState<TransferStatus | 'ALL'>('ALL');
   const [transfers, setTransfers] = useState<TransferOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(transfers);
   const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
   const [transferId, setTransferId] = useState('');
   const [outWarehouseCode, setOutWarehouseCode] = useState('');
@@ -68,7 +75,7 @@ export default function TransferList() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, outWarehouseCode, inWarehouseCode, createdAtStart, createdAtEnd]);
+  }, [activeTab, transferId, outWarehouseCode, inWarehouseCode, createdAtStart, createdAtEnd]);
 
   const handleReset = () => {
     setTransferId('');
@@ -132,31 +139,30 @@ export default function TransferList() {
   };
 
   const renderStatus = (status: TransferStatus) => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status]}`}>
-      {TRANSFER_STATUS_LABELS[status]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+      {TRANSFER_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">调拨管理</h1>
-          <p className="text-xs text-slate-500 mt-1">处理仓间调拨出库、在途与调入仓入库确认</p>
+          <PageTitle compact title="调拨管理" description="处理仓间调拨出库、在途与调入仓入库确认" />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={transfers.length === 0} className="flex items-center gap-1.5">
             <Download size={14} />
             <span>导出调拨单</span>
           </Button>
-          <Button size="sm" onClick={() => navigate('/inventory/transfers/new')} className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5 font-bold">
+          <Button size="sm" onClick={() => navigate('/inventory/transfers/new')} className="bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 font-bold">
             <ArrowRightLeft size={14} />
             <span>新建调拨单</span>
           </Button>
         </div>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm grid grid-cols-1 md:grid-cols-7 gap-3">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="grid grid-cols-1 md:grid-cols-7 gap-3 !space-y-0">
         <div className="space-y-1">
           <label className="font-semibold text-slate-500">调拨单号</label>
           <Input placeholder="输入TR单号..." value={transferId} onChange={e => setTransferId(e.target.value)} className="h-9 font-mono" />
@@ -193,31 +199,26 @@ export default function TransferList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="border-b border-slate-200">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'OUTBOUND', 'INBOUND', 'COMPLETED', 'VOIDED', 'REJECTED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', PENDING_REVIEW: '待审核', CONFIRMED: '已审核', OUTBOUND: '已出库', INBOUND: '已入库', COMPLETED: '已完成', VOIDED: '已作废', REJECTED: '已驳回' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 border-b-2 font-bold text-xs cursor-pointer transition-colors ${
-                  isActive ? 'border-primary text-primary bg-white rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {labels[tab]} ({tabCounts[tab] || 0})
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={([
+          { key: 'ALL', label: '全部' },
+          { key: 'DRAFT', label: '草稿' },
+          { key: 'PENDING_REVIEW', label: '待审核' },
+          { key: 'CONFIRMED', label: '已审核' },
+          { key: 'OUTBOUND', label: '已出库' },
+          { key: 'INBOUND', label: '已入库' },
+          { key: 'COMPLETED', label: '已完成' },
+          { key: 'VOIDED', label: '已作废' },
+          { key: 'REJECTED', label: '已驳回' },
+        ] as const).map(tab => ({ ...tab, count: tabCounts[tab.key] || 0 }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as TransferStatus | 'ALL')}
+        ariaLabel="调拨单状态筛选"
+      />
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1280px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3">调拨单号TR</th>
@@ -234,7 +235,7 @@ export default function TransferList() {
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-slate-400">暂无符合条件的调拨单</td>
                 </tr>
-              ) : transfers.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50/50">
                   <td className="p-3 font-semibold text-primary font-mono hover:underline">
                     <Link to={`/inventory/transfers/${row.id}`}>{row.id}</Link>
@@ -289,9 +290,8 @@ export default function TransferList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={transfers.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

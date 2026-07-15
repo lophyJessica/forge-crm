@@ -4,7 +4,8 @@ import { baseDataApi } from '../api/baseData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Warehouse, Zone } from '../types/baseData';
-import { ArrowLeft, Save } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Save } from 'lucide-react';
 
 export default function LocationForm() {
   const navigate = useNavigate();
@@ -75,23 +76,16 @@ export default function LocationForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在加载货位档案...</div>;
+    return <div className="forge-state-panel">正在加载货位档案...</div>;
   }
 
   return (
     <div className="space-y-4 max-w-3xl text-xs">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/base/locations')}
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{isEdit ? `编辑货位 ${code}` : '新增货位'}</h1>
-          <p className="text-xs text-slate-500 mt-1">货位按启用仓库筛选启用库区</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/base/locations')}
+        title={isEdit ? `编辑货位 ${code}` : '新增货位'}
+        description="货位按启用仓库筛选启用库区"
+      />
 
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

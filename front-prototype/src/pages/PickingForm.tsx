@@ -4,7 +4,8 @@ import { outboundApi } from '../api/outbound';
 import { WaveOrder, WaveItem } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowLeft, Smartphone, Check, AlertTriangle, Layers, User } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Smartphone, Check, AlertTriangle, Layers, User } from 'lucide-react';
 
 export default function PickingForm() {
   const navigate = useNavigate();
@@ -113,12 +114,12 @@ export default function PickingForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!wave) {
     return (
-      <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">
+      <div className="forge-state-panel forge-state-panel--error">
         该波次单不存在
       </div>
     );
@@ -129,24 +130,11 @@ export default function PickingForm() {
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12 text-xs">
-      {/* 页头 */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <button 
-          onClick={() => navigate('/outbound')} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <Smartphone size={18} className="text-primary animate-pulse" />
-            <span>PDA 手持终端拣货作业模拟</span>
-          </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            波次单号：{wave.id} | 承运商：{wave.carrier} | 配送线路：{wave.route}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound')}
+        title={<><Smartphone size={18} className="text-primary animate-pulse" /><span>PDA 手持终端拣货作业模拟</span></>}
+        description={<span className="font-mono">波次单号：{wave.id} | 承运商：{wave.carrier} | 配送线路：{wave.route}</span>}
+      />
 
       {/* 顶部操作说明 */}
       <div className="bg-slate-900 text-slate-300 p-4 rounded-lg space-y-2 border border-slate-800 shadow-inner">
@@ -173,7 +161,7 @@ export default function PickingForm() {
 
       {/* 拣货商品清单 */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-150">
+        <div className="p-4 border-b border-slate-200">
           <h3 className="font-bold text-slate-800">当前待拣货架商品明细</h3>
         </div>
         <div className="divide-y divide-slate-100">
@@ -266,7 +254,7 @@ export default function PickingForm() {
       </div>
 
       {/* 底部返回与确认 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 

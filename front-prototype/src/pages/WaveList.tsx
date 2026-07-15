@@ -6,6 +6,12 @@ import { outboundApi } from '../api/outbound';
 import { WaveOrder, WaveStatus } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { 
   Search, RotateCcw, Download, Eye, Edit, Trash2, 
   XCircle, CheckCircle, Navigation, UserCheck, Inbox, Truck
@@ -17,6 +23,7 @@ export default function WaveList() {
   // --- 状态定义 ---
   const [activeTab, setActiveTab] = useState<WaveStatus | 'ALL'>('ALL');
   const [waves, setWaves] = useState<WaveOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(waves);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // 筛选条件
@@ -88,7 +95,7 @@ export default function WaveList() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, statusFilter, carrier, route, createdAtStart, createdAtEnd]);
+  }, [activeTab, statusFilter, waveId, carrier, route, createdAtStart, createdAtEnd]);
 
   const handleReset = () => {
     setWaveId('');
@@ -101,9 +108,9 @@ export default function WaveList() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(waves.map(w => w.id));
+      setSelectedIds(current => Array.from(new Set([...current, ...pageRows.map(w => w.id)])));
     } else {
-      setSelectedIds([]);
+      setSelectedIds(current => current.filter(id => !pageRows.some(wave => wave.id === id)));
     }
   };
 
@@ -179,24 +186,23 @@ export default function WaveList() {
   return (
     <div className="space-y-4">
       {/* 页头 */}
-      <div className="flex justify-between items-center text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-3 text-xs">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">波次出库管理</h1>
-          <p className="text-xs text-slate-500 mt-1">合并销售订单为拣货波次，规划路径进行 PDA 拣货、称重包装与物流交运</p>
+          <PageTitle compact title="波次出库管理" description="合并销售订单为拣货波次，规划路径进行 PDA 拣货、称重包装与物流交运" />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1.5 cursor-pointer">
             <Download size={14} />
             <span>导出波次</span>
           </Button>
-          <Button size="sm" onClick={() => navigate('/outbound/new')} className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5 cursor-pointer font-bold">
+          <Button size="sm" onClick={() => navigate('/outbound/new')} className="bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 cursor-pointer font-bold">
             <span>新建波次单</span>
           </Button>
         </div>
       </div>
 
       {/* 搜索 */}
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm grid grid-cols-1 md:grid-cols-6 gap-3 text-xs">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="grid grid-cols-1 md:grid-cols-6 gap-3 text-xs !space-y-0">
         <div className="space-y-1">
           <label className="font-semibold text-slate-500">波次单号</label>
           <Input placeholder="WAVE单号..." value={waveId} onChange={e => setWaveId(e.target.value)} className="h-9" />
@@ -232,41 +238,32 @@ export default function WaveList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'PICKING', 'PICKED', 'CHECKED', 'SHIPPED', 'VOIDED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', PICKING: '拣货中', PICKED: '已拣货', CHECKED: '已复核', SHIPPED: '已交运', VOIDED: '已作废' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 border-b-2 font-bold text-xs cursor-pointer transition-colors ${
-                  isActive
-                    ? 'border-primary text-primary bg-white rounded-t-md'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {labels[tab]} ({tabCounts[tab] || 0})
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={([
+          { key: 'ALL', label: '全部' },
+          { key: 'DRAFT', label: '草稿' },
+          { key: 'PICKING', label: '拣货中' },
+          { key: 'PICKED', label: '已拣货' },
+          { key: 'CHECKED', label: '已复核' },
+          { key: 'SHIPPED', label: '已交运' },
+          { key: 'VOIDED', label: '已作废' },
+        ] as const).map(tab => ({ ...tab, count: tabCounts[tab.key] || 0 }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as WaveStatus | 'ALL')}
+        ariaLabel="出库波次状态筛选"
+      />
 
       {/* 表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden text-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1280px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3 w-10 text-center">
                   <input
                     type="checkbox"
-                    checked={selectedIds.length > 0 && selectedIds.length === waves.length}
+                    checked={pageRows.length > 0 && pageRows.every(wave => selectedIds.includes(wave.id))}
                     onChange={handleSelectAll}
                     className="rounded text-primary border-slate-300"
                   />
@@ -291,7 +288,7 @@ export default function WaveList() {
                   </td>
                 </tr>
               ) : (
-                waves.map(row => {
+                pageRows.map(row => {
                   const isChecked = selectedIds.includes(row.id);
                   // 汇总件数
                   const totalQty = row.items.reduce((sum, i) => sum + i.qtyRequired, 0);
@@ -309,7 +306,7 @@ export default function WaveList() {
                         />
                       </td>
                       <td className="p-3 font-semibold text-primary font-mono hover:underline">
-                        <Link to={`/outbound/${row.id}/picking`}>{row.id}</Link>
+                        <Link to={`/outbound/${row.id}`}>{row.id}</Link>
                       </td>
                       <td className="p-3">{getStatusBadge(row.status)}</td>
                       <td className="p-3">{row.carrier}</td>
@@ -403,7 +400,7 @@ export default function WaveList() {
                           variant="ghost" 
                           size="sm" 
                           className="h-7 text-slate-500 hover:bg-slate-100"
-                          onClick={() => navigate(`/outbound/${row.id}/picking`)} // 去查看拣货页/详情页
+                          onClick={() => navigate(`/outbound/${row.id}`)}
                         >
                           <Eye size={12} className="mr-1" />
                           <span>详情</span>
@@ -414,9 +411,9 @@ export default function WaveList() {
                 })
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+
+      <Pagination page={page} pageSize={pageSize} total={waves.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
 
       {/* 指派拣货员弹窗 */}
       {assigningWaveId && (

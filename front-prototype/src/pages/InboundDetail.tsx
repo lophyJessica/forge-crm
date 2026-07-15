@@ -4,8 +4,9 @@ import { inboundApi } from '../api/inbound';
 import { InboundOrder, InboundStatus } from '../types/inbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageHeader from '../components/shared/PageHeader';
 import { 
-  ArrowLeft, Edit, Trash2, XCircle, CheckCircle, 
+  Edit, Trash2, XCircle, CheckCircle,
   ArrowUpCircle, Info, Calendar, FileText, CheckSquare, Award 
 } from 'lucide-react';
 
@@ -79,12 +80,12 @@ export default function InboundDetail() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!order) {
     return (
-      <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">
+      <div className="forge-state-panel forge-state-panel--error">
         该收货单不存在或已被物理删除！
       </div>
     );
@@ -108,30 +109,22 @@ export default function InboundDetail() {
 
   return (
     <div className="space-y-4 pb-8">
-      {/* 页头导航 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/inbound')} 
-            className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900">{order.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text}`}>
-                {statusCfg.label}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">创建时间：{order.createdAt}</p>
-          </div>
-        </div>
-        <div className="text-right text-xs">
-          <div className="text-slate-400 font-semibold">来源采购单</div>
-          <div className="font-semibold text-primary font-mono select-all mt-0.5">{order.purchaseOrderId}</div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/inbound')}
+        title={(
+          <>
+            <span className="font-mono">{order.id}</span>
+            <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${statusCfg.bg} ${statusCfg.text}`}>{statusCfg.label}</span>
+          </>
+        )}
+        description={<span className="font-mono text-slate-400">创建时间：{order.createdAt}</span>}
+        meta={(
+          <>
+            <div className="font-semibold text-slate-400">来源采购单</div>
+            <div className="mt-0.5 select-all font-mono font-semibold text-primary">{order.purchaseOrderId}</div>
+          </>
+        )}
+      />
 
       {/* 状态时间线 */}
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
@@ -254,7 +247,7 @@ export default function InboundDetail() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {r.items.map((pi, piIdx) => (
-                        <div key={piIdx} className="bg-white p-2 rounded border border-slate-150 flex items-center justify-between">
+                        <div key={piIdx} className="bg-white p-2 rounded border border-slate-200 flex items-center justify-between">
                           <div>
                             <div className="font-semibold text-slate-700">{pi.productName}</div>
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">{pi.productCode}</div>
@@ -320,7 +313,7 @@ export default function InboundDetail() {
       </div>
 
       {/* 底部按钮栏 - 状态动作按钮 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm text-xs">
+      <div className="forge-action-bar text-xs">
         <Button variant="outline" size="sm" onClick={() => navigate('/inbound')} className="cursor-pointer">
           返回列表
         </Button>

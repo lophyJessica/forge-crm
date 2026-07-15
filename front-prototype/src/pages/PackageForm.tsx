@@ -4,7 +4,8 @@ import { outboundApi, generatePKGNumber } from '../api/outbound';
 import { WaveOrder } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowLeft, Inbox, Plus, Trash2, CheckCircle, Info } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Inbox, Plus, Trash2, CheckCircle, Info } from 'lucide-react';
 
 interface PackItem {
   id: string; // 临时展示单号或生成单号
@@ -112,36 +113,23 @@ export default function PackageForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!wave) {
-    return <div className="bg-red-50 text-red-700 p-5 rounded border border-red-200 text-center font-medium">该波次单不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该波次单不存在</div>;
   }
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12 text-xs">
-      {/* 页头 */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <button 
-          onClick={() => navigate('/outbound')} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <Inbox size={18} className="text-primary" />
-            <span>称重打单与发货包装</span>
-          </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            波次单号：{wave.id} | 物流承运商：{wave.carrier}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound')}
+        title={<><Inbox size={18} className="text-primary" /><span>称重打单与发货包装</span></>}
+        description={<span className="font-mono">波次单号：{wave.id} | 物流承运商：{wave.carrier}</span>}
+      />
 
       {/* 包装提示 */}
-      <div className="bg-blue-50 text-blue-700 p-3 rounded border border-blue-150 flex items-start gap-2.5">
+      <div className="bg-blue-50 text-blue-700 p-3 rounded border border-blue-200 flex items-start gap-2.5">
         <Info size={16} className="mt-0.5 shrink-0" />
         <div className="leading-relaxed">
           <strong className="block text-blue-800">发货包装说明：</strong>
@@ -169,7 +157,7 @@ export default function PackageForm() {
           {packages.map((pkg, index) => (
             <div 
               key={pkg.id} 
-              className="border border-slate-150 rounded-lg p-4 bg-slate-50/20 flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="border border-slate-200 rounded-lg p-4 bg-slate-50/20 flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               {/* 包裹单号显示 */}
               <div className="space-y-1">
@@ -219,7 +207,7 @@ export default function PackageForm() {
       </div>
 
       {/* 底部操作 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 

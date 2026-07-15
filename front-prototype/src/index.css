@@ -65,6 +65,112 @@
   }
 }
 
+@layer components {
+  .forge-main {
+    scrollbar-gutter: stable;
+  }
+
+  .forge-main :is(button, a, input, select, textarea):focus-visible,
+  .pda-shell :is(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  .forge-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  }
+
+  .forge-action-bar > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .forge-state-panel {
+    display: flex;
+    min-height: 10rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  .forge-state-panel--error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+
+  .forge-main h1 {
+    color: #1e293b;
+    font-size: 20px !important;
+    font-weight: 700;
+    line-height: 28px;
+    letter-spacing: 0;
+  }
+
+  .forge-main input,
+  .forge-main select,
+  .forge-main textarea {
+    border-color: #e2e8f0;
+    border-radius: 6px;
+    color: #334155;
+    font-size: 12px;
+  }
+
+  .forge-main input::placeholder,
+  .forge-main textarea::placeholder {
+    color: #94a3b8;
+  }
+
+  .forge-main table,
+  .forge-data-table {
+    font-size: 12px;
+  }
+
+  .forge-main thead tr,
+  .forge-data-table thead tr {
+    height: 44px;
+  }
+
+  .forge-main thead th,
+  .forge-data-table thead th {
+    white-space: nowrap;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .forge-main tbody tr,
+  .forge-data-table tbody tr {
+    min-height: 48px;
+  }
+
+  .forge-main tbody td,
+  .forge-data-table tbody td {
+    line-height: 1.45;
+  }
+
+  .forge-main .overflow-x-auto {
+    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-width: thin;
+  }
+}
+
 @layer base {
   * {
     border-color: hsl(var(--border));
@@ -72,5 +178,8 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
   }
 }

@@ -12,7 +12,8 @@ import {
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { ArrowLeft, Calculator, CheckCircle, Info, Save } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Calculator, CheckCircle, Info, Save } from 'lucide-react';
 
 export default function InventoryCheckForm() {
   const navigate = useNavigate();
@@ -131,20 +132,16 @@ export default function InventoryCheckForm() {
   const totalDiff = items.reduce((sum, item) => sum + (Number(item.countedQty || 0) - item.systemQty), 0);
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析盘点单数据...</div>;
+    return <div className="forge-state-panel">正在解析盘点单数据...</div>;
   }
 
   return (
     <div className="space-y-4 text-xs pb-12">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{order ? `录入盘点差异 ${order.id}` : '新建盘点单'}</h1>
-          <p className="text-xs text-slate-500 mt-1">上游库存字段只读，盘点差异由实盘数量与系统库存自动计算</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={order ? `录入盘点差异 ${order.id}` : '新建盘点单'}
+        description="上游库存字段只读，盘点差异由实盘数量与系统库存自动计算"
+      />
 
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">基本信息</h3>
@@ -173,7 +170,7 @@ export default function InventoryCheckForm() {
                     checkType === type ? 'border-primary text-primary bg-blue-50/50' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
                   }`}
                 >
-                  {INVENTORY_CHECK_TYPE_LABELS[type]}
+                  {INVENTORY_CHECK_TYPE_LABELS[type] ?? type ?? '未知盘点类型'}
                 </button>
               ))}
             </div>
@@ -256,7 +253,7 @@ export default function InventoryCheckForm() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button variant="outline" size="sm" onClick={() => navigate('/inventory/checks')} className="cursor-pointer">
           返回
         </Button>

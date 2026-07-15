@@ -5,7 +5,8 @@ import { inventoryOperationsApi } from '../api/inventoryOperations';
 import { DamageStatus } from '../types/damage';
 import { TRANSFER_STATUS_LABELS, TransferOrder, TransferStatus } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, ArrowRightLeft, Calendar, CheckCircle2, Edit, Send, XCircle } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { ArrowRightLeft, Calendar, CheckCircle2, Edit, Send, XCircle } from 'lucide-react';
 
 const currentUser: { role: 'supervisor' | 'operator' } = {
   role: 'supervisor',
@@ -131,33 +132,23 @@ export default function TransferDetail() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析调拨单详情...</div>;
+    return <div className="forge-state-panel">正在解析调拨单详情...</div>;
   }
 
   if (!order) {
-    return <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">该调拨单不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该调拨单不存在</div>;
   }
 
   const totalQty = order.items.reduce((sum, item) => sum + item.transferQty, 0);
 
   return (
     <div className="space-y-4 text-xs pb-8">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/inventory/transfers')} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 font-mono">{order.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusClasses[order.status]}`}>
-                {TRANSFER_STATUS_LABELS[order.status]}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">创建时间：{order.createdAt}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        onBack={() => navigate('/inventory/transfers')}
+        title={<><span className="font-mono">{order.id}</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusClasses[order.status] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>{TRANSFER_STATUS_LABELS[order.status] ?? order.status ?? '未知状态'}</span></>}
+        description={<span className="font-mono">创建时间：{order.createdAt}</span>}
+        actions={(
+          <>
           {isSupervisor && order.blNo && blStatus === 'PENDING_REVIEW' && (
             <Button size="sm" onClick={handleApproveDamage} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold">
               <CheckCircle2 size={14} />
@@ -200,8 +191,9 @@ export default function TransferDetail() {
               <span>作废</span>
             </Button>
           )}
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">

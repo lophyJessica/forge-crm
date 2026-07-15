@@ -5,12 +5,18 @@ import { inventoryApi } from '../api/inventory';
 import { InventoryStock } from '../types/inventory';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Download, AlertTriangle, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function StockQuery() {
   // --- 状态定义 ---
   const [stocks, setStocks] = useState<InventoryStock[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(stocks);
   const [warehouseCode, setWarehouseCode] = useState('');
   const [zoneCode, setZoneCode] = useState('');
   const [locationCode, setLocationCode] = useState('');
@@ -85,10 +91,9 @@ export default function StockQuery() {
   return (
     <div className="space-y-4 text-xs">
       {/* 页头 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">即时库存查询</h1>
-          <p className="text-xs text-slate-500 mt-1">实时追踪仓库中各物料可用、占用、冻结及在途的详细数量分布</p>
+          <PageTitle compact title="即时库存查询" description="实时追踪仓库中各物料可用、占用、冻结及在途的详细数量分布" />
         </div>
         <div>
           <Button 
@@ -105,7 +110,7 @@ export default function StockQuery() {
       </div>
 
       {/* 查询卡片 */}
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">选择仓库</label>
@@ -190,12 +195,10 @@ export default function StockQuery() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
       {/* 数据表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1500px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3">商品编码</th>
@@ -224,7 +227,7 @@ export default function StockQuery() {
                   </td>
                 </tr>
               ) : (
-                stocks.map(row => {
+                pageRows.map(row => {
                   const isWarn = row.qtyAvailable < row.safetyStock;
                   const isNegativeTotal = row.qtyTotal < 0;
 
@@ -289,9 +292,8 @@ export default function StockQuery() {
                 })
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={stocks.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

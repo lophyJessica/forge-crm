@@ -4,6 +4,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Eye, ArrowUpCircle } from 'lucide-react';
 
 interface ShipVirtualOrder {
@@ -24,6 +30,7 @@ export default function ShipList() {
   // --- 状态定义 ---
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING' | 'COMPLETED'>('ALL');
   const [shipOrders, setShipOrders] = useState<ShipVirtualOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(shipOrders);
   
   // 筛选条件
   const [shipId, setShipId] = useState('');
@@ -95,7 +102,7 @@ export default function ShipList() {
       PENDING: { label: '待交运', classes: 'bg-zinc-100 text-zinc-800 border-zinc-200' },
       COMPLETED: { label: '已完成', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
-    const current = config[status];
+    const current = config[status] ?? { label: status || '未知状态', classes: 'bg-slate-100 text-slate-500 border-slate-200' };
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${current.classes}`}>
         {current.label}
@@ -106,15 +113,14 @@ export default function ShipList() {
   return (
     <div className="space-y-4 text-xs">
       {/* 页头 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">出库交运单</h1>
-          <p className="text-xs text-slate-500 mt-1">处理打包完成的交运包裹移交快递/物流承运商，交运确认只完结订单/回传，不扣减库存</p>
+          <PageTitle compact title="出库交运单" description="处理打包完成的交运包裹移交快递/物流承运商，交运确认只完结订单/回传，不扣减库存" />
         </div>
       </div>
 
       {/* 查询条件 */}
-      <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={(e) => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">交运单号</label>
@@ -167,35 +173,22 @@ export default function ShipList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200 flex justify-between items-end">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'PENDING', 'COMPLETED'] as const).map(tab => {
-            const labelMap = { ALL: '全部', PENDING: '待交运', COMPLETED: '已完成' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2.5 px-4 border-b-2 font-semibold text-xs transition-colors cursor-pointer ${
-                  isActive 
-                    ? 'border-primary text-primary font-bold' 
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                {labelMap[tab]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={[
+          { key: 'ALL', label: '全部' },
+          { key: 'PENDING', label: '待交运' },
+          { key: 'COMPLETED', label: '已完成' },
+        ]}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as 'ALL' | 'PENDING' | 'COMPLETED')}
+        ariaLabel="交运单状态筛选"
+      />
 
       {/* 表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1180px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3 w-12 text-center">#</th>
@@ -216,7 +209,7 @@ export default function ShipList() {
                   <td colSpan={10} className="p-8 text-center text-slate-400">暂无符合条件的交运单记录</td>
                 </tr>
               ) : (
-                shipOrders.map((row, index) => (
+                pageRows.map((row, index) => (
                   <tr key={row.id} className="hover:bg-slate-50/50">
                     <td className="p-3 text-center text-slate-400 font-mono">{index + 1}</td>
                     <td className="p-3 font-semibold text-primary font-mono hover:underline">
@@ -224,7 +217,7 @@ export default function ShipList() {
                     </td>
                     <td className="p-3">{getStatusBadge(row.status)}</td>
                     <td className="p-3 font-mono text-slate-500">
-                      <Link to={`/outbound/waves`} className="hover:underline">{row.waveOrderId}</Link>
+                      <Link to={`/outbound/${row.waveOrderId}`} className="hover:underline">{row.waveOrderId}</Link>
                     </td>
                     <td className="p-3">{row.carrier}</td>
                     <td className="p-3">{row.route}</td>
@@ -247,7 +240,7 @@ export default function ShipList() {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-emerald-600 hover:bg-emerald-50 font-bold"
-                          onClick={() => navigate(`/outbound/waves/${row.waveOrderId}/ship`)}
+                          onClick={() => navigate(`/outbound/${row.waveOrderId}/shipping`)}
                         >
                           <ArrowUpCircle size={12} className="mr-1" />
                           <span>确认交运</span>
@@ -258,9 +251,8 @@ export default function ShipList() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={shipOrders.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

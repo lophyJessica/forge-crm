@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { inventoryApi } from '../api/inventory';
 import { InventoryFlow, FlowType } from '../types/inventory';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Download, Info } from 'lucide-react';
 
 export default function FlowList() {
   // --- 状态定义 ---
+  const [searchParams] = useSearchParams();
   const [flows, setFlows] = useState<InventoryFlow[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(flows);
   const [warehouseCode, setWarehouseCode] = useState('');
   const [productCodeOrName, setProductCodeOrName] = useState('');
   const [flowType, setFlowType] = useState('');
   const [flowDirection, setFlowDirection] = useState<'IN' | 'OUT' | 'ALL'>('ALL');
-  const [sourceOrderId, setSourceOrderId] = useState('');
+  const [sourceOrderId, setSourceOrderId] = useState(() => searchParams.get('id') || '');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
@@ -53,7 +61,7 @@ export default function FlowList() {
     if (dateStart && dateEnd) {
       loadData();
     }
-  }, [warehouseCode, flowType, flowDirection, dateStart, dateEnd]);
+  }, [warehouseCode, productCodeOrName, flowType, flowDirection, dateStart, dateEnd, sourceOrderId]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,10 +100,9 @@ export default function FlowList() {
   return (
     <div className="space-y-4 text-xs">
       {/* 页头 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">库存收发流水台账</h1>
-          <p className="text-xs text-slate-500 mt-1">追溯仓库所有物料出入库及盘点调拨变动的历史记账凭证 (只读审计)</p>
+          <PageTitle compact title="库存收发流水台账" description="追溯仓库所有物料出入库及盘点调拨变动的历史记账凭证 (只读审计)" />
         </div>
         <div>
           <Button 
@@ -112,7 +119,7 @@ export default function FlowList() {
       </div>
 
       {/* 查询卡片 */}
-      <form onSubmit={handleSearch} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={handleSearch}>
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <div className="space-y-1">
             <label className="font-semibold text-slate-500">仓库</label>
@@ -192,12 +199,10 @@ export default function FlowList() {
             </Button>
           </div>
         </div>
-      </form>
+      </FilterForm>
 
       {/* 列表表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1280px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3">流水号</th>
@@ -221,7 +226,7 @@ export default function FlowList() {
                   </td>
                 </tr>
               ) : (
-                flows.map(row => {
+                pageRows.map(row => {
                   const isPositive = row.qtyChange > 0;
                   return (
                     <tr key={row.id} className="hover:bg-slate-50/50">
@@ -250,9 +255,8 @@ export default function FlowList() {
                 })
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={flows.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

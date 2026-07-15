@@ -4,6 +4,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { Search, RotateCcw, Eye, Package } from 'lucide-react';
 
 export default function PackageList() {
@@ -18,6 +24,7 @@ export default function PackageList() {
   const [waveId, setWaveId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PACKED' | 'SHIPPED'>('ALL');
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(packages);
 
   // --- 数据装载 ---
   const loadData = async () => {
@@ -75,15 +82,14 @@ export default function PackageList() {
   return (
     <div className="space-y-4 text-xs">
       {/* 页头 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">包裹记录管理</h1>
-          <p className="text-xs text-slate-500 mt-1">查看出库商品的包装箱记录、重量复称值、及快递物流追踪单号</p>
+          <PageTitle compact title="包裹记录管理" description="查看出库商品的包装箱记录、重量复称值、及快递物流追踪单号" />
         </div>
       </div>
 
       {/* 查询条件 */}
-      <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm space-y-4">
+      <FilterForm onSubmit={(e) => { e.preventDefault(); loadData(); }}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">包裹号</label>
@@ -136,35 +142,22 @@ export default function PackageList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
       {/* Tabs */}
-      <div className="border-b border-slate-200 flex justify-between items-end">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'PACKED', 'SHIPPED'] as const).map(tab => {
-            const labelMap = { ALL: '全部', PACKED: '已打包', SHIPPED: '已交运' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2.5 px-4 border-b-2 font-semibold text-xs transition-colors cursor-pointer ${
-                  isActive 
-                    ? 'border-primary text-primary font-bold' 
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                {labelMap[tab]}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={[
+          { key: 'ALL', label: '全部' },
+          { key: 'PACKED', label: '已打包' },
+          { key: 'SHIPPED', label: '已交运' },
+        ]}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as 'ALL' | 'PACKED' | 'SHIPPED')}
+        ariaLabel="包裹状态筛选"
+      />
 
       {/* 表格 */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1180px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3 w-12 text-center">#</th>
@@ -183,7 +176,7 @@ export default function PackageList() {
                   <td colSpan={8} className="p-8 text-center text-slate-400">暂无符合条件的包裹记录</td>
                 </tr>
               ) : (
-                packages.map((row, index) => (
+                pageRows.map((row, index) => (
                   <tr key={row.id} className="hover:bg-slate-50/50">
                     <td className="p-3 text-center text-slate-400 font-mono">{index + 1}</td>
                     <td className="p-3 font-semibold text-primary font-mono hover:underline">
@@ -191,7 +184,7 @@ export default function PackageList() {
                     </td>
                     <td className="p-3">{getStatusBadge(row.status)}</td>
                     <td className="p-3 font-mono text-slate-500">
-                      <Link to={`/outbound/waves`} className="hover:underline">{row.waveId}</Link>
+                      <Link to={`/outbound/${row.waveId}`} className="hover:underline">{row.waveId}</Link>
                     </td>
                     <td className="p-3 text-right font-bold font-mono text-slate-700">{row.weight.toFixed(2)}</td>
                     <td className="p-3 font-mono text-slate-600 font-semibold">{row.trackingNumber}</td>
@@ -211,9 +204,8 @@ export default function PackageList() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={packages.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

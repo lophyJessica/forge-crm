@@ -7,7 +7,8 @@ import { DAMAGE_REASON_LABELS, DamageItem, DamageOrder, DamageReason } from '../
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, Save, Trash2 } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { AlertTriangle, CheckCircle2, Plus, Save, Trash2 } from 'lucide-react';
 
 const reasonOptions: DamageReason[] = ['TRANSFER_LOSS', 'DAMAGED', 'EXPIRED', 'SHORTAGE'];
 
@@ -165,20 +166,16 @@ export default function DamageForm() {
   const totalQty = items.reduce((sum, item) => sum + Number(item.damageQty || 0), 0);
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析报损表单数据...</div>;
+    return <div className="forge-state-panel">正在解析报损表单数据...</div>;
   }
 
   return (
     <div className="space-y-4 text-xs pb-12">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{order ? `编辑报损单 ${order.id}` : '新建报损单'}</h1>
-          <p className="text-xs text-slate-500 mt-1">报损数量不能大于当前现存量；提交后进入待审核，审核通过后才扣现存并生成 FL 流水</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={order ? `编辑报损单 ${order.id}` : '新建报损单'}
+        description="报损数量不能大于当前现存量；提交后进入待审核，审核通过后才扣现存并生成 FL 流水"
+      />
 
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">基本信息</h3>
@@ -311,7 +308,7 @@ export default function DamageForm() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button variant="outline" size="sm" onClick={() => navigate('/inventory/damages')} className="cursor-pointer">
           返回
         </Button>

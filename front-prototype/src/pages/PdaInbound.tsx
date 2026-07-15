@@ -5,8 +5,8 @@ import { inboundApi } from '../api/inbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { InboundOrder } from '../types/inbound';
-import { ArrowLeft, Check, MapPin, Search, X } from 'lucide-react';
-import { PdaHeader, PdaOfflineBar, PdaShell } from './PdaHome';
+import { ArrowLeft, Check, MapPin, X } from 'lucide-react';
+import { PdaHeader, PdaLookupForm, PdaOfflineBar, PdaShell } from './PdaHome';
 
 export default function PdaInbound() {
   const [rcvNo, setRcvNo] = useState('');
@@ -108,29 +108,22 @@ export default function PdaInbound() {
   return (
     <PdaShell>
       <PdaHeader title="收货上架" subtitle="输入 RCV 单号加载待上架商品" />
-      <main className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <main className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <Link to="/pda" className="inline-flex items-center gap-1 text-sm font-black text-slate-600">
           <ArrowLeft size={18} />
           返回主界面
         </Link>
 
-        <section className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-          <label className="text-sm font-black text-slate-600">收货单号 RCV</label>
-          <div className="flex gap-2 mt-2">
-            <Input
-              value={rcvNo}
-              onChange={e => setRcvNo(e.target.value)}
-              placeholder="RCV20260706-0001"
-              className="h-12 text-base font-mono font-bold"
-            />
-            <Button type="button" onClick={loadOrder} className="h-12 w-14 p-0">
-              <Search size={22} />
-            </Button>
-          </div>
-        </section>
+        <PdaLookupForm
+          label="收货单号 RCV"
+          value={rcvNo}
+          placeholder="RCV20260706-0001"
+          onChange={setRcvNo}
+          onSubmit={loadOrder}
+        />
 
         {message && (
-          <div className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('失败') || message.includes('不') || message.includes('未') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+          <div role="status" aria-live="polite" className={`rounded-lg px-4 py-3 text-sm font-black ${message.includes('失败') || message.includes('不') || message.includes('未') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
             {message}
           </div>
         )}
@@ -163,7 +156,7 @@ export default function PdaInbound() {
                         </div>
                       )}
                     </div>
-                    <Button
+            <Button
                       type="button"
                       disabled={qty === 0 || order.status === 'COMPLETED'}
                       onClick={() => handleOpenScan(item.productCode)}
@@ -199,7 +192,7 @@ export default function PdaInbound() {
           <div className="w-full max-w-[375px] bg-white rounded-t-lg p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-slate-900">输入货位编码</h2>
-              <button type="button" onClick={() => setScanProduct(null)} className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center">
+              <button type="button" aria-label="关闭货位输入" title="关闭" onClick={() => setScanProduct(null)} className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100">
                 <X size={22} />
               </button>
             </div>

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { db } from '../db';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Calendar, Layers, Clipboard, ShieldCheck, Truck } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Calendar, Layers, Clipboard, ShieldCheck, Truck } from 'lucide-react';
 
 interface PackageDetailData {
   id: string;
@@ -73,11 +74,11 @@ export default function PackageDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析包装条码...</div>;
+    return <div className="forge-state-panel">正在解析包装条码...</div>;
   }
 
   if (!detail) {
-    return <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">该包裹不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该包裹不存在</div>;
   }
 
   const getStatusClasses = (status: string) => {
@@ -88,23 +89,11 @@ export default function PackageDetail() {
 
   return (
     <div className="space-y-4 text-xs pb-8">
-      {/* 页头 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/outbound/packages')} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 font-mono">{detail.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>
-                {detail.status === 'PACKED' ? '已打包' : '已交运'}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">关联出库波次：{detail.waveId}</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound/packages')}
+        title={<><span className="font-mono">{detail.id}</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>{detail.status === 'PACKED' ? '已打包' : '已交运'}</span></>}
+        description={<span className="font-mono">关联出库波次：{detail.waveId}</span>}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* 商品明细列表 */}
@@ -162,7 +151,7 @@ export default function PackageDetail() {
               <div className="flex justify-between gap-3">
                 <span className="text-slate-400 font-semibold">关联出库波次</span>
                 <span className="font-mono text-primary hover:underline">
-                  <Link to={`/outbound/waves`}>{detail.waveId}</Link>
+                  <Link to={`/outbound/${detail.waveId}`}>{detail.waveId}</Link>
                 </span>
               </div>
               <div className="flex justify-between gap-3">

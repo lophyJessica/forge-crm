@@ -5,7 +5,8 @@ import { inboundApi } from '../api/inbound';
 import { baseDataApi } from '../api/baseData';
 import { InboundOrder, InboundItem } from '../types/inbound';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Check, Smartphone, MapPin } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Check, Smartphone, MapPin } from 'lucide-react';
 
 export default function PutawayForm() {
   const navigate = useNavigate();
@@ -96,12 +97,12 @@ export default function PutawayForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!order) {
     return (
-      <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">
+      <div className="forge-state-panel forge-state-panel--error">
         该收货单不存在
       </div>
     );
@@ -112,24 +113,11 @@ export default function PutawayForm() {
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12 text-xs">
-      {/* 页头 */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <button 
-          onClick={() => navigate(`/inbound/${id}`)} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <Smartphone size={18} className="text-primary animate-bounce" />
-            <span>PDA 手持终端扫描上架模拟</span>
-          </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            收货单：{order.id} | 收货仓库：{order.warehouseName}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate(`/inbound/${id}`)}
+        title={<><Smartphone size={18} className="text-primary animate-bounce" /><span>PDA 手持终端扫描上架模拟</span></>}
+        description={<span className="font-mono">收货单：{order.id} | 收货仓库：{order.warehouseName}</span>}
+      />
 
       {/* PDA 扫码背景与使用指南 */}
       <div className="bg-slate-900 text-slate-300 p-4 rounded-lg space-y-2 border border-slate-800 shadow-inner">
@@ -144,7 +132,7 @@ export default function PutawayForm() {
 
       {/* 上架明细列表 */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-150">
+        <div className="p-4 border-b border-slate-200">
           <h3 className="font-bold text-slate-800">当前待上架商品清单</h3>
         </div>
         <div className="divide-y divide-slate-100">
@@ -205,7 +193,7 @@ export default function PutawayForm() {
       </div>
 
       {/* 确认提交 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 

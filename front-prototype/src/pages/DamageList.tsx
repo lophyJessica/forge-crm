@@ -6,6 +6,12 @@ import { damageApi } from '../api/damage';
 import { DAMAGE_REASON_LABELS, DAMAGE_STATUS_LABELS, DamageOrder, DamageReason, DamageStatus } from '../types/damage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageTitle from '../components/shared/PageTitle';
+import FilterForm from '../components/shared/FilterForm';
+import DataTable from '../components/shared/DataTable';
+import Pagination from '../components/shared/Pagination';
+import StatusTabs from '../components/shared/StatusTabs';
+import { usePagination } from '../hooks/usePagination';
 import { AlertTriangle, CheckCircle2, Download, Eye, Plus, RotateCcw, Search, XCircle, Send } from 'lucide-react';
 
 const currentUser: { role: 'supervisor' | 'operator' } = {
@@ -29,6 +35,7 @@ export default function DamageList() {
 
   const [activeTab, setActiveTab] = useState<DamageStatus | 'ALL'>('ALL');
   const [damages, setDamages] = useState<DamageOrder[]>([]);
+  const { page, pageSize, pageRows, setPage, changePageSize } = usePagination(damages);
   const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
   const [damageId, setDamageId] = useState('');
   const [warehouseCode, setWarehouseCode] = useState('');
@@ -58,7 +65,7 @@ export default function DamageList() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, warehouseCode, reason, createdAtStart, createdAtEnd]);
+  }, [activeTab, damageId, warehouseCode, reason, createdAtStart, createdAtEnd]);
 
   const handleReset = () => {
     setDamageId('');
@@ -114,31 +121,30 @@ export default function DamageList() {
   };
 
   const renderStatus = (status: DamageStatus) => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status]}`}>
-      {DAMAGE_STATUS_LABELS[status]}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusClasses[status] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+      {DAMAGE_STATUS_LABELS[status] ?? status ?? '未知状态'}
     </span>
   );
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">报损管理</h1>
-          <p className="text-xs text-slate-500 mt-1">处理调拨差异、坏货、过期和短少等库存损耗，确认后立即扣减现存</p>
+          <PageTitle compact title="报损管理" description="处理调拨差异、坏货、过期和短少等库存损耗，确认后立即扣减现存" />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={damages.length === 0} className="flex items-center gap-1.5">
             <Download size={14} />
             <span>导出报损单</span>
           </Button>
-          <Button size="sm" onClick={() => navigate('/inventory/damages/new')} className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5 font-bold">
+          <Button size="sm" onClick={() => navigate('/inventory/damages/new')} className="bg-primary hover:bg-primary/90 text-white flex items-center gap-1.5 font-bold">
             <Plus size={14} />
             <span>新建报损单</span>
           </Button>
         </div>
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); loadData(); }} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm grid grid-cols-1 md:grid-cols-7 gap-3">
+      <FilterForm onSubmit={e => { e.preventDefault(); loadData(); }} className="grid grid-cols-1 md:grid-cols-7 gap-3 !space-y-0">
         <div className="space-y-1">
           <label className="font-semibold text-slate-500">报损单号</label>
           <Input placeholder="输入BL单号..." value={damageId} onChange={e => setDamageId(e.target.value)} className="h-9 font-mono" />
@@ -176,31 +182,23 @@ export default function DamageList() {
             <span>查询</span>
           </Button>
         </div>
-      </form>
+      </FilterForm>
 
-      <div className="border-b border-slate-200">
-        <div className="flex gap-1 text-sm font-medium">
-          {(['ALL', 'DRAFT', 'PENDING_REVIEW', 'CONFIRMED', 'VOIDED', 'REJECTED'] as const).map(tab => {
-            const labels = { ALL: '全部', DRAFT: '草稿', PENDING_REVIEW: '待审核', CONFIRMED: '已确认', VOIDED: '已作废', REJECTED: '已驳回' };
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 border-b-2 font-bold text-xs cursor-pointer transition-colors ${
-                  isActive ? 'border-primary text-primary bg-white rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {labels[tab]} ({tabCounts[tab] || 0})
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <StatusTabs
+        items={([
+          { key: 'ALL', label: '全部' },
+          { key: 'DRAFT', label: '草稿' },
+          { key: 'PENDING_REVIEW', label: '待审核' },
+          { key: 'CONFIRMED', label: '已确认' },
+          { key: 'VOIDED', label: '已作废' },
+          { key: 'REJECTED', label: '已驳回' },
+        ] as const).map(tab => ({ ...tab, count: tabCounts[tab.key] || 0 }))}
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as DamageStatus | 'ALL')}
+        ariaLabel="报损单状态筛选"
+      />
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <DataTable minWidth="1180px">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-500">
                 <th className="p-3">报损单号BL</th>
@@ -219,7 +217,7 @@ export default function DamageList() {
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-slate-400">暂无符合条件的报损单</td>
                 </tr>
-              ) : damages.map(row => (
+              ) : pageRows.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50/50">
                   <td className="p-3 font-semibold text-primary font-mono hover:underline">
                     <Link to={`/inventory/damages/${row.id}`}>{row.id}</Link>
@@ -228,7 +226,7 @@ export default function DamageList() {
                   <td className="p-3">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-semibold">
                       <AlertTriangle size={12} />
-                      {DAMAGE_REASON_LABELS[row.reason]}
+                      {DAMAGE_REASON_LABELS[row.reason] ?? row.reason ?? '未知原因'}
                     </span>
                   </td>
                   <td className="p-3">{renderStatus(row.status)}</td>
@@ -277,9 +275,8 @@ export default function DamageList() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination page={page} pageSize={pageSize} total={damages.length} onPageChange={setPage} onPageSizeChange={changePageSize} />
     </div>
   );
 }

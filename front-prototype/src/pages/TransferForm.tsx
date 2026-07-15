@@ -7,7 +7,8 @@ import { TransferItem, TransferOrder } from '../types/inventoryOperations';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { AlertTriangle, ArrowLeft, ArrowUpFromLine, Plus, Save, Trash2, CheckSquare } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { AlertTriangle, ArrowUpFromLine, Plus, Save, Trash2, CheckSquare } from 'lucide-react';
 
 export default function TransferForm() {
   const navigate = useNavigate();
@@ -215,20 +216,16 @@ export default function TransferForm() {
   const tableColSpan = isInboundStage || canEditDraft ? 7 : 6;
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析调拨单数据...</div>;
+    return <div className="forge-state-panel">正在解析调拨单数据...</div>;
   }
 
   return (
     <div className="space-y-4 text-xs pb-12">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-	          <h1 className="text-xl font-bold text-slate-900">{order ? `${order.status === 'OUTBOUND' ? '调入确认' : order.status === 'CONFIRMED' ? '执行调拨单' : '编辑调拨单'} ${order.id}` : '新建调拨单'}</h1>
-          <p className="text-xs text-slate-500 mt-1">调拨商品来自调出仓当前现存库存，调拨数量不能大于现存量</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={order ? `${order.status === 'OUTBOUND' ? '调入确认' : order.status === 'CONFIRMED' ? '执行调拨单' : '编辑调拨单'} ${order.id}` : '新建调拨单'}
+        description="调拨商品来自调出仓当前现存库存，调拨数量不能大于现存量"
+      />
       <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">基本信息</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -402,7 +399,7 @@ export default function TransferForm() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="cursor-pointer">
           返回
         </Button>

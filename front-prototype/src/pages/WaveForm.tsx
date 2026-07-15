@@ -4,8 +4,9 @@ import { outboundApi } from '../api/outbound';
 import { SalesOrder } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import PageHeader from '../components/shared/PageHeader';
 import { Textarea } from '../components/ui/Textarea';
-import { ArrowLeft, Save, Plus, AlertTriangle, Info } from 'lucide-react';
+import { Save, Plus, AlertTriangle, Info } from 'lucide-react';
 
 export default function WaveForm() {
   const navigate = useNavigate();
@@ -101,19 +102,11 @@ export default function WaveForm() {
 
   return (
     <div className="space-y-4 text-xs pb-12">
-      {/* 页头 */}
-      <div className="flex items-center gap-3">
-        <button 
-          onClick={() => navigate('/outbound')} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">新建拣货波次单</h1>
-          <p className="text-xs text-slate-500 mt-1">按承运商、线路进行销售订单聚合，提升仓库拣货现场路径效率</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound')}
+        title="新建拣货波次单"
+        description="按承运商、线路进行销售订单聚合，提升仓库拣货现场路径效率"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* 左侧配置栏 */}
@@ -198,7 +191,7 @@ export default function WaveForm() {
         {/* 右侧待选订单列表 */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-150 flex justify-between items-center bg-slate-50/50">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
               <div>
                 <h3 className="font-bold text-slate-800">待合并出库销售订单 (SO)</h3>
                 <p className="text-[10px] text-slate-400 mt-0.5">仅显示待出库未锁定的订单</p>
@@ -214,7 +207,7 @@ export default function WaveForm() {
             </div>
 
             {loading ? (
-              <div className="p-12 text-center text-slate-400 font-semibold">正在载入订单...</div>
+              <div className="forge-state-panel">正在载入订单...</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -274,7 +267,7 @@ export default function WaveForm() {
           </div>
 
           {/* 底部保存栏 */}
-          <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="forge-action-bar">
             <Button 
               type="button" 
               variant="outline" 
@@ -297,7 +290,7 @@ export default function WaveForm() {
                 size="sm"
                 onClick={handleCreate}
                 disabled={selectedOrderIds.length === 0 || selectedOrderIds.length > 50}
-                className="bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="bg-primary hover:bg-primary/90 text-white font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <Plus size={14} />
                 <span>生成波次拣货单</span>

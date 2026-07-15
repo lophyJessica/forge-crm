@@ -4,7 +4,8 @@ import { outboundApi, generatePKGNumber } from '../api/outbound';
 import { WaveOrder, WaveItem } from '../types/outbound';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ArrowLeft, Check, QrCode, ClipboardCheck, Info } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { Check, QrCode, ClipboardCheck, Info } from 'lucide-react';
 
 export default function CheckForm() {
   const navigate = useNavigate();
@@ -119,35 +120,22 @@ export default function CheckForm() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析单据数据...</div>;
+    return <div className="forge-state-panel">正在解析单据数据...</div>;
   }
 
   if (!wave) {
-    return <div className="bg-red-50 text-red-700 p-5 rounded border border-red-200 text-center">该波次不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该波次不存在</div>;
   }
 
   const allConfirmed = wave.items.every(item => confirmedProducts.includes(item.productCode));
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-12 text-xs">
-      {/* 页头 */}
-      <div className="flex items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <button 
-          onClick={() => navigate('/outbound')} 
-          className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div>
-          <h1 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-            <ClipboardCheck size={18} className="text-primary" />
-            <span>出库复核校验中心</span>
-          </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            波次单号：{wave.id} | 物流承运商：{wave.carrier}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/outbound')}
+        title={<><ClipboardCheck size={18} className="text-primary" /><span>出库复核校验中心</span></>}
+        description={<span className="font-mono">波次单号：{wave.id} | 物流承运商：{wave.carrier}</span>}
+      />
 
       {/* 复核包裹提示 */}
       <div className="bg-slate-900 text-slate-300 p-4 rounded-lg space-y-2 border border-slate-800 shadow-inner">
@@ -167,7 +155,7 @@ export default function CheckForm() {
 
       {/* 商品清单 */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-150">
+        <div className="p-4 border-b border-slate-200">
           <h3 className="font-bold text-slate-800">商品逐件扫码复核校验</h3>
         </div>
         <div className="divide-y divide-slate-100">
@@ -249,7 +237,7 @@ export default function CheckForm() {
       </div>
 
       {/* 底部按钮 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="forge-action-bar">
         <Button 
           variant="outline" 
           size="sm" 

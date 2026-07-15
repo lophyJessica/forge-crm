@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { db } from '../db';
 import { InboundOrder } from '../types/inbound';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, ArrowUpCircle, Calendar, Layers, Clipboard, ShieldCheck } from 'lucide-react';
+import PageHeader from '../components/shared/PageHeader';
+import { ArrowUpCircle, Calendar, Layers, Clipboard, ShieldCheck } from 'lucide-react';
 
 interface PutawayVirtualDetail {
   id: string;
@@ -120,11 +121,11 @@ export default function PutawayDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500 font-medium">正在解析上架指令...</div>;
+    return <div className="forge-state-panel">正在解析上架指令...</div>;
   }
 
   if (!detail) {
-    return <div className="bg-red-50 text-red-700 text-xs p-5 rounded border border-red-200 text-center font-medium">该上架单不存在</div>;
+    return <div className="forge-state-panel forge-state-panel--error">该上架单不存在</div>;
   }
 
   const getStatusClasses = (status: string) => {
@@ -143,35 +144,17 @@ export default function PutawayDetail() {
 
   return (
     <div className="space-y-4 text-xs pb-8">
-      {/* 页头 */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/inventory/putaways')} className="p-1.5 rounded-md hover:bg-slate-100 border border-slate-200 bg-white text-slate-600 cursor-pointer">
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-900 font-mono">{detail.id}</h1>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>
-                {getStatusText(detail.status)}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">来源收货单：{detail.inboundOrderId}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {detail.status !== 'COMPLETED' && (
-            <Button 
-              size="sm" 
-              onClick={() => navigate(`/inbound/${detail.inboundOrderId}/putaway`)} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold cursor-pointer"
-            >
-              <ArrowUpCircle size={14} />
-              <span>去执行上架</span>
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => navigate('/inventory/putaways')}
+        title={<><span className="font-mono">{detail.id}</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusClasses(detail.status)}`}>{getStatusText(detail.status)}</span></>}
+        description={<span className="font-mono">来源收货单：{detail.inboundOrderId}</span>}
+        actions={detail.status !== 'COMPLETED' ? (
+          <Button size="sm" onClick={() => navigate(`/inbound/${detail.inboundOrderId}/putaway`)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 font-bold cursor-pointer">
+            <ArrowUpCircle size={14} />
+            <span>去执行上架</span>
+          </Button>
+        ) : undefined}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* 商品明细列表 */}
