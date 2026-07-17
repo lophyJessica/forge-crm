@@ -134,7 +134,7 @@
   <div id="content"></div>
   <script>
     mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#1e3a5f', primaryTextColor: '#e2e8f0', primaryBorderColor: '#38bdf8', lineColor: '#64748b', secondaryColor: '#1e293b', tertiaryColor: '#0f172a' } });
-    fetch('flowchart.md').then(r => r.text()).then(async md => {
+    fetch('flowchart.md?t='+Date.now()).then(r => r.text()).then(async md => {
       document.getElementById('content').innerHTML = marked.parse(md);
 
       // 动态包裹所有的 .language-mermaid 节点
