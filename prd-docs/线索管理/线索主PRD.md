@@ -104,6 +104,7 @@ stateDiagram-v2
     [*] --> PENDING_ASSIGN : 批量导入
     DRAFT --> PENDING_ASSIGN : 提交
     PENDING_ASSIGN --> ASSIGNED : 分配销售
+    PENDING_ASSIGN --> ABANDONED : 管理员废弃
     ASSIGNED --> FOLLOWING : 首次跟进
     FOLLOWING --> FOLLOWING : 再次跟进
     FOLLOWING --> CONVERTED : 转客户
@@ -111,7 +112,7 @@ stateDiagram-v2
     ASSIGNED --> ABANDONED : 主动放弃
     ASSIGNED --> PENDING_ASSIGN : 48h未跟进自动回收
     FOLLOWING --> PENDING_ASSIGN : 48h未跟进自动回收
-    ABANDONED --> PENDING_ASSIGN : 公海认领（7天后）
+    ABANDONED --> ASSIGNED : 公海认领（7天后）
 ```
 
 ### 5.3 状态流转表
@@ -126,17 +127,18 @@ stateDiagram-v2
 | ASSIGNED | 放弃 | 必填放弃原因 | ABANDONED | 同上 |
 | ASSIGNED | 超时回收 | 距分配>48h 且无跟进 | PENDING_ASSIGN | 清除归属人 |
 | FOLLOWING | 超时回收 | 距上条跟进>48h | PENDING_ASSIGN | 清除归属人 |
+| ABANDONED | 公海认领 | 距放弃>7天 | ASSIGNED | 归属人=认领人 |
 
 ### 5.4 动作能力矩阵
 
 | 动作 | DRAFT | PENDING_ASSIGN | ASSIGNED | FOLLOWING | CONVERTED | ABANDONED |
 |------|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
 | 查看 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 编辑 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 编辑 | ✅ | ✅(仅管理员) | ❌ | ❌ | ❌ | ❌ |
 | 分配 | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | 跟进 | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | 转客户 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| 放弃 | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| 放弃 | ❌ | ✅(管理员可废弃) | ✅ | ✅ | ❌ | ❌ |
 | 删除 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
