@@ -61,6 +61,9 @@ export default function OppDetail() {
   const followUps = useLiveQuery(() => 
     db.opportunity_follow_ups.where('oppId').equals(id || '').toArray()
   ) || [];
+  const contracts = useLiveQuery(() => 
+    db.contracts.where('oppId').equals(id || '').toArray()
+  ) || [];
 
   // Modals 控制
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
@@ -104,6 +107,12 @@ export default function OppDetail() {
 
   // 2. 状态机流转核心校验
   const checkTransition = (targetStage: string): { allowed: boolean; reason?: string } => {
+    // P1-1 互锁：合同进入 PENDING_SIGN 待签署或以上时，商机只读
+    const hasActiveContract = contracts.some(c => ['PENDING_SIGN', 'SIGNED', 'ARCHIVED'].includes(c.status));
+    if (hasActiveContract) {
+      return { allowed: false, reason: '关联合同签署中,商机不可操作' };
+    }
+
     if (opp.status === 'WON' || opp.status === 'LOST') {
       return { allowed: false, reason: '该商机已结案，无法修改状态' };
     }

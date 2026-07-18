@@ -81,6 +81,9 @@ export default function LeadsList() {
   const [confirmAbandonId, setConfirmAbandonId] = useState<string | null>(null);
   const [abandonReason, setAbandonReason] = useState('');
   const [batchActionType, setBatchActionType] = useState<'VOID' | null>(null); // 批量作废确认
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importStep, setImportStep] = useState<'UPLOAD' | 'PARSING' | 'PREVIEW'>('UPLOAD');
+  const [importFileName, setImportFileName] = useState('');
 
   // 快捷显示 Toast
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
@@ -91,13 +94,63 @@ export default function LeadsList() {
   // 2. 从数据库中实时订阅所有线索与跟进
   const allLeads = useLiveQuery(() => db.leads.toArray()) || [];
 
+  // P1-4: 自动回收超48小时未跟进的已分配线索
+  useEffect(() => {
+    if (allLeads.length === 0) return;
+
+    const checkTimeoutLeads = async () => {
+      const assigned = allLeads.filter(l => l.status === 'ASSIGNED' && l.assignedAt);
+      if (assigned.length === 0) return;
+
+      const now = new Date().getTime();
+      const timeoutIds: string[] = [];
+
+      for (const lead of assigned) {
+        const assignedTime = new Date(lead.assignedAt!).getTime();
+        const diffHours = (now - assignedTime) / (1000 * 60 * 60);
+        if (diffHours > 48) {
+          const followCount = await db.follow_up_records.where('leadId').equals(lead.id).count();
+          if (followCount === 0) {
+            timeoutIds.push(lead.id);
+          }
+        }
+      }
+
+      if (timeoutIds.length > 0) {
+        console.log('检测到以下已分配线索超48h且无跟进，自动退回待分配池：', timeoutIds);
+        await db.transaction('rw', db.leads, async () => {
+          for (const id of timeoutIds) {
+            await db.leads.update(id, {
+              status: 'PENDING_ASSIGN',
+              owner: undefined,
+              assignedAt: undefined
+            });
+          }
+        });
+        showToast('系统已自动将分配超48h且未跟进的线索退回待分配池', 'success');
+      }
+    };
+
+    checkTimeoutLeads();
+  }, [allLeads]);
+
   // 判断是否已过公海保护期 (放弃已超7天)
   const isHighseasAbandoned = (lead: Lead) => {
-    if (lead.status !== 'ABANDONED' || !lead.followedAt) return false;
-    const abandonedTime = new Date(lead.followedAt).getTime();
+    if (lead.status !== 'ABANDONED') return false;
+    const timeStr = lead.abandonedAt || lead.followedAt;
+    if (!timeStr) return false;
+    const abandonedTime = new Date(timeStr).getTime();
     const now = new Date().getTime();
     const days = (now - abandonedTime) / (1000 * 60 * 60 * 24);
     return days > 7;
+  };
+
+  // 判断公海是否可见 (待分配、或者已释放超7天，或者我是原负责人)
+  const isHighseasVisible = (lead: Lead) => {
+    if (lead.status === 'PENDING_ASSIGN') return true;
+    if (lead.status !== 'ABANDONED') return false;
+    if (lead.owner === CURRENT_USER) return true;
+    return isHighseasAbandoned(lead);
   };
 
   // 3. 计算各个 Tab 的统计计数
@@ -105,7 +158,7 @@ export default function LeadsList() {
     ALL: allLeads.length,
     PENDING: allLeads.filter(l => l.status === 'PENDING_ASSIGN').length,
     MY: allLeads.filter(l => l.owner === CURRENT_USER && ['DRAFT', 'ASSIGNED', 'FOLLOWING'].includes(l.status)).length,
-    HIGHSEAS: allLeads.filter(l => l.status === 'PENDING_ASSIGN' || isHighseasAbandoned(l)).length,
+    HIGHSEAS: allLeads.filter(l => isHighseasVisible(l)).length,
     CONVERTED: allLeads.filter(l => l.status === 'CONVERTED').length,
     ABANDONED: allLeads.filter(l => l.status === 'ABANDONED').length,
   };
@@ -115,7 +168,7 @@ export default function LeadsList() {
     // A. Tab 状态过滤
     if (activeTab === 'PENDING' && lead.status !== 'PENDING_ASSIGN') return false;
     if (activeTab === 'MY' && !(lead.owner === CURRENT_USER && ['DRAFT', 'ASSIGNED', 'FOLLOWING'].includes(lead.status))) return false;
-    if (activeTab === 'HIGHSEAS' && !(lead.status === 'PENDING_ASSIGN' || isHighseasAbandoned(lead))) return false;
+    if (activeTab === 'HIGHSEAS' && !isHighseasVisible(lead)) return false;
     if (activeTab === 'CONVERTED' && lead.status !== 'CONVERTED') return false;
     if (activeTab === 'ABANDONED' && lead.status !== 'ABANDONED') return false;
 
@@ -147,12 +200,27 @@ export default function LeadsList() {
   // 5. 核心交互函数
   // 认领线索
   const handleClaim = async (id: string) => {
-    await db.leads.update(id, {
-      status: 'ASSIGNED',
-      owner: CURRENT_USER,
-      assignedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const lead = await db.leads.get(id);
+    const isOwnerAbandon = lead && lead.status === 'ABANDONED' && lead.owner === CURRENT_USER;
+    
+    await db.transaction('rw', db.leads, db.follow_up_records, async () => {
+      await db.leads.update(id, {
+        status: 'ASSIGNED',
+        owner: CURRENT_USER,
+        assignedAt: nowStr
+      });
+      await db.follow_up_records.add({
+        leadId: id,
+        time: nowStr,
+        operator: CURRENT_USER,
+        type: '系统记录',
+        content: isOwnerAbandon 
+          ? `销售 [${CURRENT_USER}] 撤销了放弃，重新恢复跟进该线索。`
+          : `销售 [${CURRENT_USER}] 从公海主动认领了该线索。`
+      });
     });
-    showToast('线索已认领，请及时跟进');
+    showToast(isOwnerAbandon ? '撤销放弃成功，线索已恢复' : '线索已认领，请及时跟进');
   };
 
   // 确认删除草稿
@@ -235,6 +303,17 @@ export default function LeadsList() {
           <p className="text-xs text-slate-500">处理全渠道收集的线索并评估 AI 分数，推动转化为商机或客户。</p>
         </div>
         <div className="flex gap-2">
+          <button 
+            type="button"
+            onClick={() => {
+              setIsImportModalOpen(true);
+              setImportStep('UPLOAD');
+              setImportFileName('');
+            }}
+            className="flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm"
+          >
+            <span>批量导入</span>
+          </button>
           <button 
             type="button"
             onClick={() => navigate('/leads/new')}
@@ -475,13 +554,19 @@ export default function LeadsList() {
                         </>
                       )}
                       
-                      {(lead.status === 'PENDING_ASSIGN' || (lead.status === 'ABANDONED' && isHighseasAbandoned(lead))) && (
+                      {(lead.status === 'PENDING_ASSIGN' || (lead.status === 'ABANDONED' && isHighseasVisible(lead))) && (
                         <>
                           <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                          <button type="button" onClick={() => handleClaim(lead.id)} className="text-[#1677ff] hover:text-blue-500 text-xs font-semibold">认领</button>
+                          <button 
+                            type="button" 
+                            onClick={() => handleClaim(lead.id)} 
+                            className="text-[#1677ff] hover:text-blue-500 text-xs font-semibold"
+                          >
+                            {lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}
+                          </button>
                         </>
                       )}
-
+ 
                       {lead.status === 'ASSIGNED' && (
                         <>
                           <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
@@ -489,7 +574,7 @@ export default function LeadsList() {
                           <button type="button" onClick={() => setConfirmAbandonId(lead.id)} className="text-amber-600 hover:text-amber-500 text-xs font-semibold">放弃</button>
                         </>
                       )}
-
+ 
                       {lead.status === 'FOLLOWING' && (
                         <>
                           <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
@@ -498,8 +583,8 @@ export default function LeadsList() {
                           <button type="button" onClick={() => setConfirmAbandonId(lead.id)} className="text-amber-600 hover:text-amber-500 text-xs font-semibold">放弃</button>
                         </>
                       )}
-
-                      {(lead.status === 'CONVERTED' || (lead.status === 'ABANDONED' && !isHighseasAbandoned(lead))) && (
+ 
+                      {(lead.status === 'CONVERTED' || (lead.status === 'ABANDONED' && !isHighseasVisible(lead))) && (
                         <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
                       )}
                     </td>
@@ -656,6 +741,127 @@ export default function LeadsList() {
                 确认作废
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6.4 批量导入 Modal (P2-2) */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl border border-slate-100 text-xs space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <span className="text-sm font-bold text-slate-800">批量导入线索 (Excel)</span>
+            </div>
+
+            {importStep === 'UPLOAD' && (
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-lg p-10 bg-slate-50 space-y-3">
+                <div className="h-12 w-12 rounded-full bg-blue-50 text-[#1677ff] flex items-center justify-center">
+                  <Plus size={24} />
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-slate-700">点击或拖拽 Excel 文件到此区域上传</p>
+                  <p className="text-[10px] text-slate-400 mt-1">仅支持 .xlsx, .xls 格式，最大 10MB</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportFileName('leads_import_template_20260718.xlsx');
+                    setImportStep('PARSING');
+                    setTimeout(() => {
+                      setImportStep('PREVIEW');
+                    }, 1200);
+                  }}
+                  className="px-4 h-8 text-[11px] font-bold text-white bg-[#1677ff] hover:bg-blue-500 rounded transition-colors shadow-sm"
+                >
+                  选择模拟 Excel 文件
+                </button>
+              </div>
+            )}
+
+            {importStep === 'PARSING' && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="h-8 w-8 border-4 border-[#1677ff] border-t-transparent rounded-full animate-spin" />
+                <div className="text-center text-slate-500 font-medium">
+                  正在解析 Excel 表格数据，正在联动 AI 评分模型计算转化分数...
+                </div>
+              </div>
+            )}
+
+            {importStep === 'PREVIEW' && (
+              <div className="space-y-4">
+                <div className="bg-emerald-50 text-emerald-700 border border-emerald-150 p-2.5 rounded text-[11px] font-bold flex items-center gap-2">
+                  <CheckCircle size={14} />
+                  <span>已成功解析文件「{importFileName}」，AI 评分预测已就绪，共找到 3 条新线索：</span>
+                </div>
+                <div className="border border-slate-150 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
+                  <table className="forge-table">
+                    <thead>
+                      <tr>
+                        <th>公司名称</th>
+                        <th>联系人</th>
+                        <th>手机号</th>
+                        <th>所属行业</th>
+                        <th>AI 预测评分</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', industry: 'MANUFACTURING', score: 78 },
+                        { company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', industry: 'HEALTHCARE', score: 85 },
+                        { company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', industry: 'IT', score: 92 }
+                      ].map((preview, i) => (
+                        <tr key={i}>
+                          <td className="font-bold text-slate-800">{preview.company}</td>
+                          <td>{preview.contact}</td>
+                          <td className="font-mono">{preview.phone}</td>
+                          <td>
+                            {preview.industry === 'MANUFACTURING' ? '制造业' : 
+                             preview.industry === 'HEALTHCARE' ? '医疗健康' : '信息技术'}
+                          </td>
+                          <td>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-emerald-50 text-emerald-600 border-emerald-200">
+                              {preview.score}分
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex justify-end gap-2 text-xs pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsImportModalOpen(false);
+                    }}
+                    className="px-3 py-2 font-semibold text-slate-500 hover:bg-slate-50 border border-slate-200 rounded"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                      const mockImportLeads = [
+                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', email: 'wukong@longxiang.com', industry: 'MANUFACTURING', region: '北京市-海淀区', score: 78, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
+                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', email: 'gujing@zhuoyue.com', industry: 'HEALTHCARE', region: '广东省-深圳市', score: 85, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
+                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', email: 'nezha@jiguang.com', industry: 'IT', region: '上海市-张江区', score: 92, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' }
+                      ];
+
+                      await db.transaction('rw', db.leads, async () => {
+                        await db.leads.bulkAdd(mockImportLeads);
+                      });
+
+                      setIsImportModalOpen(false);
+                      showToast('成功导入 3 条新线索，AI 已自动计算转化分数并分发！', 'success');
+                    }}
+                    className="px-4 py-2 font-bold text-white bg-green-600 hover:bg-green-500 rounded shadow-sm"
+                  >
+                    确认导入
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -202,10 +202,17 @@ export default function CustomerDetail() {
             { label: '所在地区', val: customer.region },
             { label: '客户等级', val: `${customer.level} 等级` },
             { label: '信用额度 (元)', val: formatCurrency(customer.creditLimit), mono: true },
+            { 
+              label: 'ERP信用状态', 
+              val: customer.riskLevel === 'HIGH' ? '冻结' : '正常', 
+              colorClass: customer.riskLevel === 'HIGH' 
+                ? 'text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded font-bold w-fit block' 
+                : 'text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded font-bold w-fit block' 
+            }
           ].map((field, idx) => (
             <div key={idx} className="space-y-1">
               <span className="text-[10px] text-slate-400 block font-semibold">{field.label}</span>
-              <span className={`text-slate-700 font-bold block ${field.mono ? 'font-mono' : ''}`}>{field.val}</span>
+              <span className={field.colorClass || `text-slate-700 font-bold block ${field.mono ? 'font-mono' : ''}`}>{field.val}</span>
             </div>
           ))}
           <div className="col-span-2 md:col-span-4 bg-slate-50 border border-slate-100 p-2.5 rounded text-[10px] text-slate-400 italic">

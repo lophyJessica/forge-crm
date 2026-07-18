@@ -7,6 +7,9 @@ import {
   LayoutDashboard,
   TrendingUp,
   Users,
+  FileText,
+  Calendar,
+  Trophy
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +31,9 @@ export default function Sidebar({
     { label: '公海管理', to: '/lead-pool', icon: Globe },
     { label: '商机管理', to: '/opportunities', icon: TrendingUp },
     { label: '客户管理', to: '/customers', icon: BarChart3 },
+    { label: '合同管理', to: '/contracts', icon: FileText },
+    { label: '拜访管理', to: '/visits', icon: Calendar },
+    { label: '业绩目标', to: '/targets', icon: Trophy },
   ];
 
   const isLinkActive = (to: string) => {

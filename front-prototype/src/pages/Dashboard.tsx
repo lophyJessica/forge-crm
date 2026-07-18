@@ -1,11 +1,26 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
 import { BarChart3, TrendingUp, Users, Wallet } from 'lucide-react';
 
 export default function Dashboard() {
+  const leads = useLiveQuery(() => db.leads.toArray()) || [];
+  const opportunities = useLiveQuery(() => db.opportunities.toArray()) || [];
+  const customers = useLiveQuery(() => db.customers.toArray()) || [];
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayLeadsCount = leads.filter(l => l.createdAt.startsWith(todayStr)).length;
+  const activeOppsCount = opportunities.filter(o => o.status !== 'WON' && o.status !== 'LOST').length;
+  const customerCount = customers.length;
+  
+  const predictedSales = opportunities
+    .filter(o => o.status !== 'WON' && o.status !== 'LOST')
+    .reduce((sum, o) => sum + ((o.amount || 0) * (o.score || 0) / 100), 0);
+
   const stats = [
-    { label: '今日新增线索', value: '42', change: '+12%', icon: Users, color: 'text-blue-600 bg-blue-50' },
-    { label: '活跃商机总数', value: '18', change: '+5%', icon: TrendingUp, color: 'text-amber-600 bg-amber-50' },
-    { label: '正式客户总数', value: '128', change: '+8%', icon: BarChart3, color: 'text-emerald-600 bg-emerald-50' },
-    { label: '预测销售额 (CNY)', value: '￥240,000', change: '+15%', icon: Wallet, color: 'text-violet-600 bg-violet-50' },
+    { label: '今日新增线索', value: String(todayLeadsCount), change: '+12%', icon: Users, color: 'text-blue-600 bg-blue-50' },
+    { label: '活跃商机总数', value: String(activeOppsCount), change: '+5%', icon: TrendingUp, color: 'text-amber-600 bg-amber-50' },
+    { label: '正式客户总数', value: String(customerCount), change: '+8%', icon: BarChart3, color: 'text-emerald-600 bg-emerald-50' },
+    { label: '预测销售额 (CNY)', value: `￥${predictedSales.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`, change: '+15%', icon: Wallet, color: 'text-violet-600 bg-violet-50' },
   ];
 
   return (

@@ -78,9 +78,16 @@ export default function OpportunitiesList() {
 
   // 2. 从数据库实时订阅商机与跟进记录
   const allOpps = useLiveQuery(() => db.opportunities.toArray()) || [];
+  const allContracts = useLiveQuery(() => db.contracts.toArray()) || [];
 
   // 3. 看板拖放和推进的核心校验函数
   const checkTransitionPreconditions = (opp: Opportunity, targetStage: string): { allowed: boolean; reason?: string } => {
+    // P1-1 互锁：合同进入 PENDING_SIGN 待签署或以上时，商机只读
+    const hasActiveContract = allContracts.some(c => c.oppId === opp.id && ['PENDING_SIGN', 'SIGNED', 'ARCHIVED'].includes(c.status));
+    if (hasActiveContract) {
+      return { allowed: false, reason: '关联合同签署中,商机不可操作' };
+    }
+
     // 终态不可回退
     if (opp.status === 'WON' || opp.status === 'LOST') {
       return { allowed: false, reason: '终态 (赢单/输单) 商机不可再流转或回退' };

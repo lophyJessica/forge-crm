@@ -10,6 +10,14 @@ import OppDetail from './pages/OppDetail';
 import LeadPool from './pages/LeadPool';
 import CustomersList from './pages/CustomersList';
 import CustomerDetail from './pages/CustomerDetail';
+import ContractList from './pages/ContractList';
+import ContractForm from './pages/ContractForm';
+import ContractDetail from './pages/ContractDetail';
+import VisitList from './pages/VisitList';
+import VisitForm from './pages/VisitForm';
+import VisitDetail from './pages/VisitDetail';
+import TargetList from './pages/TargetList';
+import TargetForm from './pages/TargetForm';
 import AppShell from './components/layout/AppShell';
 import Sidebar from './components/layout/Sidebar';
 import TopNav from './components/layout/TopNav';
@@ -28,6 +36,16 @@ const getBreadcrumbs = (path: string): [string, string] => {
   if (/\/opportunities\/[^/]+/.test(path)) return ['商机管理', '商机详情'];
   if (path === '/customers') return ['客户管理', '客户列表'];
   if (/\/customers\/[^/]+/.test(path)) return ['客户管理', '客户详情'];
+  if (path === '/contracts') return ['合同管理', '合同列表'];
+  if (path === '/contracts/new') return ['合同管理', '新建合同'];
+  if (/\/contracts\/[^/]+\/edit/.test(path)) return ['合同管理', '编辑合同'];
+  if (/\/contracts\/[^/]+/.test(path)) return ['合同管理', '合同详情'];
+  if (path === '/visits') return ['拜访管理', '拜访计划列表'];
+  if (path === '/visits/new') return ['拜访管理', '新建拜访计划'];
+  if (/\/visits\/[^/]+\/edit/.test(path)) return ['拜访管理', '编辑拜访计划'];
+  if (/\/visits\/[^/]+/.test(path)) return ['拜访管理', '拜访计划详情'];
+  if (path === '/targets') return ['业绩目标', '目标进度列表'];
+  if (path === '/targets/new') return ['业绩目标', '设定新目标'];
   return ['主工作台', '控制台首页'];
 };
 
@@ -132,6 +150,16 @@ export default function App() {
           <Route path="/lead-pool" element={<LeadPool />} />
           <Route path="/customers" element={<CustomersList />} />
           <Route path="/customers/:id" element={<CustomerDetail />} />
+          <Route path="/contracts" element={<ContractList />} />
+          <Route path="/contracts/new" element={<ContractForm />} />
+          <Route path="/contracts/:id/edit" element={<ContractForm />} />
+          <Route path="/contracts/:id" element={<ContractDetail />} />
+          <Route path="/visits" element={<VisitList />} />
+          <Route path="/visits/new" element={<VisitForm />} />
+          <Route path="/visits/:id/edit" element={<VisitForm />} />
+          <Route path="/visits/:id" element={<VisitDetail />} />
+          <Route path="/targets" element={<TargetList />} />
+          <Route path="/targets/new" element={<TargetForm />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>

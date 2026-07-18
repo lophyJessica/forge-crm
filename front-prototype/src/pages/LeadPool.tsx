@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Lead } from '../db';
@@ -59,22 +59,65 @@ export default function LeadPool() {
   // 1. 获取所有线索
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
 
+  // P1-4: 自动回收超48小时未跟进的已分配线索
+  useEffect(() => {
+    if (leads.length === 0) return;
+
+    const checkTimeoutLeads = async () => {
+      const assigned = leads.filter(l => l.status === 'ASSIGNED' && l.assignedAt);
+      if (assigned.length === 0) return;
+
+      const now = new Date().getTime();
+      const timeoutIds: string[] = [];
+
+      for (const lead of assigned) {
+        const assignedTime = new Date(lead.assignedAt!).getTime();
+        const diffHours = (now - assignedTime) / (1000 * 60 * 60);
+        if (diffHours > 48) {
+          const followCount = await db.follow_up_records.where('leadId').equals(lead.id).count();
+          if (followCount === 0) {
+            timeoutIds.push(lead.id);
+          }
+        }
+      }
+
+      if (timeoutIds.length > 0) {
+        console.log('检测到以下已分配线索超48h且无跟进，自动退回待分配池：', timeoutIds);
+        await db.transaction('rw', db.leads, async () => {
+          for (const id of timeoutIds) {
+            await db.leads.update(id, {
+              status: 'PENDING_ASSIGN',
+              owner: undefined,
+              assignedAt: undefined
+            });
+          }
+        });
+        showToast('系统已自动将分配超48h且未跟进的线索退回待分配池', 'success');
+      }
+    };
+
+    checkTimeoutLeads();
+  }, [leads]);
+
   // 判断是否已被释放满7天
   const isAbandonedAndReleased = (lead: Lead) => {
-    if (lead.status !== 'ABANDONED' || !lead.abandonedAt) return false;
-    const abandonedTime = new Date(lead.abandonedAt).getTime();
+    if (lead.status !== 'ABANDONED') return false;
+    const timeStr = lead.abandonedAt || lead.followedAt;
+    if (!timeStr) return false;
+    const abandonedTime = new Date(timeStr).getTime();
     const now = new Date().getTime();
     const diffDays = (now - abandonedTime) / (1000 * 60 * 60 * 24);
     return diffDays >= 7;
   };
 
-  // 2. 筛选在公海里的线索 (PENDING_ASSIGN 或 放弃满7天的 ABANDONED)
+  // 2. 筛选在公海里的线索 (PENDING_ASSIGN 或 放弃满7天的 ABANDONED，或当前用户是原负责人)
   const poolLeads = leads.filter(lead => {
     const isNew = lead.status === 'PENDING_ASSIGN';
     const isReleased = isAbandonedAndReleased(lead);
+    const isOwnerAbandon = lead.status === 'ABANDONED' && lead.owner === CURRENT_USER;
     
     // 必须符合公海的定义
-    if (!isNew && !isReleased) return false;
+    if (!isNew && !isReleased && !isOwnerAbandon) return false;
 
     // 关键词过滤 (公司名称/手机号/编号)
     if (keyword.trim()) {
@@ -108,7 +151,7 @@ export default function LeadPool() {
     return {
       ...lead,
       poolType: isNew ? 'NEW' : 'RELEASED',
-      poolTime: isNew ? lead.createdAt : (lead.abandonedAt || lead.createdAt)
+      poolTime: isNew ? lead.createdAt : (lead.abandonedAt || lead.followedAt || lead.createdAt)
     };
   }).sort((a, b) => b.score - a.score); // 默认按 AI 评分倒序排序
 
@@ -116,7 +159,11 @@ export default function LeadPool() {
   const handleClaim = async (leadId: string) => {
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
     try {
+      let isOwnerAbandon = false;
       await db.transaction('rw', db.leads, db.follow_up_records, async () => {
+        const lead = await db.leads.get(leadId);
+        isOwnerAbandon = !!(lead && lead.status === 'ABANDONED' && lead.owner === CURRENT_USER);
+
         await db.leads.update(leadId, {
           status: 'ASSIGNED',
           owner: CURRENT_USER,
@@ -129,12 +176,14 @@ export default function LeadPool() {
           time: nowStr,
           operator: CURRENT_USER,
           type: '系统记录',
-          content: `销售 [${CURRENT_USER}] 从公海主动认领了该线索。`
+          content: isOwnerAbandon 
+            ? `销售 [${CURRENT_USER}] 撤销了放弃，重新恢复跟进该线索。`
+            : `销售 [${CURRENT_USER}] 从公海主动认领了该线索。`
         });
       });
 
       // 成功 Toast 提示 (无二次确认弹窗)
-      showToast('线索已认领，请及时跟进', 'success');
+      showToast(isOwnerAbandon ? '撤销放弃成功，线索已恢复' : '线索已认领，请及时跟进', 'success');
     } catch (err) {
       console.error(err);
       showToast('认领失败，请重试', 'error');
@@ -311,10 +360,14 @@ export default function LeadPool() {
                       <button
                         type="button"
                         onClick={() => handleClaim(lead.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white bg-[#1677ff] hover:bg-blue-500 rounded transition-colors shadow-sm"
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white rounded transition-colors shadow-sm ${
+                          lead.owner === CURRENT_USER && lead.status === 'ABANDONED'
+                            ? 'bg-amber-600 hover:bg-amber-500'
+                            : 'bg-[#1677ff] hover:bg-blue-500'
+                        }`}
                       >
                         <UserCheck size={11} />
-                        <span>认领</span>
+                        <span>{lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}</span>
                       </button>
                     </td>
                   </tr>
