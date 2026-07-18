@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  
+  body {
+    background-color: #f8fafc; /* bg-slate-50 */
+    color: #1e293b; /* text-slate-800 */
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* 自定义滚动条，使其与亮色主题完美融合 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+  }
+}
+
+@layer components {
+  /* 统一卡片布局 */
+  .forge-card {
+    background-color: #ffffff; /* bg-white */
+    border: 1px solid #e2e8f0; /* border-slate-200 */
+    border-radius: 0.5rem; /* rounded-lg */
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 操作栏 */
+  .forge-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  /* 表格基本样式 */
+  .forge-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    text-align: left;
+  }
+  
+  .forge-table th {
+    padding: 0.75rem 1rem;
+    color: #64748b; /* text-slate-500 */
+    font-weight: 600;
+    border-bottom: 1px solid #edf2f7;
+    background-color: #ffffff;
+  }
+  
+  .forge-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #edf2f7;
+    color: #334155; /* text-slate-700 */
+  }
+
+  .forge-table tbody tr:hover {
+    background-color: #f8fafc; /* bg-slate-50 */
+  }
+}
