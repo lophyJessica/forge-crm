@@ -100,6 +100,7 @@ stateDiagram-v2
     PROPOSAL --> NEGOTIATION : 报价发出
     NEGOTIATION --> CONTRACT : 进入合同阶段
     CONTRACT --> WON : 合同签署完成
+    CONTRACT --> LOST : 判定输单
     NEGOTIATION --> LOST : 判定输单
     PROPOSAL --> LOST : 报价未通过
     NEEDS_CONFIRM --> LOST : 需求不匹配
@@ -113,8 +114,8 @@ stateDiagram-v2
 | INITIAL_CONTACT | 推进 | 需求描述已填写 | NEEDS_CONFIRM | 记录推进时间 |
 | NEEDS_CONFIRM | 推进 | 已关联商品 | PROPOSAL | AI 商机预测更新 |
 | PROPOSAL | 推进 | 报价金额>0 | NEGOTIATION | 记录报价信息 |
-| NEGOTIATION | 推进 | 合同编号已生成 | CONTRACT | 触发在线合同模块 |
-| CONTRACT | 赢单 | 合同签署完成 | WON | 下推 ERP 销售订单草稿 |
+| NEGOTIATION | 推进 | 确认启动在线合同流程 | CONTRACT | 触发在线合同模块 |
+| CONTRACT | 赢单 | 合同签署完成且合同编号已生成 | WON | 下推 ERP 销售订单草稿 |
 | 任意非终态 | 输单 | 必填输单原因 | LOST | 记录原因+输单时间 |
 
 ### 5.4 动作能力矩阵
@@ -124,7 +125,7 @@ stateDiagram-v2
 | 查看 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 编辑 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | 推进 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| 输单 | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| 输单 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 
 ---
 
