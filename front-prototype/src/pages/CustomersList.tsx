@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { erpDb } from '../api/erpSync';
 import { Search, Download, CheckCircle, XCircle } from 'lucide-react';
 
 const INDUSTRY_MAP: Record<string, string> = {
@@ -88,7 +89,7 @@ export default function CustomersList() {
   };
 
   // 2. 实时拉取多表数据用于聚合计算
-  const customers = useLiveQuery(() => db.customers.toArray()) || [];
+  const customers = useLiveQuery(() => erpDb.table('customers').toArray()) || [];
   const opportunities = useLiveQuery(() => db.opportunities.toArray()) || [];
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const leadFollowUps = useLiveQuery(() => db.follow_up_records.toArray()) || [];
@@ -97,7 +98,7 @@ export default function CustomersList() {
   // 3. 多表聚合计算客户扩展字段
   const enrichedCustomers = customers.map(cust => {
     // 3.1 关联商机明细
-    const associatedOpps = opportunities.filter(o => o.customerId === cust.id);
+    const associatedOpps = opportunities.filter(o => o.customerId === String(cust.id || cust.code));
     
     // 最近更新的商机状态
     let latestOppStage = '—';
@@ -139,7 +140,7 @@ export default function CustomersList() {
       const matchName = cust.name.toLowerCase().includes(kw);
       const matchContact = cust.contact.toLowerCase().includes(kw);
       const matchPhone = cust.phone.includes(kw);
-      const matchId = cust.id.toLowerCase().includes(kw);
+      const matchId = String(cust.id || cust.code || '').toLowerCase().includes(kw);
       if (!matchName && !matchContact && !matchPhone && !matchId) return false;
     }
 
@@ -280,42 +281,45 @@ export default function CustomersList() {
                   </td>
                 </tr>
               ) : (
-                pagedCustomers.map(cust => (
-                  <tr key={cust.id}>
-                    <td className="font-mono font-bold text-slate-500">{cust.id}</td>
-                    {/* 公司名称链接进入详情 */}
-                    <td 
-                      className="font-bold text-[#1677ff] cursor-pointer hover:underline"
-                      onClick={() => navigate(`/customers/${cust.id}`)}
-                    >
-                      {cust.name}
-                    </td>
-                    <td className="font-medium text-slate-700">{cust.contact}</td>
-                    <td className="font-semibold text-slate-600">{INDUSTRY_MAP[cust.industry] || cust.industry}</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getLevelBadgeColor(cust.level)}`}>
-                        {cust.level} 等级
-                      </span>
-                    </td>
-                    <td className="font-mono font-bold text-slate-700">{cust.oppCount} 个</td>
-                    <td className="font-semibold text-slate-650">{cust.latestOppStage}</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getRiskBadgeColor(cust.riskLevel)}`}>
-                        {getRiskLabel(cust.riskLevel)}
-                      </span>
-                    </td>
-                    <td className="font-mono text-slate-500 text-[11px]">{cust.latestFollowTime}</td>
-                    <td className="text-right">
-                      <button 
-                        type="button" 
-                        onClick={() => navigate(`/customers/${cust.id}`)}
-                        className="text-[#1677ff] hover:text-blue-500 font-bold"
+                pagedCustomers.map(cust => {
+                  const custId = cust.id ? String(cust.id) : (cust.code || '');
+                  return (
+                    <tr key={custId}>
+                      <td className="font-mono font-bold text-slate-500">{custId}</td>
+                      {/* 公司名称链接进入详情 */}
+                      <td 
+                        className="font-bold text-[#1677ff] cursor-pointer hover:underline"
+                        onClick={() => navigate(`/customers/${custId}`)}
                       >
-                        查看
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        {cust.name}
+                      </td>
+                      <td className="font-medium text-slate-700">{cust.contact}</td>
+                      <td className="font-semibold text-slate-650">{INDUSTRY_MAP[cust.industry] || cust.industry}</td>
+                      <td>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getLevelBadgeColor(cust.level)}`}>
+                          {cust.level} 等级
+                        </span>
+                      </td>
+                      <td className="font-mono font-bold text-slate-700">{cust.oppCount} 个</td>
+                      <td className="font-semibold text-slate-650">{cust.latestOppStage}</td>
+                      <td>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getRiskBadgeColor(cust.riskLevel)}`}>
+                          {getRiskLabel(cust.riskLevel)}
+                        </span>
+                      </td>
+                      <td className="font-mono text-slate-500 text-[11px]">{cust.latestFollowTime}</td>
+                      <td className="text-right">
+                        <button 
+                          type="button" 
+                          onClick={() => navigate(`/customers/${custId}`)}
+                          className="text-[#1677ff] hover:text-blue-500 font-bold"
+                        >
+                          查看
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

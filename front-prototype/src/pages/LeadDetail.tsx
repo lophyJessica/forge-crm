@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type FollowUpRecord } from '../db';
+import { addCustomerToErp } from '../api/erpSync';
 import { 
   ChevronLeft, 
   User, 
@@ -217,22 +218,46 @@ export default function LeadDetail() {
   // 转为客户
   const handleConvertToCustomer = async () => {
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    await db.transaction('rw', db.leads, db.follow_up_records, async () => {
-      await db.leads.update(lead.id, {
-        status: 'CONVERTED',
-        followedAt: nowStr
-      });
-      await db.follow_up_records.add({
-        leadId: lead.id,
-        time: nowStr,
-        operator: CURRENT_USER,
-        type: '拜访',
-        content: '线索成功转为客户快照，同步下发 ERP 数据库正式建档。'
-      });
-    });
 
-    setIsConvertModalOpen(false);
-    showToast('已转为客户，ERP 客户建档通知已成功下推');
+    try {
+      await db.transaction('rw', db.leads, db.follow_up_records, async () => {
+        await db.leads.update(lead.id, {
+          status: 'CONVERTED',
+          followedAt: nowStr
+        });
+
+        try {
+          await addCustomerToErp({
+            code: `CUST-${Date.now()}`,
+            name: lead.company,
+            contact: lead.contact || '',
+            phone: lead.phone || '',
+            priceLevel: '一级',
+            creditLimit: 0,
+            paymentPeriod: 30,
+            status: 'active',
+          });
+        } catch(e: any) {
+          showToast('同步ERP失败:' + e.message);
+          setIsConvertModalOpen(false);
+          return;
+        }
+
+        await db.follow_up_records.add({
+          leadId: lead.id,
+          time: nowStr,
+          operator: CURRENT_USER,
+          type: '拜访',
+          content: '线索成功转为客户快照，同步下发 ERP 数据库正式建档。'
+        });
+      });
+
+      setIsConvertModalOpen(false);
+      showToast('已同步至ERP');
+    } catch (err: any) {
+      console.error(err);
+      showToast(`操作失败:${err?.message || err}`, 'error');
+    }
   };
 
   // 删除草稿

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { erpDb } from '../api/erpSync';
 import { 
   ChevronLeft, 
   AlertTriangle, 
@@ -90,7 +91,10 @@ export default function CustomerDetail() {
   };
 
   // 1. 实时读取该客户、所有商机、订单、跟进及线索用于聚合
-  const customer = useLiveQuery(() => db.customers.get(id || '')) || null;
+  const customer = useLiveQuery(() => {
+    const parsedId = id && !isNaN(Number(id)) ? Number(id) : (id || '');
+    return erpDb.table('customers').get(parsedId);
+  }) || null;
   const opportunities = useLiveQuery(() => db.opportunities.where('customerId').equals(id || '').toArray()) || [];
   const erpOrders = useLiveQuery(() => db.erp_orders.where('customerId').equals(id || '').toArray()) || [];
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
@@ -183,7 +187,7 @@ export default function CustomerDetail() {
         </button>
         <div className="flex flex-col">
           <h1 className="text-lg font-black text-slate-800">{customer.name}</h1>
-          <p className="text-[10px] text-slate-400">客户编码 (ERP SSOT): {customer.id} · 创建于 {customer.createdAt}</p>
+          <p className="text-[10px] text-slate-400">客户编码 (ERP SSOT): {customer.code || customer.id} · 创建于 {customer.createdAt}</p>
         </div>
       </div>
 
@@ -234,7 +238,7 @@ export default function CustomerDetail() {
               </div>
               <button 
                 type="button" 
-                onClick={() => navigate('/opportunities/new', { state: { defaultCustomerId: customer.id } })}
+                onClick={() => navigate('/opportunities/new', { state: { defaultCustomerId: customer.code || customer.id } })}
                 className="flex items-center gap-1 text-[#1677ff] hover:text-blue-500 text-[10px] font-bold"
               >
                 <Plus size={12} />

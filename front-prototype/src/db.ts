@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { getErpCustomers } from './api/erpSync';
 
 // 1. 定义数据结构
 export interface Lead {
@@ -251,18 +252,7 @@ const MOCK_OPP_FOLLOW_UPS: OpportunityFollowUp[] = [
   { oppId: 'OPP20260717-0010', time: '2026-07-18 10:15:00', operator: '张三', type: '电话', content: '【商机】初次商机确认，客户确实需要升级老旧ERP以打通仓储条码出入库。' }
 ];
 
-const MOCK_CUSTOMERS: Customer[] = [
-  { id: 'C001', name: '强盛科技有限公司', contact: '赵六', phone: '13800010009', email: 'zhaoliu@qiangsheng.com', industry: 'IT', region: '江苏省-南京市', level: 'VIP', creditLimit: 200000, riskLevel: 'MEDIUM', owner: '张三', createdAt: '2026-07-17 09:30:00' },
-  { id: 'C002', name: '瑞丰生鲜连锁超市', contact: '王强', phone: '13800010008', email: 'wangqiang@ruifeng.com', industry: 'RETAIL', region: '湖北省-武汉市', level: 'A', creditLimit: 100000, riskLevel: 'LOW', owner: '张三', createdAt: '2026-07-17 13:40:00' },
-  { id: 'C003', name: '万达商贸进出口公司', contact: '陈曦', phone: '13800010019', email: 'chenxi@wanda.com', industry: 'RETAIL', region: '北京市-朝阳区', level: 'B', creditLimit: 150000, riskLevel: 'HIGH', owner: '李四', createdAt: '2026-07-17 13:30:00' },
-  { id: 'C004', name: '安泰医疗器械有限公司', contact: '李华', phone: '13800010004', email: 'lihua@antai.com', industry: 'HEALTHCARE', region: '江苏省-苏州市', level: 'VIP', creditLimit: 300000, riskLevel: 'LOW', owner: '李四', createdAt: '2026-07-17 11:00:00' },
-  { id: 'C005', name: '远东重工制造集团', contact: '郑军', phone: '13800010007', email: 'zhengjun@yuandong.com', industry: 'MANUFACTURING', region: '辽宁省-沈阳市', level: 'A', creditLimit: 500000, riskLevel: 'HIGH', owner: '李四', createdAt: '2026-07-17 12:30:00' },
-  { id: 'C006', name: '龙腾实业有限公司', contact: '赵刚', phone: '13800010001', email: 'zhaogang@longteng.com', industry: 'MANUFACTURING', region: '北京市-东城区', level: 'C', creditLimit: 50000, riskLevel: 'LOW', owner: '张三', createdAt: '2026-07-17 09:00:00' },
-  { id: 'C007', name: '海纳商贸有限公司', contact: '孙明', phone: '13800010002', email: 'sunming@haina.com', industry: 'RETAIL', region: '广东省-广州市', level: 'B', creditLimit: 120000, riskLevel: 'MEDIUM', owner: '张三', createdAt: '2026-07-17 09:30:00' },
-  { id: 'C008', name: '智芯微电子技术公司', contact: '钱伟', phone: '13800010003', email: 'qianwei@zhixin.com', industry: 'IT', region: '上海市-张江区', level: 'VIP', creditLimit: 400000, riskLevel: 'LOW', owner: '李四', createdAt: '2026-07-17 10:15:00' },
-  { id: 'C009', name: '金石金融信息服务公司', contact: '周亮', phone: '13800010005', email: 'zhouliang@jinshi.com', industry: 'FINANCE', region: '四川省-成都市', level: 'A', creditLimit: 250000, riskLevel: 'MEDIUM', owner: '张三', createdAt: '2026-07-17 11:30:00' },
-  { id: 'C010', name: '天河云网络科技有限公司', contact: '吴勇', phone: '13800010006', email: 'wuyong@tianhe.com', industry: 'IT', region: '浙江省-杭州市', level: 'B', creditLimit: 88000, riskLevel: 'LOW', owner: '张三', createdAt: '2026-07-17 11:45:00' }
-];
+// MOCK_CUSTOMERS 已移除，客户列表改为直接从 ERP 获取。
 
 const MOCK_ERP_ORDERS: ErpOrder[] = [
   { id: 'ORD20260717-0001', customerId: 'C001', amount: 50000, date: '2026-07-17', status: 'SIGNED' },
@@ -332,10 +322,17 @@ export async function seedDatabase() {
   }
 
   if (customerCount === 0) {
-    await db.transaction('rw', db.customers, async () => {
-      await db.customers.bulkAdd(MOCK_CUSTOMERS);
-    });
-    console.log('IndexedDB 客户种子数据已初始化！');
+    const erpCustomers = await getErpCustomers();
+    if (erpCustomers && erpCustomers.length > 0) {
+      await db.transaction('rw', db.customers, async () => {
+        const formatted = erpCustomers.map(cust => ({
+          ...cust,
+          id: cust.id ? String(cust.id) : (cust.code || '')
+        }));
+        await db.customers.bulkAdd(formatted);
+      });
+      console.log('IndexedDB 客户数据已从 ERP 同步加载初始化！');
+    }
   }
 
   if (orderCount === 0) {
