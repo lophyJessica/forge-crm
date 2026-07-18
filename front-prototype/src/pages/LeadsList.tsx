@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Lead } from '../db';
@@ -62,6 +62,15 @@ export default function LeadsList() {
   const [filterMinScore, setFilterMinScore] = useState('');
   const [filterMaxScore, setFilterMaxScore] = useState('');
   const [filterOwner, setFilterOwner] = useState('');
+
+  // 分页状态
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 筛选项改变时自动重设当前页为 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchKeyword, filterSource, filterIndustry, filterMinScore, filterMaxScore, filterOwner]);
   
   // 勾选与弹窗状态
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
@@ -129,6 +138,11 @@ export default function LeadsList() {
 
     return true;
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 创建时间倒序
+
+  // 分页计算
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const pagedLeads = filteredLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 5. 核心交互函数
   // 认领线索
@@ -387,7 +401,7 @@ export default function LeadsList() {
                 <th className="w-12 text-center">
                   <input 
                     type="checkbox" 
-                    checked={filteredLeads.length > 0 && selectedLeadIds.length === filteredLeads.length}
+                    checked={pagedLeads.length > 0 && selectedLeadIds.length === pagedLeads.length}
                     onChange={(e) => handleSelectAll(e.target.checked)}
                   />
                 </th>
@@ -406,14 +420,14 @@ export default function LeadsList() {
               </tr>
             </thead>
             <tbody>
-              {filteredLeads.length === 0 ? (
+              {totalCount === 0 ? (
                 <tr>
                   <td colSpan={13} className="text-center py-10 text-slate-400">
                     暂无符合条件的线索数据
                   </td>
                 </tr>
               ) : (
-                filteredLeads.map((lead) => (
+                pagedLeads.map((lead) => (
                   <tr key={lead.id} className={selectedLeadIds.includes(lead.id) ? 'bg-blue-50/20' : ''}>
                     <td className="text-center">
                       <input 
@@ -498,11 +512,50 @@ export default function LeadsList() {
 
         {/* 分页 */}
         <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
-          <span>共 {filteredLeads.length} 条记录</span>
+          <div className="flex items-center gap-3">
+            <span>共 {totalCount} 条记录</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(parseInt(e.target.value));
+                setCurrentPage(1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="h-7 px-2 text-xs bg-white border border-slate-200 rounded text-slate-650 focus:outline-none"
+            >
+              <option value={20}>20 条/页</option>
+              <option value={50}>50 条/页</option>
+              <option value={100}>100 条/页</option>
+            </select>
+          </div>
           <div className="flex items-center gap-2">
-            <button type="button" className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" disabled>上一页</button>
-            <span className="font-mono">1 / 1</span>
-            <button type="button" className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" disabled>下一页</button>
+            <button 
+              type="button" 
+              onClick={() => {
+                if (currentPage > 1) {
+                  setCurrentPage(prev => prev - 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
+              disabled={currentPage === 1}
+            >
+              上一页
+            </button>
+            <span className="font-mono">{currentPage} / {totalPages}</span>
+            <button 
+              type="button" 
+              onClick={() => {
+                if (currentPage < totalPages) {
+                  setCurrentPage(prev => prev + 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
+              disabled={currentPage === totalPages}
+            >
+              下一页
+            </button>
           </div>
         </div>
       </div>

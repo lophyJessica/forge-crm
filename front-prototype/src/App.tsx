@@ -5,7 +5,11 @@ import LeadsList from './pages/LeadsList';
 import LeadForm from './pages/LeadForm';
 import LeadDetail from './pages/LeadDetail';
 import OpportunitiesList from './pages/OpportunitiesList';
+import OppForm from './pages/OppForm';
+import OppDetail from './pages/OppDetail';
+import LeadPool from './pages/LeadPool';
 import CustomersList from './pages/CustomersList';
+import CustomerDetail from './pages/CustomerDetail';
 import AppShell from './components/layout/AppShell';
 import Sidebar from './components/layout/Sidebar';
 import TopNav from './components/layout/TopNav';
@@ -17,8 +21,13 @@ const getBreadcrumbs = (path: string): [string, string] => {
   if (path === '/leads/new') return ['线索管理', '新建线索'];
   if (/\/leads\/[^/]+\/edit/.test(path)) return ['线索管理', '编辑线索'];
   if (/\/leads\/[^/]+/.test(path)) return ['线索管理', '线索详情'];
+  if (path === '/lead-pool') return ['线索管理', '公海管理'];
   if (path === '/opportunities') return ['商机管理', '商机列表'];
+  if (path === '/opportunities/new') return ['商机管理', '新建商机'];
+  if (/\/opportunities\/[^/]+\/edit/.test(path)) return ['商机管理', '编辑商机'];
+  if (/\/opportunities\/[^/]+/.test(path)) return ['商机管理', '商机详情'];
   if (path === '/customers') return ['客户管理', '客户列表'];
+  if (/\/customers\/[^/]+/.test(path)) return ['客户管理', '客户详情'];
   return ['主工作台', '控制台首页'];
 };
 
@@ -117,7 +126,12 @@ export default function App() {
           <Route path="/leads/:id/edit" element={<LeadForm />} />
           <Route path="/leads/:id" element={<LeadDetail />} />
           <Route path="/opportunities" element={<OpportunitiesList />} />
+          <Route path="/opportunities/new" element={<OppForm />} />
+          <Route path="/opportunities/:id/edit" element={<OppForm />} />
+          <Route path="/opportunities/:id" element={<OppDetail />} />
+          <Route path="/lead-pool" element={<LeadPool />} />
           <Route path="/customers" element={<CustomersList />} />
+          <Route path="/customers/:id" element={<CustomerDetail />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>

@@ -3,6 +3,7 @@ import {
   BarChart3,
   ChevronLeft,
   Crown,
+  Globe,
   LayoutDashboard,
   TrendingUp,
   Users,
@@ -24,6 +25,7 @@ export default function Sidebar({
   const menuItems = [
     { label: '控制台首页', to: '/', icon: LayoutDashboard },
     { label: '线索管理', to: '/leads', icon: Users },
+    { label: '公海管理', to: '/lead-pool', icon: Globe },
     { label: '商机管理', to: '/opportunities', icon: TrendingUp },
     { label: '客户管理', to: '/customers', icon: BarChart3 },
   ];
