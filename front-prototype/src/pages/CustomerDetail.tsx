@@ -92,8 +92,7 @@ export default function CustomerDetail() {
 
   // 1. 实时读取该客户、所有商机、订单、跟进及线索用于聚合
   const customer = useLiveQuery(() => {
-    const parsedId = id && !isNaN(Number(id)) ? Number(id) : (id || '');
-    return erpDb.table('customers').get(parsedId);
+    return erpDb.table('customers').get(id || '');
   }) || null;
   const opportunities = useLiveQuery(() => db.opportunities.where('customerId').equals(id || '').toArray()) || [];
   const erpOrders = useLiveQuery(() => db.erp_orders.where('customerId').equals(id || '').toArray()) || [];

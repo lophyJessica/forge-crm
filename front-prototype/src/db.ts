@@ -325,9 +325,20 @@ export async function seedDatabase() {
     const erpCustomers = await getErpCustomers();
     if (erpCustomers && erpCustomers.length > 0) {
       await db.transaction('rw', db.customers, async () => {
-        const formatted = erpCustomers.map(cust => ({
-          ...cust,
-          id: cust.id ? String(cust.id) : (cust.code || '')
+        const syncedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+        const formatted: Customer[] = erpCustomers.map(cust => ({
+          id: String(cust.id),
+          name: cust.name,
+          contact: cust.contact,
+          phone: cust.phone,
+          email: '',
+          industry: 'OTHER',
+          region: '',
+          level: cust.priceLevel === '一级' ? 'A' : cust.priceLevel === '二级' ? 'B' : 'C',
+          creditLimit: cust.creditLimit,
+          riskLevel: 'LOW',
+          owner: 'ERP 同步',
+          createdAt: syncedAt
         }));
         await db.customers.bulkAdd(formatted);
       });

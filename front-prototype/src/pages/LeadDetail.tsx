@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type FollowUpRecord } from '../db';
-import { addCustomerToErp } from '../api/erpSync';
+import { addCustomerToErp, type ErpCustomer } from '../api/erpSync';
 import { 
   ChevronLeft, 
   User, 
@@ -218,30 +218,30 @@ export default function LeadDetail() {
   // 转为客户
   const handleConvertToCustomer = async () => {
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const customerCode = `CUST-${Date.now()}`;
+    const erpCustomer: ErpCustomer = {
+      id: customerCode,
+      code: customerCode,
+      name: lead.company,
+      contact: lead.contact || '',
+      phone: lead.phone || '',
+      priceLevel: '一级',
+      creditLimit: 0,
+      paymentPeriod: 30,
+      status: 'active',
+      remark: `由 CRM 线索 ${lead.id} 转化`
+    };
 
     try {
+      // IndexedDB cannot provide an atomic transaction across two databases.
+      // Write ERP first so a failed sync never marks the CRM lead as converted.
+      await addCustomerToErp(erpCustomer);
+
       await db.transaction('rw', db.leads, db.follow_up_records, async () => {
         await db.leads.update(lead.id, {
           status: 'CONVERTED',
           followedAt: nowStr
         });
-
-        try {
-          await addCustomerToErp({
-            code: `CUST-${Date.now()}`,
-            name: lead.company,
-            contact: lead.contact || '',
-            phone: lead.phone || '',
-            priceLevel: '一级',
-            creditLimit: 0,
-            paymentPeriod: 30,
-            status: 'active',
-          });
-        } catch(e: any) {
-          showToast('同步ERP失败:' + e.message);
-          setIsConvertModalOpen(false);
-          return;
-        }
 
         await db.follow_up_records.add({
           leadId: lead.id,
@@ -256,7 +256,8 @@ export default function LeadDetail() {
       showToast('已同步至ERP');
     } catch (err: any) {
       console.error(err);
-      showToast(`操作失败:${err?.message || err}`, 'error');
+      setIsConvertModalOpen(false);
+      showToast(`转客户失败：${err?.message || err}`, 'error');
     }
   };
 

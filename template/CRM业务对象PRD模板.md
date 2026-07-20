@@ -7,7 +7,6 @@
 
 ## 一、主PRD 标准章节
 
-```markdown
 # [对象名称]主PRD
 
 > **版本**：V1.0 | YYYY-MM-DD
@@ -168,7 +167,6 @@ Mermaid stateDiagram-v2 完整流转图
 | 日期 | 变更摘要 |
 |------|---------|
 | YYYY-MM-DD | V1.0 初版 |
-```
 
 ## 二、Demo PRD 标准章节
 
