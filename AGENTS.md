@@ -56,3 +56,12 @@ Forge CRM 客户关系管理系统，覆盖线索管理、商机管理、客户�
 - 不涉及 ERP/WMS 侧的原型修改——只做 CRM 侧，对接走 Mock
 - 不涉及移动端（App/小程序），仅 PC Web
 - 不涉及市场营销模块（短信/邮件群发、广告归因）
+
+## 产物自动流转管道（完成后必做）
+
+每轮 build + 产出 zip 后，**必须**：
+1. 上传 zip 到 VPS：`rsync -avz -e "ssh -p 2222 -i ~/.ssh/id_ed25519_vps" "/Users/liulongfei/个人文件/forge-crm/dist" root@192.220.14.245:/var/www/pmlophy.com/forge-crm-incoming/`
+   VPS cron 每分钟自动部署到 /var/www/pmlophy.com/project/forge-crm → 刷新即生效。
+2. 生成自检报告（# AI 自检报告 / 项目任务 / 改动文件清单 / 改动点说明 / 自检结果 / 遗留风险）→ 上传：`curl -X POST "https://pmlophy.com/p/jarvis/file/upload" -H "X-Jarvis-User: ai-reports" -F "file=@报告.md"`
+
+红线不变：不 commit / 不 push。
