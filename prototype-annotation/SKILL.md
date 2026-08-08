@@ -36,7 +36,15 @@ Annotations are displayed in a **panel UI** (like Axure's annotation sidebar), n
 Store type in `annotation.config.json` per annotation id (`type` field) so the panel can filter by tab.
 
 ### 2. Panel UI Requirements (runtime must support)
-- **Entry button**: "原型标注" button on the page (white, document icon) — click to open/close the panel
+- **Interaction flow (mandatory, must match)**:
+  1. Page shows a "原型标注" entry button (white, document icon) — click to toggle annotation mode
+  2. When annotation mode is ON, page displays **numbered badges on each annotated region** (green circle with number, floating on the region edge, not covering content) — the user sees WHICH region each annotation belongs to
+  3. Click a badge → shows that region's annotation content (popup/panel with source line)
+  4. Clicking a badge also highlights the corresponding region (border/background flash)
+  5. The side panel (if present) lists items; clicking an item locates the region
+- **Initial mode**: `preview` by default — badges hidden until the button is clicked (NOT directly showing annotation content on load)
+- **CRITICAL**: clicking the button must NOT directly show annotation content — it shows the numbered badges first; content appears only after clicking a badge. This is the key difference from a simple popup.
+- **Entry button**: "原型标注" button on the page (white, document icon) — click to open/close annotation mode
 - **Panel**: floating panel (white card, shadow, rounded corners), title "原型标注" + total item count badge + close button, subtitle "点击条目定位页面中的对应区域"
 - **Tabs**: 全部/页面/交互/规则/字段/待确认 — current tab highlighted (brand green), filters items by type
 - **Item cards**: number badge (green circle) + title + type tag + one-line summary + "展开详细说明 (N 项)" expand/collapse
