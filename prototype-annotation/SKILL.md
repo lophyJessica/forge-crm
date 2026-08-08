@@ -22,6 +22,28 @@ Annotations are read by **business stakeholders and reviewers**, not developers.
 
 Annotation blocks whose main descriptions are English enums or technical routes are non-compliant and must be rewritten.
 
+## Annotation Classification & Panel UI Standard (Mandatory)
+
+Annotations are displayed in a **panel UI** (like Axure's annotation sidebar), not only as page badges. Every annotation block must carry a **type** classification for tab filtering:
+
+### 1. Type Classification (each annotation block must have one)
+- `page` 页面: page-level description (page path, layout overview, global behavior)
+- `interaction` 交互: click behavior, tab switching, state transitions, expand/collapse
+- `rule` 规则: business rules, validation, permissions, exceptions
+- `field` 字段: field-level description (Chinese labels, constraints, defaults)
+- `pending` 待确认: rules whose source is unclear or awaiting confirmation
+
+Store type in `annotation.config.json` per annotation id (`type` field) so the panel can filter by tab.
+
+### 2. Panel UI Requirements (runtime must support)
+- **Entry button**: "原型标注" button on the page (white, document icon) — click to open/close the panel
+- **Panel**: floating panel (white card, shadow, rounded corners), title "原型标注" + total item count badge + close button, subtitle "点击条目定位页面中的对应区域"
+- **Tabs**: 全部/页面/交互/规则/字段/待确认 — current tab highlighted (brand green), filters items by type
+- **Item cards**: number badge (green circle) + title + type tag + one-line summary + "展开详细说明 (N 项)" expand/collapse
+- **Expanded detail**: structured rules (general behavior / per-item rules), long text with collapse
+- **Locate**: click item → scroll/highlight the corresponding page region (via data-anno anchor)
+- **Style**: white card + shadow + rounded corners + brand green highlight, clean scrollbar
+
 Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
 
 The page annotation runtime is strictly read-only. Never add annotation editing, drafts, save APIs, or browser-to-Markdown write-back. Annotation content is changed only by editing Markdown files directly or by asking Codex to update them.
