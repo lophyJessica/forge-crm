@@ -45,6 +45,7 @@ Store type in `annotation.config.json` per annotation id (`type` field) so the p
 - **Initial mode**: `preview` by default — badges hidden until the button is clicked (NOT directly showing annotation content on load)
 - **CRITICAL**: clicking the button must NOT directly show annotation content — it shows the numbered badges first; content appears only after clicking a badge. This is the key difference from a simple popup.
 - **Entry button**: "原型标注" button on the page (white, document icon) — click to open/close annotation mode
+- **Entry buttons are floating & draggable**: the annotation entries ("标注清单" and "原型标注") must NOT occupy layout space or cover page controls — they are floating (fixed position), draggable by mouse (user can move them to a non-blocking spot). Implementation: fixed-position container with drag-to-reposition (pointer events), remember position in sessionStorage, no impact on page layout/flow
 - **Panel**: floating panel (white card, shadow, rounded corners), title "原型标注" + total item count badge + close button, subtitle "点击条目定位页面中的对应区域"
 - **Tabs**: 全部/页面/交互/规则/字段/待确认 — current tab highlighted (brand green), filters items by type
 - **Item cards**: number badge (green circle) + title + type tag + one-line summary + "展开详细说明 (N 项)" expand/collapse
