@@ -1,5 +1,5 @@
 ---
-name: vitamin-prototype-annotation
+name: prototype-annotation
 description: Low-intrusion product-logic annotation workflow for existing prototypes and frontend projects. Use when Codex needs to add, initialize, update, or export page-level business annotations for already-built HTML, React, Vue, SPA, admin-system, Axure-like, Figma-exported, or static prototype pages by reading business PRDs, mapping requirements to UI elements, injecting a lightweight annotation runtime, and writing separate Markdown annotation documents without polluting the original PRD or business code.
 ---
 
