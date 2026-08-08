@@ -9,6 +9,19 @@ description: Low-intrusion product-logic annotation workflow for existing protot
 
 Treat annotations as an external explanation layer, not as business UI. Keep the original prototype and business PRD clean. Add only the smallest required runtime hook, selector hints, and annotation documents.
 
+## Annotation Language Standard (Product View — Mandatory)
+
+Annotations are read by **business stakeholders and reviewers**, not developers. Write in business language, not technical language:
+
+- **Page identification**: use breadcrumb path (e.g. "线索管理/线索列表"), NOT URL/route (e.g. `/leads`).
+- **Status / enum values**: use Chinese business names as primary text (待分配/跟进中/已转客户/已作废), English enum (PENDING_ASSIGN etc.) only in parentheses for developer cross-reference — never as the main description.
+- **Tabs / filters**: use Chinese names (全部/待分配/我的线索/公海/已转客户/已作废).
+- **Rules**: business language ("分配后48小时未首次跟进自动回收，回退待分配"), NOT code logic.
+- **Fields**: use Chinese labels (线索名称/手机号), not field names (leadName/phone).
+- **Audience**: business reviewers — developers look up English enums in the PRD; annotations do not carry developer-facing references.
+
+Annotation blocks whose main descriptions are English enums or technical routes are non-compliant and must be rewritten.
+
 Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
 
 The page annotation runtime is strictly read-only. Never add annotation editing, drafts, save APIs, or browser-to-Markdown write-back. Annotation content is changed only by editing Markdown files directly or by asking Codex to update them.
