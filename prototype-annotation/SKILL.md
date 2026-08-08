@@ -52,6 +52,30 @@ Store type in `annotation.config.json` per annotation id (`type` field) so the p
 - **Locate**: click item → scroll/highlight the corresponding page region (via data-anno anchor)
 - **Style**: white card + shadow + rounded corners + brand green highlight, clean scrollbar
 
+## Annotation Content Structure Standard (Mandatory)
+
+Annotation detail content must be **structured as grouped item lists**, NOT long paragraphs. Format:
+
+### 1. Structure per annotation block
+```
+需求描述：【模块名】              ← title (module name)
+来源：xxx.md#章节                 ← source line (gray code box)
+分组标题 A                        ← behavior group (small heading)
+- 项名1：描述（一句话）          ← item: name + description (one line each)
+- 项名2：描述
+分组标题 B                        ← second group
+- 项名1：描述
+- 项名2：描述
+```
+
+### 2. Rules
+- Split content into **behavior groups** (e.g. 页签通用行为 / 状态说明 / 显示样式 / 交互规则), each with a small heading
+- Under each group, write **item lists** as `- 项名：描述` — one rule point per item, concise one-line description
+- Do NOT write long paragraph prose for rules that can be itemized
+- Keep 来源 line at top (gray code box)
+- Long content: items can be further grouped; the panel supports expand/collapse per item group
+- Reference format: title → source → group headings → `- 项名：描述` item lists (see panel UI reference)
+
 Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
 
 The page annotation runtime is strictly read-only. Never add annotation editing, drafts, save APIs, or browser-to-Markdown write-back. Annotation content is changed only by editing Markdown files directly or by asking Codex to update them.
