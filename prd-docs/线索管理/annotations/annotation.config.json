@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "title": "Forge CRM 线索列表页标注",
+  "scope": "leads",
+  "sourceBase": ".",
+  "runtime": {
+    "zIndexBase": 2147480000,
+    "initialMode": "annotate"
+  },
+  "mermaid": {
+    "enabled": false,
+    "src": "",
+    "options": {}
+  },
+  "sourceRequirements": [
+    {
+      "id": "REQ-LEADS-TABS-001",
+      "source": "../线索_Demo_列表页.md#2-状态-tab-栏",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-TABS-002",
+      "source": "../线索_Demo_列表页.md#状态-tab-栏-tab-交互规则",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-STATE-001",
+      "source": "../线索主PRD.md#5-状态机",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-R04-001",
+      "source": "../线索主PRD.md#r04-48h超时回收计算机制",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-R09-001",
+      "source": "../线索主PRD.md#r09-ai-评分分级流向规则",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-R10-001",
+      "source": "../线索主PRD.md#r10-公海-7-天防撞墙保护规则",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-FILTER-001",
+      "source": "../线索_Demo_列表页.md#3-查询区",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-FIELDS-001",
+      "source": "../线索字段清单.md#一、基础信息字段；#二、分配与跟进字段；#四、展示规则",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-TABLE-001",
+      "source": "../线索_Demo_列表页.md#5-表格",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-OPS-001",
+      "source": "../线索_Demo_列表页.md#行内操作（按状态动态展示）",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-MODAL-001",
+      "source": "../线索_Demo_列表页.md#6-二次确认弹窗规格",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-R05-001",
+      "source": "../线索主PRD.md#r05-转客户强一致性与-ssot-规则",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-R07-001",
+      "source": "../线索主PRD.md#r07-放弃原因必填约束",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-PERMS-001",
+      "source": "../线索主PRD.md#8-权限设计",
+      "page": "/leads"
+    },
+    {
+      "id": "REQ-LEADS-EXCEPTIONS-001",
+      "source": "../线索主PRD.md#9-边界与异常处理",
+      "page": "/leads"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "1",
+      "page": "#/leads",
+      "moduleName": "状态页签与线索池视图",
+      "target": {
+        "selector": "[data-anno='leads-status-tabs']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "1",
+      "sourceRefs": [
+        "REQ-LEADS-TABS-001",
+        "REQ-LEADS-TABS-002",
+        "REQ-LEADS-STATE-001",
+        "REQ-LEADS-R04-001",
+        "REQ-LEADS-R09-001",
+        "REQ-LEADS-R10-001"
+      ],
+      "order": 1
+    },
+    {
+      "id": "2",
+      "page": "#/leads",
+      "moduleName": "线索筛选与查询栏",
+      "target": {
+        "selector": "[data-anno='leads-filter-bar']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "2",
+      "sourceRefs": [
+        "REQ-LEADS-FILTER-001",
+        "REQ-LEADS-FIELDS-001",
+        "REQ-LEADS-R09-001"
+      ],
+      "order": 2
+    },
+    {
+      "id": "3",
+      "page": "#/leads",
+      "moduleName": "线索表格、批量工具与行操作",
+      "target": {
+        "selector": "[data-anno='leads-table-operations']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "3",
+      "sourceRefs": [
+        "REQ-LEADS-FIELDS-001",
+        "REQ-LEADS-TABLE-001",
+        "REQ-LEADS-OPS-001",
+        "REQ-LEADS-MODAL-001",
+        "REQ-LEADS-R05-001",
+        "REQ-LEADS-R07-001",
+        "REQ-LEADS-PERMS-001",
+        "REQ-LEADS-EXCEPTIONS-001"
+      ],
+      "order": 3
+    }
+  ]
+}

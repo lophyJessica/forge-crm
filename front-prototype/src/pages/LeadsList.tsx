@@ -326,7 +326,7 @@ export default function LeadsList() {
       </div>
 
       {/* 6 状态 Tab 栏 */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-slate-200" data-anno="leads-status-tabs">
         <div className="flex gap-6">
           {[
             { id: 'ALL', label: '全部' },
@@ -364,7 +364,7 @@ export default function LeadsList() {
       </div>
 
       {/* 筛选与查询区 */}
-      <div className="forge-action-bar grid grid-cols-1 md:grid-cols-6 gap-3">
+      <div className="forge-action-bar grid grid-cols-1 md:grid-cols-6 gap-3" data-anno="leads-filter-bar">
         <div className="md:col-span-2 relative">
           <input 
             type="text" 
@@ -472,7 +472,7 @@ export default function LeadsList() {
       )}
 
       {/* 数据表格卡片 */}
-      <div className="forge-card p-0 overflow-hidden">
+      <div className="forge-card p-0 overflow-hidden" data-anno="leads-table-operations">
         <div className="overflow-x-auto">
           <table className="forge-table">
             <thead>

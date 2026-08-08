@@ -5,9 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>front-prototype</title>
+    <link rel="stylesheet" href="/annotation-kit/runtime.css">
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      const vitaminAnnotationRuntime = document.createElement('script');
+      vitaminAnnotationRuntime.type = 'module';
+      vitaminAnnotationRuntime.src = '/project/forge-crm/annotation-kit/runtime.js';
+      document.head.appendChild(vitaminAnnotationRuntime);
+    </script>
   </body>
 </html>
