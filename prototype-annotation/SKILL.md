@@ -76,6 +76,26 @@ Annotation detail content must be **structured as grouped item lists**, NOT long
 - Long content: items can be further grouped; the panel supports expand/collapse per item group
 - Reference format: title → source → group headings → `- 项名：描述` item lists (see panel UI reference)
 
+## Annotation Detail Tab Standard (Mandatory)
+
+Each annotation block's **detail content** must be organized into **tab pages** (not a single flat body). Tabs:
+
+```
+全部             ← combined view of all sections below (default tab)
+页面内容         ← page-level description: page path, layout, what the region displays
+交互说明         ← interaction behavior: click, hover, tab switching, state transitions, expand/collapse
+业务规则         ← business rules: validation, permissions, exceptions, calculation logic
+字段说明         ← field-level details: field labels, defaults, constraints, formats
+待确认           ← unresolved items: source unclear / rules awaiting confirmation
+```
+
+### Rules
+- **Every annotation block detail must have all 6 tabs** — even empty tabs are shown (as an extension placeholder, e.g. "待确认" shows 0 items). Do NOT hide empty tabs.
+- `全部` = combined rendering of all populated tabs (页面内容+交互说明+业务规则+字段说明+待确认)
+- Content under each tab uses the grouped item-list format (`分组标题` + `- 项名：描述`) from Annotation Content Structure Standard
+- Each tab's content must be accurate to the PRD: 交互说明 covers click/state behaviors, 业务规则 covers validation/permissions/exceptions, 字段说明 covers field-level rules
+- Tab filter (`type` classification) remains: page/interaction/rule/field/pending — the detail tabs provide richer in-block organization
+
 Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
 
 The page annotation runtime is strictly read-only. Never add annotation editing, drafts, save APIs, or browser-to-Markdown write-back. Annotation content is changed only by editing Markdown files directly or by asking Codex to update them.
