@@ -33,7 +33,17 @@ Annotations are displayed in a **panel UI** (like Axure's annotation sidebar), n
 - `field` 字段: field-level description (Chinese labels, constraints, defaults)
 - `pending` 待确认: rules whose source is unclear or awaiting confirmation
 
-Store type in `annotation.config.json` per annotation id (`type` field) so the panel can filter by tab.
+- **Entry buttons are floating & draggable**: the annotation entries ("标注清单" and "原型标注") must NOT occupy layout space or cover page controls — they are floating (fixed position), draggable by mouse (user can move them to a non-blocking spot). Implementation: fixed-position container with drag-to-reposition (pointer events), remember position in sessionStorage, no impact on page layout/flow
+
+## Drag & Click Coexistence Standard (Mandatory — hard-won lesson)
+
+Floating draggable toolbars must support BOTH drag AND button clicks. Known pitfalls:
+
+- **NEVER use `setPointerCapture` on the drag container** — it steals pointer/click targets from child buttons; child buttons become unclickable (verified bug: toolbar click dead, 3 rounds of fixes).
+- **Correct pattern**: listen to pointerdown on the drag handle/container, track move/up on `window` (no capture); if movement stays under a threshold → let native `click` fire; if movement exceeds threshold → update position and suppress that one click (to avoid accidental toggle after drag).
+- **Ensure `pointer-events: auto`** explicitly on the floating container and buttons (a full-screen `.vpa-root` must be `pointer-events: none` so it never blocks).
+- **z-index**: floating toolbar must sit above the annotation panel (raise z-index so the panel never covers the toolbar).
+- Verify in browser: click button → works; drag toolbar → position changes without triggering click; drag then click → click still works.
 
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
