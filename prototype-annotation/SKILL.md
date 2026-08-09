@@ -103,6 +103,7 @@ The 待确认 tab is NOT extracted from the PRD — it is a **human-entered revi
   ```
 - **PRD sync**: browser cannot write PRD files directly (sandbox) — export block → user/Codex merges into PRD; the Markdown todo format enables state to be read back (双向 via the block format)
 - Golden rule: 待确认 = human review input (never auto-extracted from PRD); it is the review-side complement to PRD-side rules
+- **Scrollability**: the per-block issue list and the global issue list must be scrollable (they are new dynamic containers — verify `overflow-y: auto` + a max-height; do NOT rely on the panel's own scroll, and do NOT rebuild them from within their own scroll event). Test: add many issues → list scrolls; panel scroll and tab persistence still work.
 
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
