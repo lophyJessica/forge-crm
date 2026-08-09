@@ -45,6 +45,21 @@ Floating draggable toolbars must support BOTH drag AND button clicks. Known pitf
 - **z-index**: floating toolbar must sit above the annotation panel (raise z-index so the panel never covers the toolbar).
 - Verify in browser: click button → works; drag toolbar → position changes without triggering click; drag then click → click still works.
 
+## Panel Tab State Persistence Standard (Mandatory — hard-won lesson)
+
+Panel detail tabs must survive re-renders (scroll triggers `scheduleMeasure` → panel `innerHTML` rebuild → tab resets to default without persistence).
+
+- **Root cause pattern**: scroll/resize listeners rebuild the panel DOM (`renderAnnotationPanel` + `innerHTML`), destroying the detail-tab node; reading the tab from the new DOM falls back to the default (`all`).
+- **Correct pattern**: store UI state OUTSIDE the re-rendered DOM — keep a `Map` keyed by card identity (e.g. `detailTabByCard: Map` keyed by `data-annotation-key`); save the current tab on switch, restore it on rebuild:
+  ```js
+  const cardKey = container.closest('[data-annotation-key]')?.dataset.annotationKey;
+  const savedTab = cardKey ? VPA_STATE.detailTabByCard.get(cardKey) : null;
+  const requestedTab = savedTab || container.dataset.detailTab || initialTab;
+  if (cardKey) VPA_STATE.detailTabByCard.set(cardKey, currentTab);
+  ```
+- **Golden rule**: DOM is only a presentation layer; state lives in a persistent store (`VPA_STATE`) outside the rebuilt DOM.
+- Verify in browser: select a detail tab (e.g. 页面内容), scroll the page, confirm the tab stays selected.
+
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
   1. Page shows a "原型标注" entry button (white, document icon) — click to toggle annotation mode
