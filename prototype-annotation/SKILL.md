@@ -101,6 +101,19 @@ The 待确认 tab is NOT extracted from the PRD — it is a **human-entered revi
   - [x] 已解决问题（来源：标注块Y）
     - 解决方法：已解决方式描述
   ```
+- **Per-block export**: each annotation block's 待确认 tab (inside its detail view) also has its own "导出待办" button — exports ONLY that block's issues (not global). So a block with issues can be exported individually during review.
+- **Global export grouping**: the global "导出待办" must group issues by annotation block, prefixed with 序号（标题）:
+  ```
+  ## 待办项
+  ### 序号 1（线索列表页面）
+  - [ ] 问题描述
+    - 解决方法：（待补充）
+  - [x] 已解决问题
+    - 解决方法：...
+  ### 序号 2（状态页签与线索池视图）
+  - [ ] ...
+  ```
+  Group header uses the annotation badge number + block title, so reviewers can trace which region each todo belongs to.
 - **PRD sync**: browser cannot write PRD files directly (sandbox) — export block → user/Codex merges into PRD; the Markdown todo format enables state to be read back (双向 via the block format)
 - Golden rule: 待确认 = human review input (never auto-extracted from PRD); it is the review-side complement to PRD-side rules
 - **Scrollability**: the per-block issue list and the global issue list must be scrollable (they are new dynamic containers — verify `overflow-y: auto` + a max-height; do NOT rely on the panel's own scroll, and do NOT rebuild them from within their own scroll event). Test: add many issues → list scrolls; panel scroll and tab persistence still work.
