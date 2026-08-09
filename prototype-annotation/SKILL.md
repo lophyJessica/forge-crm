@@ -101,7 +101,15 @@ The 待确认 tab is NOT extracted from the PRD — it is a **human-entered revi
   - [x] 已解决问题（来源：标注块Y）
     - 解决方法：已解决方式描述
   ```
-- **Per-block export**: each annotation block's 待确认 tab (inside its detail view) also has its own "导出待办" button — exports ONLY that block's issues (not global). So a block with issues can be exported individually during review.
+- **Per-block export**: each annotation block's 待确认 tab (inside its detail view) also has its own "导出待办" button — exports ONLY that block's issues (not global). So a block with issues can be exported individually during review. **Per-block export must ALSO include the block title + todo list** (same grouped format as global, but only that one block):
+  ```
+  ## 待办项
+  ### 序号 X（该块标题）
+  - [ ] 问题描述
+    - 解决方法：（待补充）
+  - [x] 已解决问题
+    - 解决方法：解决方式
+  ```
 - **Global export grouping**: the global "导出待办" must group issues by annotation block, prefixed with 序号（标题）:
   ```
   ## 待办项
