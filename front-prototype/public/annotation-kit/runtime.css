@@ -7,17 +7,22 @@
 
 .vpa-badge,
 .vpa-badge-static {
-  display: inline-block;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 2px;
-  background: rgb(250, 173, 20);
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1a9a6b;
   color: #fff;
   cursor: pointer;
-  font-size: 10px;
+  box-shadow: 0 3px 9px rgb(15 118 82 / 28%);
+  font-size: 11px;
   font-weight: 800;
-  line-height: 14px;
-  vertical-align: top;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .vpa-badge {
@@ -69,16 +74,19 @@
 
 .vpa-popup {
   position: fixed;
+  display: flex;
+  flex-direction: column;
   z-index: calc(var(--vpa-z-base, 9997) + 3);
   min-width: 360px;
   min-height: 260px;
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
-  overflow: auto;
-  border-radius: 4px;
-  background: #f0efef;
-  box-shadow: 0 18px 54px rgb(15 23 42 / 20%);
-  color: #1f2937;
+  overflow: hidden;
+  border: 1px solid #e3ece7;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgb(15 23 42 / 20%), 0 5px 18px rgb(15 118 82 / 9%);
+  color: #24362d;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
 }
 
@@ -86,31 +94,49 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid #d6d3d3;
+  gap: 10px;
+  padding: 15px 17px;
+  border-bottom: 1px solid #edf2ef;
+  background: #fff;
   user-select: none;
 }
 
 .vpa-popup-header strong {
   min-width: 0;
   overflow: hidden;
-  font-size: 14px;
-  line-height: 1.35;
+  color: #1e3026;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .vpa-popup-header button {
-  height: 26px;
-  padding: 0 8px;
-  border: 1px solid #c8c4c4;
-  border-radius: 4px;
-  background: #fff;
-  color: #334155;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8a9a92;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.vpa-popup-header button:hover {
+  background: #f1f7f4;
+  color: #13724d;
+}
+
+.vpa-popup-header .vpa-badge-static {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  font-size: 13px;
 }
 
 .vpa-all-popup .vpa-download {
@@ -129,13 +155,20 @@
 }
 
 .vpa-popup-body {
-  padding: 12px;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 14px 16px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #f8fbf9;
+  scrollbar-color: #badbc9 transparent;
+  scrollbar-width: thin;
 }
 
 .vpa-markdown {
-  color: #2f3743;
+  color: #61756a;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .vpa-markdown h1 {
@@ -146,9 +179,18 @@
 
 .vpa-markdown h2,
 .vpa-markdown h3 {
-  margin: 14px 0 8px;
-  color: #111827;
-  font-size: 14px;
+  margin: 18px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e6efea;
+  color: #2b4a3a;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.vpa-markdown h2:first-child,
+.vpa-markdown h3:first-child {
+  margin-top: 0;
 }
 
 .vpa-markdown p {
@@ -157,26 +199,186 @@
 
 .vpa-markdown ul {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin: 0 0 12px;
   padding-left: 20px;
 }
 
+.vpa-markdown li {
+  padding-left: 2px;
+}
+
+.vpa-list-label {
+  color: #263f32;
+  font-weight: 850;
+}
+
 .vpa-markdown blockquote {
-  margin: 0 0 12px;
-  padding: 8px 10px;
-  border-left: 3px solid #c7c3c3;
-  background: #e8e6e6;
-  color: #4b5563;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #e0e9e4;
+  border-left: 3px solid #c3d1c9;
+  border-radius: 8px;
+  background: #eef2f0;
+  color: #718178;
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .vpa-markdown code {
   padding: 1px 4px;
   border-radius: 3px;
-  background: #e9edf3;
-  color: #334155;
+  background: #e3ebe7;
+  color: #56685d;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
+}
+
+.vpa-popup-source {
+  margin-bottom: 12px;
+}
+
+.vpa-popup-source .vpa-markdown code {
+  font-size: 11px;
+}
+
+.vpa-popup-expand {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2px;
+  border: 0;
+  border-top: 1px solid #e1ece6;
+  border-bottom: 1px solid #e1ece6;
+  background: transparent;
+  color: #16805a;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.vpa-popup-expand:hover {
+  color: #0f6042;
+}
+
+.vpa-popup-expand span {
+  color: #16805a;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.vpa-popup-details {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.24s ease, padding-top 0.24s ease, opacity 0.18s ease;
+}
+
+.vpa-popup-details.is-open {
+  max-height: none;
+  overflow: visible;
+  padding-top: 12px;
+  opacity: 1;
+}
+
+.vpa-popup-details .vpa-markdown {
+  padding: 12px 14px;
+  border: 1px solid #e5eee9;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.vpa-detail-tabs {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  border-bottom: 1px solid #e4eee8;
+  scrollbar-color: #badbc9 transparent;
+  scrollbar-width: thin;
+}
+
+.vpa-detail-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.vpa-detail-tabs::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c4dfd2;
+}
+
+.vpa-detail-tab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #8a9a92;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.vpa-detail-tab span {
+  color: #a9b7af;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.vpa-detail-tab::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.vpa-detail-tab:hover,
+.vpa-detail-tab.is-active {
+  color: #17845b;
+}
+
+.vpa-detail-tab.is-active::after {
+  background: #1b9a6b;
+}
+
+.vpa-detail-tab.is-active span {
+  color: #17845b;
+}
+
+.vpa-detail-tab-panel {
+  min-height: 0;
+  padding-top: 10px;
+}
+
+.vpa-detail-empty {
+  padding: 24px 12px;
+  border: 1px dashed #d9e8df;
+  border-radius: 9px;
+  background: #fbfdfc;
+  color: #95a69d;
+  font-size: 12px;
+  text-align: center;
+}
+
+.vpa-markdown h4 {
+  margin: 13px 0 7px;
+  color: #6f8578;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.vpa-markdown h4:first-child {
+  margin-top: 0;
 }
 
 .vpa-markdown pre,
@@ -306,4 +508,830 @@
 
 .vpa-toast.show {
   opacity: 1;
+}
+
+.vpa-floating-entries {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  /* Keep the controls reachable even when a dragged toolbar overlaps the panel. */
+  z-index: calc(var(--vpa-z-base, 9997) + 5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+}
+
+.vpa-floating-entries.is-dragging {
+  cursor: grabbing;
+}
+
+.vpa-entry {
+  position: relative;
+  z-index: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid #d8e6df;
+  border-radius: 8px;
+  background: #fff;
+  color: #263b32;
+  pointer-events: auto;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 12%);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: grab;
+  transition: border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.vpa-entry:hover {
+  border-color: #63b894;
+  color: #13724d;
+  box-shadow: 0 10px 26px rgb(15 118 82 / 18%);
+  transform: translateY(-1px);
+}
+
+.vpa-entry.is-active {
+  border-color: #63b894;
+  background: #f2fbf6;
+  color: #13724d;
+  box-shadow: 0 10px 26px rgb(15 118 82 / 16%);
+}
+
+.vpa-entry svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.vpa-panel-toggle {
+  position: relative;
+  z-index: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid #d8e6df;
+  border-radius: 8px;
+  background: #fff;
+  color: #5f7469;
+  pointer-events: auto;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 10%);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: grab;
+}
+
+.vpa-panel-toggle:hover {
+  border-color: #63b894;
+  color: #13724d;
+}
+
+.vpa-panel-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.vpa-panel {
+  position: fixed;
+  top: 58px;
+  right: 16px;
+  z-index: calc(var(--vpa-z-base, 9997) + 3);
+  display: flex;
+  width: min(440px, calc(100vw - 24px));
+  height: min(760px, calc(100vh - 74px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5ece8;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgb(15 23 42 / 20%), 0 4px 14px rgb(15 118 82 / 8%);
+  color: #1e2e27;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  pointer-events: auto;
+  animation: vpa-panel-in 0.2s ease-out both;
+}
+
+.vpa-panel * {
+  box-sizing: border-box;
+}
+
+.vpa-panel-header {
+  flex: 0 0 auto;
+  padding: 18px 18px 0;
+  background: #fff;
+}
+
+.vpa-panel-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vpa-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #15241d;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.vpa-panel-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e3f4eb;
+  color: #16805a;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.vpa-panel-subtitle {
+  margin-top: 5px;
+  color: #8a9a92;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.vpa-panel-close {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  margin: -3px -5px 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8a9a92;
+  cursor: pointer;
+  font-size: 23px;
+  font-weight: 350;
+  line-height: 1;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.vpa-panel-close:hover {
+  background: #f1f7f4;
+  color: #13724d;
+}
+
+.vpa-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vpa-export-pending {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #b8dfca;
+  border-radius: 7px;
+  background: #f3fbf6;
+  color: #16805a;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.vpa-export-pending:hover {
+  border-color: #63b894;
+  background: #e6f7ed;
+}
+
+.vpa-panel-tabs {
+  display: flex;
+  gap: 3px;
+  margin-top: 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid #edf2ef;
+  scrollbar-width: thin;
+  scrollbar-color: #badbc9 transparent;
+}
+
+.vpa-panel-tabs::-webkit-scrollbar,
+.vpa-panel-list::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.vpa-panel-tabs::-webkit-scrollbar-thumb,
+.vpa-panel-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c4dfd2;
+}
+
+.vpa-panel-tab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #84948c;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.vpa-panel-tab span {
+  color: #a6b4ad;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.vpa-panel-tab::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.vpa-panel-tab:hover,
+.vpa-panel-tab.is-active {
+  color: #17845b;
+}
+
+.vpa-panel-tab.is-active::after {
+  background: #1b9a6b;
+}
+
+.vpa-panel-tab.is-active span {
+  color: #17845b;
+}
+
+.vpa-panel-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+  background: #f7faf8;
+  scrollbar-color: #badbc9 transparent;
+  scrollbar-width: thin;
+}
+
+.vpa-card {
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid #e4eee8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(15 23 42 / 4%);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.vpa-card:hover,
+.vpa-card.is-expanded {
+  border-color: #b8dfca;
+  box-shadow: 0 8px 22px rgb(15 118 82 / 9%);
+}
+
+.vpa-card-main {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 12px 9px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.vpa-card-number {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #1a9a6b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.vpa-card-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.vpa-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.vpa-card-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #24362d;
+  font-size: 13px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpa-type-tag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: #edf7f1;
+  color: #17845b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.vpa-type-rule { background: #fff5e7; color: #aa6b12; }
+.vpa-type-field { background: #edf4ff; color: #3470b8; }
+.vpa-type-pending { background: #fff0f0; color: #c04e4e; }
+.vpa-type-page { background: #f0f1ff; color: #5d62b4; }
+
+.vpa-card-summary {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #809088;
+  font-size: 11px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpa-card-chevron {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: #a7b6ae;
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.16s ease, color 0.16s ease;
+}
+
+.vpa-card:hover .vpa-card-chevron {
+  color: #17845b;
+  transform: translateX(2px);
+}
+
+.vpa-card-expand {
+  display: block;
+  width: calc(100% - 46px);
+  margin: 0 12px 9px 46px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #17845b;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.vpa-card-expand:hover {
+  color: #0f6042;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vpa-card-details {
+  max-height: 0;
+  margin: 0 12px 0 46px;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.24s ease, margin-bottom 0.24s ease, opacity 0.18s ease;
+}
+
+.vpa-card-details.is-open {
+  max-height: 1100px;
+  margin-bottom: 12px;
+  opacity: 1;
+}
+
+.vpa-card-details .vpa-markdown {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f6faf7;
+  color: #5e7167;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.vpa-card-details .vpa-markdown h2,
+.vpa-card-details .vpa-markdown h3 {
+  margin: 4px 0 6px;
+  color: #2f4a3d;
+  font-size: 11px;
+}
+
+.vpa-card-details .vpa-markdown p {
+  margin-bottom: 7px;
+}
+
+.vpa-card-details .vpa-markdown ul {
+  gap: 3px;
+  margin-bottom: 7px;
+  padding-left: 16px;
+}
+
+.vpa-card-details .vpa-detail-tabs {
+  gap: 0;
+}
+
+.vpa-card-details .vpa-detail-tab {
+  height: 28px;
+  padding: 0 5px;
+  font-size: 10px;
+}
+
+.vpa-card-details .vpa-detail-tab::after {
+  right: 5px;
+  left: 5px;
+}
+
+.vpa-card-details .vpa-detail-tab-panel {
+  padding-top: 7px;
+}
+
+.vpa-card-details .vpa-detail-empty {
+  padding: 16px 8px;
+  font-size: 11px;
+}
+
+.vpa-card-details .vpa-markdown h4 {
+  margin: 10px 0 5px;
+  font-size: 10px;
+}
+
+.vpa-panel-empty {
+  padding: 52px 12px;
+  color: #94a49b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.vpa-pending-tracker {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vpa-pending-block-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.vpa-pending-compose {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 7px;
+  padding: 2px 0 4px;
+}
+
+.vpa-pending-new-input,
+.vpa-pending-resolution {
+  min-width: 0;
+  border: 1px solid #d6e6dc;
+  border-radius: 7px;
+  outline: 0;
+  background: #fff;
+  color: #2f4a3d;
+  font: inherit;
+}
+
+.vpa-pending-new-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+.vpa-pending-new-input:focus,
+.vpa-pending-resolution:focus {
+  border-color: #63b894;
+  box-shadow: 0 0 0 2px rgb(99 184 148 / 14%);
+}
+
+.vpa-pending-add {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: #1a9a6b;
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.vpa-pending-add:hover {
+  background: #137b53;
+}
+
+.vpa-pending-block-export {
+  flex: 0 0 auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.vpa-pending-filter {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid #e0ebe4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.vpa-pending-filter-button {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #81938a;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.vpa-pending-filter-button span {
+  margin-left: 3px;
+  color: #a7b6ad;
+  font-size: 9px;
+}
+
+.vpa-pending-filter-button:hover,
+.vpa-pending-filter-button.is-active {
+  background: #edf9f2;
+  color: #16805a;
+}
+
+.vpa-pending-filter-button.is-active span {
+  color: #16805a;
+}
+
+.vpa-pending-count {
+  color: #8a9a92;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.vpa-pending-issue-list {
+  display: flex;
+  min-height: 0;
+  max-height: min(360px, calc(100vh - 260px));
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 3px;
+  scrollbar-color: #badbc9 transparent;
+  scrollbar-width: thin;
+}
+
+.vpa-pending-issue-list::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.vpa-pending-issue-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c4dfd2;
+}
+
+.vpa-pending-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vpa-pending-group + .vpa-pending-group {
+  margin-top: 6px;
+}
+
+.vpa-pending-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 3px 0 0;
+  padding: 0 2px;
+  color: #527466;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.vpa-pending-group-heading {
+  min-width: 0;
+  overflow: hidden;
+  color: #527466;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpa-pending-group-title > span:last-child {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e3f4eb;
+  color: #16805a;
+  font-size: 9px;
+}
+
+.vpa-pending-issue {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0ebe4;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(15 118 82 / 4%);
+}
+
+.vpa-pending-issue.is-resolved {
+  border-color: #c5e6d2;
+  background: #f6fcf8;
+}
+
+.vpa-pending-check {
+  flex: 0 0 auto;
+  padding-top: 2px;
+  cursor: pointer;
+}
+
+.vpa-pending-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #1a9a6b;
+  cursor: pointer;
+}
+
+.vpa-pending-issue-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.vpa-pending-issue-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  color: #a0afa7;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.vpa-pending-issue-meta > span:first-child {
+  color: #d07835;
+}
+
+.vpa-pending-issue.is-resolved .vpa-pending-issue-meta > span:first-child {
+  color: #16805a;
+}
+
+.vpa-pending-source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpa-pending-description {
+  margin-bottom: 8px;
+  color: #30483d;
+  font-size: 11px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.vpa-pending-resolution-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #82968b;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.vpa-pending-resolution {
+  width: 0;
+  height: 27px;
+  flex: 1;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.vpa-pending-empty {
+  padding: 34px 12px;
+  border: 1px dashed #cfe3d7;
+  border-radius: 9px;
+  background: #fbfdfc;
+  color: #8da198;
+  font-size: 11px;
+  text-align: center;
+}
+
+.vpa-pending-inline-summary {
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid #dcebe2;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.vpa-pending-inline-summary h3 {
+  margin: 0 0 5px;
+  color: #527466;
+  font-size: 11px;
+}
+
+.vpa-pending-inline-summary ul {
+  margin: 0;
+  padding-left: 16px;
+  color: #657c70;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.vpa-pending-inline-status {
+  margin-right: 5px;
+  color: #d07835;
+  font-weight: 800;
+}
+
+.vpa-pending-inline-summary li:has(.vpa-pending-inline-status) {
+  overflow-wrap: anywhere;
+}
+
+.vpa-target-highlight {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid rgb(27 154 107 / 72%) !important;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 7px rgb(27 154 107 / 12%), 0 10px 34px rgb(15 118 82 / 20%) !important;
+  transition: outline-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@keyframes vpa-panel-in {
+  from { opacity: 0; transform: translateY(-7px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .vpa-floating-entries {
+    top: 8px;
+    right: 8px;
+  }
+
+  .vpa-panel {
+    top: 52px;
+    right: 8px;
+    width: calc(100vw - 16px);
+    height: calc(100vh - 62px);
+  }
 }

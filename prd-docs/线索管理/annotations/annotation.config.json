@@ -5,7 +5,7 @@
   "sourceBase": ".",
   "runtime": {
     "zIndexBase": 2147480000,
-    "initialMode": "annotate"
+    "initialMode": "preview"
   },
   "mermaid": {
     "enabled": false,
@@ -92,6 +92,21 @@
   "annotations": [
     {
       "id": "1",
+      "type": "page",
+      "page": "#/leads",
+      "moduleName": "线索列表页面",
+      "target": {
+        "selector": "[data-anno='leads-page-header']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "1",
+      "sourceRefs": ["REQ-LEADS-TABLE-001"],
+      "order": 1
+    },
+    {
+      "id": "2",
+      "type": "interaction",
       "page": "#/leads",
       "moduleName": "状态页签与线索池视图",
       "target": {
@@ -99,7 +114,7 @@
         "fallbackSelectors": []
       },
       "markdownFile": "pages/leads-list.md",
-      "blockId": "1",
+      "blockId": "2",
       "sourceRefs": [
         "REQ-LEADS-TABS-001",
         "REQ-LEADS-TABS-002",
@@ -108,10 +123,11 @@
         "REQ-LEADS-R09-001",
         "REQ-LEADS-R10-001"
       ],
-      "order": 1
+      "order": 2
     },
     {
-      "id": "2",
+      "id": "3",
+      "type": "field",
       "page": "#/leads",
       "moduleName": "线索筛选与查询栏",
       "target": {
@@ -119,35 +135,99 @@
         "fallbackSelectors": []
       },
       "markdownFile": "pages/leads-list.md",
-      "blockId": "2",
-      "sourceRefs": [
-        "REQ-LEADS-FILTER-001",
-        "REQ-LEADS-FIELDS-001",
-        "REQ-LEADS-R09-001"
-      ],
-      "order": 2
+      "blockId": "3",
+      "sourceRefs": ["REQ-LEADS-FILTER-001", "REQ-LEADS-FIELDS-001"],
+      "order": 3
     },
     {
-      "id": "3",
+      "id": "4",
+      "type": "interaction",
       "page": "#/leads",
-      "moduleName": "线索表格、批量工具与行操作",
+      "moduleName": "新建与批量导入工具",
       "target": {
-        "selector": "[data-anno='leads-table-operations']",
+        "selector": "[data-anno='leads-create-tools']",
         "fallbackSelectors": []
       },
       "markdownFile": "pages/leads-list.md",
-      "blockId": "3",
+      "blockId": "4",
+      "sourceRefs": ["REQ-LEADS-TABLE-001", "REQ-LEADS-MODAL-001"],
+      "order": 4
+    },
+    {
+      "id": "5",
+      "type": "interaction",
+      "page": "#/leads",
+      "moduleName": "批量作废工具",
+      "target": {
+        "selector": "[data-anno='leads-batch-tools']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "5",
+      "sourceRefs": ["REQ-LEADS-TABLE-001", "REQ-LEADS-MODAL-001", "REQ-LEADS-PERMS-001"],
+      "order": 5
+    },
+    {
+      "id": "6",
+      "type": "field",
+      "page": "#/leads",
+      "moduleName": "线索表格字段与分页",
+      "target": {
+        "selector": "[data-anno='leads-table-fields']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "6",
+      "sourceRefs": ["REQ-LEADS-FIELDS-001", "REQ-LEADS-TABLE-001"],
+      "order": 6
+    },
+    {
+      "id": "7",
+      "type": "rule",
+      "page": "#/leads",
+      "moduleName": "AI评分与分流规则",
+      "target": {
+        "selector": "[data-anno='leads-ai-score']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "7",
+      "sourceRefs": ["REQ-LEADS-R09-001", "REQ-LEADS-FIELDS-001"],
+      "order": 7
+    },
+    {
+      "id": "8",
+      "type": "interaction",
+      "page": "#/leads",
+      "moduleName": "线索行操作与状态流转",
+      "target": {
+        "selector": "[data-anno='leads-row-operations']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "8",
       "sourceRefs": [
-        "REQ-LEADS-FIELDS-001",
-        "REQ-LEADS-TABLE-001",
+        "REQ-LEADS-STATE-001",
         "REQ-LEADS-OPS-001",
         "REQ-LEADS-MODAL-001",
         "REQ-LEADS-R05-001",
-        "REQ-LEADS-R07-001",
-        "REQ-LEADS-PERMS-001",
-        "REQ-LEADS-EXCEPTIONS-001"
+        "REQ-LEADS-R07-001"
       ],
-      "order": 3
+      "order": 8
+    },
+    {
+      "id": "9",
+      "type": "rule",
+      "page": "#/leads",
+      "moduleName": "权限与异常边界",
+      "target": {
+        "selector": "[data-anno='leads-permissions']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/leads-list.md",
+      "blockId": "9",
+      "sourceRefs": ["REQ-LEADS-PERMS-001", "REQ-LEADS-EXCEPTIONS-001", "REQ-LEADS-R04-001"],
+      "order": 9
     }
   ]
 }

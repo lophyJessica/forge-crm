@@ -299,10 +299,10 @@ export default function LeadsList() {
       {/* 头部导航与操作 */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-slate-800">线索管理</h1>
-          <p className="text-xs text-slate-500">处理全渠道收集的线索并评估 AI 分数，推动转化为商机或客户。</p>
+          <h1 className="text-2xl font-black text-slate-800" data-anno="leads-page-header">线索管理</h1>
+          <p className="text-xs text-slate-500" data-anno="leads-permissions">处理全渠道收集的线索并评估 AI 分数，推动转化为商机或客户。</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" data-anno="leads-create-tools">
           <button 
             type="button"
             onClick={() => {
@@ -452,7 +452,7 @@ export default function LeadsList() {
 
       {/* 批量操作工具条 */}
       {selectedLeadIds.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in text-xs">
+        <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in text-xs" data-anno="leads-batch-tools">
           <span className="font-bold text-blue-700">已选择 {selectedLeadIds.length} 项</span>
           <button 
             type="button" 
@@ -472,7 +472,7 @@ export default function LeadsList() {
       )}
 
       {/* 数据表格卡片 */}
-      <div className="forge-card p-0 overflow-hidden" data-anno="leads-table-operations">
+      <div className="forge-card p-0 overflow-hidden" data-anno="leads-table-fields">
         <div className="overflow-x-auto">
           <table className="forge-table">
             <thead>
@@ -490,12 +490,12 @@ export default function LeadsList() {
                 <th>手机号</th>
                 <th>邮箱</th>
                 <th>线索来源</th>
-                <th>AI评分</th>
+                <th data-anno="leads-ai-score">AI评分</th>
                 <th>状态</th>
                 <th>负责人</th>
                 <th>最近跟进</th>
                 <th>创建时间</th>
-                <th className="text-right">操作</th>
+                <th className="text-right" data-anno="leads-row-operations">操作</th>
               </tr>
             </thead>
             <tbody>

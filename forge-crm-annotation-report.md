@@ -2,49 +2,55 @@
 
 ## 项目任务
 
-线索管理/线索列表原型标注语言修正。
-
-按更新后的 `vitamin-prototype-annotation` Skill Annotation Language Standard，将面向业务方的标注改写为中文业务语言；保留原有标注结构、标注块 ID、来源行、selector、data-anno 锚点和只读 runtime。
+修复线索管理/线索列表页原型标注入口点击失效：排查并修正悬浮拖动与按钮点击的事件冲突。
 
 ## 改动文件清单
 
-- `prd-docs/线索管理/annotations/pages/leads-list.md`
-- `prd-docs/线索管理/annotations/annotation.config.json`
-- `prd-docs/线索管理/annotations/coverage.md`
-- `front-prototype/public/annotation-kit/annotation.bundle.json`
-- `prd-docs/线索管理/annotations/screenshots/leads-list-annotation-popup.png`
+- `front-prototype/public/annotation-kit/runtime.js`
+- `front-prototype/dist/annotation-kit/runtime.js`（由 build 生成）
+- `forge-crm-annotation-report.md`
 
-本轮未修改 PRD、业务代码、`data-anno` 锚点或 runtime 文件。
+未修改 PRD 正文、业务状态逻辑或业务数据；未 commit、push 或部署代码仓库。
 
-## 改动点说明
+## 改动点说明与根因
 
-- 页面标识统一为面包屑路径「线索管理/线索列表」，不在标注正文使用路由路径。
-- 状态页签、状态表和行操作统一使用「待分配」「已分配」「跟进中」「已转客户」「已作废/已放弃」等中文业务名称，英文枚举只作为括号附注。
-- 筛选项和表格字段统一使用中文标签；技术组件名、代码函数名和代码逻辑表达已改写为业务规则。
-- 保留 3 个标注块：状态页签与线索池视图、线索筛选与查询栏、线索表格/批量工具/行操作。
+- 根因：拖动容器在捕获阶段统一拦截 `click`，拖动过程中留下 `suppressClick` 后会把两个子按钮的正常点击一起吞掉。
+- 修复：移除容器级 click 捕获拦截，改为 `原型标注` 和 `标注清单` 各自仅在确认发生拖动时抑制当前一次 click。
+- 命中排查：`.vpa-root` 虽为全屏 fixed，但 `pointer-events:none`；入口和悬浮容器均为 `pointer-events:auto`，悬浮容器 z-index 为 `2147480002`，命中测试顶层为入口按钮，无透明遮罩。
+- 样式加固：对 `.vpa-floating-entries`、`.vpa-entry`、`.vpa-panel-toggle` 显式声明 `pointer-events:auto`。
+- 保留：Pointer Events/Mouse Events 拖动、位置 `sessionStorage` 记忆、6 个详情页签、徽章定位和高亮均未改变。
+
+## 标注块结构
+
+| ID | 区域 | 类型 | data-anno |
+| --- | --- | --- | --- |
+| 1 | 线索列表页面 | page | `leads-page-header` |
+| 2 | 状态页签与线索池视图 | interaction | `leads-status-tabs` |
+| 3 | 线索筛选与查询栏 | field | `leads-filter-bar` |
+| 4 | 新建与批量导入工具 | interaction | `leads-create-tools` |
+| 5 | 批量作废工具 | interaction | `leads-batch-tools` |
+| 6 | 线索表格字段与分页 | field | `leads-table-fields` |
+| 7 | AI评分与分流规则 | rule | `leads-ai-score` |
+| 8 | 线索行操作与状态流转 | interaction | `leads-row-operations` |
+| 9 | 权限与异常边界 | rule | `leads-permissions` |
 
 ## 自检结果
 
-- 产物检查：通过。标注配置、Markdown、Bundle、页面锚点均存在。
-- `npm run build`：通过。
-- 标注覆盖：15/15 个来源需求已映射，`unmapped=0`。
-- 浏览器验证：线索管理/线索列表页面显示徽章 `1/2/3`；点击徽章可打开标注弹窗，标题和正文使用中文业务语言，包含页面面包屑和 `来源` 行；控制台无 runtime error。
-- 浏览器截图：`prd-docs/线索管理/annotations/screenshots/leads-list-annotation-popup.png`。
-- 打包文件：`forge-crm.zip`，解压第一层为 `index.html`、`annotation-kit/`、`assets/` 等前端产物，无 `front-prototype/dist` 前缀。
-- Zip 完整性：`unzip -t` 通过。
-- VPS 上传：已上传至 `/var/www/pmlophy.com/forge-crm-incoming/`，等待 VPS cron 自动部署。
+- `npm run build`：通过；仅有 Vite 单 chunk 超过 500 kB 的提示，不影响构建结果。
+- 5173/5174 本地页面控制台：无 error/warn。
+- 点击「原型标注」：徽章数量 `8`，toast 为「已显示标注区域序号」。
+- 点击「标注清单」：面板数量 `1`，标注卡片数量 `9`。
+- 点击徽章定位：对应区域正常高亮。
+- 事件监听检查：拖动监听未使用捕获阶段，也未创建透明 drag handle 或全屏遮罩。
+- Zip：已检查解压第一层为 `index.html`、`annotation-kit/`、`assets/`，无 `front-prototype/dist` 前缀。
 
 ## 遗留风险
 
-- 当前原型「我的线索」仍包含「草稿」，与原型说明中的「已分配 + 跟进中」定义不一致，待确认。
-- 当前原型允许原负责人在「已作废/已放弃」后立即显示「撤销放弃」，与 7 天防撞墙保护规则不一致，待确认。
-- 当前原型自动回收仅覆盖「已分配」且无跟进记录场景，未完整覆盖「跟进中」超过 48 小时回收和 10 分钟定时扫描，待补齐。
-- 当前页面未实现关键词多值搜索、创建时间筛选、导出、列宽拖拽、固定列、批量分配等能力，待确认是否补齐。
-- 当前放弃弹窗仅做非空校验，未严格执行放弃原因至少 15 字；放弃时是否清空负责人和分配时间也需确认。
+- Vite 单 chunk 体积提示仍存在，本轮未进行业务代码拆包。
+- 拖动后的首次 click 会被抑制，避免拖动松手误触；后续普通点击正常生效。
 
 ## 上传记录
 
 - 产物包：`/Users/liulongfei/个人文件/forge-crm/forge-crm.zip`
 - 报告文件：`/Users/liulongfei/个人文件/forge-crm/forge-crm-annotation-report.md`
-- Zip 大小：185731 bytes（约 181K）。
-- 上传时间：2026-08-08（Asia/Shanghai）
+- Zip 大小：192450 bytes（约 188K）。
