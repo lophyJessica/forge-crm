@@ -125,6 +125,7 @@ The 待确认 tab is NOT extracted from the PRD — it is a **human-entered revi
 - **PRD sync**: browser cannot write PRD files directly (sandbox) — export block → user/Codex merges into PRD; the Markdown todo format enables state to be read back (双向 via the block format)
 - Golden rule: 待确认 = human review input (never auto-extracted from PRD); it is the review-side complement to PRD-side rules
 - **Scrollability**: the per-block issue list and the global issue list must be scrollable (they are new dynamic containers — verify `overflow-y: auto` + a max-height; do NOT rely on the panel's own scroll, and do NOT rebuild them from within their own scroll event). Test: add many issues → list scrolls; panel scroll and tab persistence still work.
+- **Display-count integrity**: the global 待确认 tab count (e.g. "待确认 5") and the filtered counts (全部/未解决/已解决) MUST match the number of issues actually rendered. Verified bug: count said 5 but only 3 rendered (2 issues missing from display, though export had all 5) — a grouping/render bug in the global view. Test: count badges match rendered cards exactly; if they diverge, the render loop is dropping groups/issues (check group iteration, sort/order, and any render error that silently skips items).
 
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
