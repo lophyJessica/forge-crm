@@ -75,6 +75,35 @@ A scrollable container must NOT be rebuilt from within its own scroll event (scr
 - **Golden rule**: scroll events only update positioning; structural updates (rebuild) are driven by explicit actions, never by the scroll event of the container itself.
 - Verify in browser: panel list `scrollTop` changes 0 → N and stays; inner detail tabs `scrollLeft` changes; tab stays selected after scroll.
 
+## Pending-Items (待确认) as Review Issue Tracker (Mandatory)
+
+The 待确认 tab is NOT extracted from the PRD — it is a **human-entered review issue tracker**. During review, the reviewer types problems they spot into the 待确认 input; these become actionable todo items.
+
+### Data model (per issue)
+```
+- id: stable id (annotation block key + timestamp)
+- description: issue text (typed by reviewer)
+- source: which annotation block / page region it belongs to
+- status: open / resolved (checkbox)
+- resolution: solution text (filled when resolving)
+```
+
+### Requirements
+- **Per-block**: each annotation block's 待确认 tab has an input field to add issues (tied to that block)
+- **Global**: the global 待确认 tab aggregates all issues from all blocks (grouped by block, filterable)
+- **Persistence**: save to `localStorage` (key: project+page+annotation key; array of issues) — survives refresh
+- **Resolution flow**: each issue has a checkbox (open/resolved) AND a `解决方法` text field — when resolving, write the solution; the resolution is displayed (not just a checkmark)
+- **Export**: button exports a **PRD todo Markdown block** for pasting into the PRD file:
+  ```
+  ## 待办项
+  - [ ] 问题描述（来源：标注块X / 页面区域）
+    - 解决方法：（待补充）
+  - [x] 已解决问题（来源：标注块Y）
+    - 解决方法：已解决方式描述
+  ```
+- **PRD sync**: browser cannot write PRD files directly (sandbox) — export block → user/Codex merges into PRD; the Markdown todo format enables state to be read back (双向 via the block format)
+- Golden rule: 待确认 = human review input (never auto-extracted from PRD); it is the review-side complement to PRD-side rules
+
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
   1. Page shows a "原型标注" entry button (white, document icon) — click to toggle annotation mode
