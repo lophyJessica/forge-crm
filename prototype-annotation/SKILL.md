@@ -60,6 +60,21 @@ Panel detail tabs must survive re-renders (scroll triggers `scheduleMeasure` →
 - **Golden rule**: DOM is only a presentation layer; state lives in a persistent store (`VPA_STATE`) outside the rebuilt DOM.
 - Verify in browser: select a detail tab (e.g. 页面内容), scroll the page, confirm the tab stays selected.
 
+## Scroll Event Must Not Rebuild Scrollable Containers (Mandatory — hard-won lesson)
+
+A scrollable container must NOT be rebuilt from within its own scroll event (scroll → `scheduleMeasure` → `renderAnnotationPanel` rebuilds the container → `scrollTop/scrollLeft` reset to 0 → scrollbar dead).
+
+- **Correct pattern**: on scroll, only update elements that follow the business page (e.g. `measureBadges()`); do NOT re-render the panel. Panel re-render should be triggered only by explicit user/data actions (tab switch, expand/collapse, data refresh):
+  ```js
+  window.requestAnimationFrame(() => {
+    VPA_STATE.measureScheduled = false;
+    measureBadges();
+    // never call renderAnnotationPanel() during scroll
+  });
+  ```
+- **Golden rule**: scroll events only update positioning; structural updates (rebuild) are driven by explicit actions, never by the scroll event of the container itself.
+- Verify in browser: panel list `scrollTop` changes 0 → N and stays; inner detail tabs `scrollLeft` changes; tab stays selected after scroll.
+
 ### 2. Panel UI Requirements (runtime must support)
 - **Interaction flow (mandatory, must match)**:
   1. Page shows a "原型标注" entry button (white, document icon) — click to toggle annotation mode
