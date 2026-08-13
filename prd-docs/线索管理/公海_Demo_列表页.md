@@ -23,7 +23,8 @@
 | 线索来源 | Select | |
 | 所属行业 | Select | |
 | AI评分 | Range | 0-100 |
-| 入池类型 | Select | NEW=新线索 / RELEASED=已释放 |
+| 池子类型 | Select | 引用《线索字段清单》`poolType`：`ASSIGN_POOL`待分配池 / `NURTURE_POOL`培育池 |
+| 作废类型 | Select | 引用《线索字段清单》`voidType`：主动放弃/管理作废/作废草稿；普通销售仅可见符合公海规则的主动放弃 |
 
 ---
 
@@ -36,7 +37,8 @@
 | 线索来源 | 100px | |
 | 所属行业 | 120px | |
 | AI评分 | 80px | Tag配色 |
-| 入池类型 | 100px | NEW蓝色/RELEASED灰色 |
+| 池子类型 | 120px | `poolType` 标签；待分配池蓝色、培育池紫色 |
+| 作废类型 | 120px | `voidType` 标签；普通销售不展示不可认领类型 |
 | 入池时间 | 160px | |
 | 操作 | 100px | 认领按钮 |
 
@@ -44,11 +46,12 @@
 
 ## 4. 认领交互
 
-- 点击认领:无二次确认,状态→ASSIGNED,归属人=当前用户,从公海列表移除
+- 点击认领：无二次确认，状态→`ASSIGNED`，归属人=当前用户，从公海列表移除；状态变化只能由动作按钮触发。
+- 普通销售只可认领 `poolType=ASSIGN_POOL` 或主动放弃满 7 天的记录；`NURTURE_POOL`、管理作废和作废草稿不显示认领按钮。
 - 认领成功:Toast"线索已认领,请及时跟进"
 
 ---
 
 ## 5. Mock 数据
 
-≥ 10 条:5条 NEW(PENDING_ASSIGN),5条 RELEASED(ABANDONED满7天),AI评分 30-85 分布
+≥ 10 条：5 条 `PENDING_ASSIGN + ASSIGN_POOL`、3 条 `PENDING_ASSIGN + NURTURE_POOL`、2 条 `ABANDONED + VOLUNTARY_ABANDON`（其中 1 条未满 7 天仅原销售可见）；另准备管理作废和作废草稿记录验证权限隐藏。AI 评分覆盖 30-85 分。
