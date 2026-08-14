@@ -8,10 +8,21 @@ import {
   XCircle, 
   UserCheck
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const CURRENT_USER = '张三';
 
-// 线索来源和行业字典
 const SOURCE_MAP: Record<string, string> = {
   ONLINE: '线上申请',
   ACTIVITY: '市场活动',
@@ -30,11 +41,10 @@ const INDUSTRY_MAP: Record<string, string> = {
   OTHER: '其他行业'
 };
 
-// AI评分配色样式
-const getScoreBadgeClass = (score: number) => {
-  if (score >= 70) return 'bg-emerald-50 text-emerald-600 border-emerald-250';
-  if (score >= 40) return 'bg-amber-50 text-amber-600 border-amber-250';
-  return 'bg-red-50 text-red-650 border-red-200';
+const getScoreBadge = (score: number) => {
+  if (score >= 70) return <Badge variant="success" className="font-mono">{score}分</Badge>;
+  if (score >= 40) return <Badge variant="warning" className="font-mono">{score}分</Badge>;
+  return <Badge variant="destructive" className="font-mono">{score}分</Badge>;
 };
 
 export default function LeadPool() {
@@ -46,7 +56,7 @@ export default function LeadPool() {
   const [industry, setIndustry] = useState('');
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
-  const [poolType, setPoolType] = useState(''); // NEW | RELEASED
+  const [poolType, setPoolType] = useState('');
 
   // Toast 状态
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -59,7 +69,7 @@ export default function LeadPool() {
   // 1. 获取所有线索
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
 
-  // P1-4: 自动回收超48小时未跟进的已分配线索
+  // 自动回收超48小时未跟进的已分配线索
   useEffect(() => {
     if (leads.length === 0) return;
 
@@ -82,7 +92,6 @@ export default function LeadPool() {
       }
 
       if (timeoutIds.length > 0) {
-        console.log('检测到以下已分配线索超48h且无跟进，自动退回待分配池：', timeoutIds);
         await db.transaction('rw', db.leads, async () => {
           for (const id of timeoutIds) {
             await db.leads.update(id, {
@@ -110,16 +119,14 @@ export default function LeadPool() {
     return diffDays >= 7;
   };
 
-  // 2. 筛选在公海里的线索 (PENDING_ASSIGN 或 放弃满7天的 ABANDONED，或当前用户是原负责人)
+  // 2. 筛选在公海里的线索
   const poolLeads = leads.filter(lead => {
     const isNew = lead.status === 'PENDING_ASSIGN';
     const isReleased = isAbandonedAndReleased(lead);
     const isOwnerAbandon = lead.status === 'ABANDONED' && lead.owner === CURRENT_USER;
     
-    // 必须符合公海的定义
     if (!isNew && !isReleased && !isOwnerAbandon) return false;
 
-    // 关键词过滤 (公司名称/手机号/编号)
     if (keyword.trim()) {
       const kw = keyword.toLowerCase();
       const matchComp = lead.company.toLowerCase().includes(kw);
@@ -128,17 +135,12 @@ export default function LeadPool() {
       if (!matchComp && !matchPhone && !matchId) return false;
     }
 
-    // 来源过滤
     if (source && lead.source !== source) return false;
-
-    // 行业过滤
     if (industry && lead.industry !== industry) return false;
 
-    // AI评分区间过滤
     if (minScore && lead.score < parseInt(minScore)) return false;
     if (maxScore && lead.score > parseInt(maxScore)) return false;
 
-    // 入池类型过滤
     if (poolType) {
       if (poolType === 'NEW' && !isNew) return false;
       if (poolType === 'RELEASED' && !isReleased) return false;
@@ -146,14 +148,13 @@ export default function LeadPool() {
 
     return true;
   }).map(lead => {
-    // 动态增加附加属性方便表格展示
     const isNew = lead.status === 'PENDING_ASSIGN';
     return {
       ...lead,
       poolType: isNew ? 'NEW' : 'RELEASED',
       poolTime: isNew ? lead.createdAt : (lead.abandonedAt || lead.followedAt || lead.createdAt)
     };
-  }).sort((a, b) => b.score - a.score); // 默认按 AI 评分倒序排序
+  }).sort((a, b) => b.score - a.score);
 
   // 3. 认领交互
   const handleClaim = async (leadId: string) => {
@@ -170,7 +171,6 @@ export default function LeadPool() {
           assignedAt: nowStr
         });
 
-        // 插入跟进记录
         await db.follow_up_records.add({
           leadId,
           time: nowStr,
@@ -182,7 +182,6 @@ export default function LeadPool() {
         });
       });
 
-      // 成功 Toast 提示 (无二次确认弹窗)
       showToast(isOwnerAbandon ? '撤销放弃成功，线索已恢复' : '线索已认领，请及时跟进', 'success');
     } catch (err) {
       console.error(err);
@@ -194,7 +193,7 @@ export default function LeadPool() {
     <div className="space-y-4">
       {/* 顶部 Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 animate-slide-in text-xs font-bold text-slate-800">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800">
           {toastMessage.type === 'success' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-red-500" />}
           <span>{toastMessage.text}</span>
         </div>
@@ -203,180 +202,172 @@ export default function LeadPool() {
       {/* 顶部标题栏 */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-slate-800">线索公海</h1>
+          <h1 className="text-xl font-bold text-slate-900">线索公海</h1>
           <p className="text-xs text-slate-500">展示所有等待分配的新线索或被放弃流失的呆滞线索，销售可主动认领直接跟进。</p>
         </div>
       </div>
 
       {/* 查询检索栏 */}
-      <div className="forge-action-bar grid grid-cols-1 md:grid-cols-6 gap-3">
-        <div className="relative md:col-span-2">
-          <input
-            type="text"
-            placeholder="搜索公司名称/线索编号/手机号..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 text-xs bg-white border border-slate-200 rounded-md text-slate-800 focus:outline-none focus:border-blue-500"
-          />
-          <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
-        </div>
-        
-        <div>
-          <select
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-650 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">线索来源(全部)</option>
-            {Object.entries(SOURCE_MAP).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-650 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">所属行业(全部)</option>
-            {Object.entries(INDUSTRY_MAP).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={poolType}
-            onChange={(e) => setPoolType(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-650 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">入池类型(全部)</option>
-            <option value="NEW">新线索</option>
-            <option value="RELEASED">已释放</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <input
-              type="number"
-              placeholder="评分Min"
-              min="0"
-              max="100"
-              value={minScore}
-              onChange={(e) => setMinScore(e.target.value)}
-              className="w-full h-9 px-1.5 text-center text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none"
+      <Card>
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div className="relative md:col-span-2">
+            <Input
+              placeholder="搜索公司名称/线索编号/手机号..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="pl-8 text-xs h-9"
             />
-            <span className="text-slate-400">-</span>
-            <input
-              type="number"
-              placeholder="Max"
-              min="0"
-              max="100"
-              value={maxScore}
-              onChange={(e) => setMaxScore(e.target.value)}
-              className="w-full h-9 px-1.5 text-center text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none"
-            />
+            <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setKeyword('');
-              setSource('');
-              setIndustry('');
-              setPoolType('');
-              setMinScore('');
-              setMaxScore('');
-            }}
-            className="h-9 px-3 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors shrink-0"
-          >
-            重置
-          </button>
-        </div>
-      </div>
+          
+          <div>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">线索来源(全部)</option>
+              {Object.entries(SOURCE_MAP).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">所属行业(全部)</option>
+              {Object.entries(INDUSTRY_MAP).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={poolType}
+              onChange={(e) => setPoolType(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">入池类型(全部)</option>
+              <option value="NEW">新线索</option>
+              <option value="RELEASED">已释放</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Input
+                type="number"
+                placeholder="最小分"
+                min="0"
+                max="100"
+                value={minScore}
+                onChange={(e) => setMinScore(e.target.value)}
+                className="text-xs h-9"
+              />
+              <span className="text-slate-400 text-xs">-</span>
+              <Input
+                type="number"
+                placeholder="最大分"
+                min="0"
+                max="100"
+                value={maxScore}
+                onChange={(e) => setMaxScore(e.target.value)}
+                className="text-xs h-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setKeyword('');
+                setSource('');
+                setIndustry('');
+                setPoolType('');
+                setMinScore('');
+                setMaxScore('');
+              }}
+              className="shrink-0 text-xs"
+            >
+              重置
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 公海表格区 */}
-      <div className="forge-card p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="forge-table text-xs">
-            <thead>
-              <tr>
-                <th className="w-[160px]">线索编号</th>
-                <th className="w-[180px]">公司名称</th>
-                <th className="w-[100px]">线索来源</th>
-                <th className="w-[120px]">所属行业</th>
-                <th className="w-[80px]">AI评分</th>
-                <th className="w-[100px]">入池类型</th>
-                <th className="w-[160px]">入池时间</th>
-                <th>放弃原因</th>
-                <th className="text-right w-[100px] font-bold">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {poolLeads.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-center py-12 text-slate-400">
-                    公海暂无符合筛选要求的线索
-                  </td>
-                </tr>
-              ) : (
-                poolLeads.map(lead => (
-                  <tr key={lead.id}>
-                    {/* 线索编号链接至详情 */}
-                    <td 
-                      className="font-mono font-bold text-[#1677ff] cursor-pointer hover:underline"
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[160px]">线索编号</TableHead>
+              <TableHead className="w-[180px]">公司名称</TableHead>
+              <TableHead className="w-[100px]">线索来源</TableHead>
+              <TableHead className="w-[120px]">所属行业</TableHead>
+              <TableHead className="w-[80px]">AI评分</TableHead>
+              <TableHead className="w-[100px]">入池类型</TableHead>
+              <TableHead className="w-[160px]">入池时间</TableHead>
+              <TableHead>放弃原因</TableHead>
+              <TableHead className="text-right w-[100px]">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {poolLeads.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-12 text-slate-400">
+                  公海暂无符合筛选要求的线索
+                </TableCell>
+              </TableRow>
+            ) : (
+              poolLeads.map(lead => (
+                <TableRow key={lead.id}>
+                  <TableCell>
+                    <span 
+                      className="font-mono font-medium text-blue-600 cursor-pointer hover:underline"
                       onClick={() => navigate(`/leads/${lead.id}`)}
                     >
                       {lead.id}
-                    </td>
-                    <td className="font-bold text-slate-800">{lead.company}</td>
-                    <td className="font-semibold text-slate-600">{SOURCE_MAP[lead.source] || lead.source}</td>
-                    <td className="font-semibold text-slate-600">{INDUSTRY_MAP[lead.industry || ''] || lead.industry || '—'}</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getScoreBadgeClass(lead.score)}`}>
-                        {lead.score}分
-                      </span>
-                    </td>
-                    <td>
-                      {lead.poolType === 'NEW' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-150">
-                          新线索
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-200">
-                          已释放
-                        </span>
-                      )}
-                    </td>
-                    <td className="font-mono text-slate-500 text-[11px]">{lead.poolTime}</td>
-                    <td className="max-w-[200px] truncate text-slate-400 font-medium" title={lead.abandonedReason}>
-                      {lead.poolType === 'RELEASED' ? lead.abandonedReason : '—'}
-                    </td>
-                    <td className="text-right">
-                      {/* 认领按钮 */}
-                      <button
-                        type="button"
-                        onClick={() => handleClaim(lead.id)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white rounded transition-colors shadow-sm ${
-                          lead.owner === CURRENT_USER && lead.status === 'ABANDONED'
-                            ? 'bg-amber-600 hover:bg-amber-500'
-                            : 'bg-[#1677ff] hover:bg-blue-500'
-                        }`}
-                      >
-                        <UserCheck size={11} />
-                        <span>{lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">{lead.company}</TableCell>
+                  <TableCell className="text-slate-600">{SOURCE_MAP[lead.source] || lead.source}</TableCell>
+                  <TableCell className="text-slate-600">{INDUSTRY_MAP[lead.industry || ''] || lead.industry || '—'}</TableCell>
+                  <TableCell>{getScoreBadge(lead.score)}</TableCell>
+                  <TableCell>
+                    {lead.poolType === 'NEW' ? (
+                      <Badge variant="info">新线索</Badge>
+                    ) : (
+                      <Badge variant="secondary">已释放</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-mono text-slate-500 text-[11px]">{lead.poolTime}</TableCell>
+                  <TableCell className="max-w-[200px] truncate text-slate-500" title={lead.abandonedReason}>
+                    {lead.poolType === 'RELEASED' ? lead.abandonedReason : '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      onClick={() => handleClaim(lead.id)}
+                      className={`h-7 px-2.5 text-xs ${
+                        lead.owner === CURRENT_USER && lead.status === 'ABANDONED'
+                          ? 'bg-amber-600 hover:bg-amber-700'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                    >
+                      <UserCheck size={12} className="mr-1" />
+                      <span>{lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}</span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

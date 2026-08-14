@@ -7,48 +7,55 @@ import {
   Search, 
   AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Upload
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const CURRENT_USER = '张三'; // 模拟当前登录的销售
 
-// 获取状态 Tag 样式（07产品设计通用规范.md 亮色淡色方案）
-const getStatusStyles = (status: string) => {
+const getStatusBadge = (status: string) => {
   switch (status) {
     case 'DRAFT':
-      return 'text-slate-500 bg-slate-100 border-slate-200';
+      return <Badge variant="secondary">草稿</Badge>;
     case 'PENDING_ASSIGN':
-      return 'text-blue-600 bg-blue-50 border-blue-100';
+      return <Badge variant="info">待分配</Badge>;
     case 'ASSIGNED':
-      return 'text-amber-600 bg-amber-50 border-amber-200';
+      return <Badge variant="warning">已分配</Badge>;
     case 'FOLLOWING':
-      return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      return <Badge variant="success">跟进中</Badge>;
     case 'CONVERTED':
-      return 'text-green-700 bg-green-50 border-green-200';
+      return <Badge variant="purple">已转客户</Badge>;
     case 'ABANDONED':
-      return 'text-red-600 bg-red-50 border-red-100';
+      return <Badge variant="destructive">已作废</Badge>;
     default:
-      return 'text-slate-500 bg-slate-100 border-slate-200';
+      return <Badge variant="outline">{status}</Badge>;
   }
 };
 
-const getStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    DRAFT: '草稿',
-    PENDING_ASSIGN: '待分配',
-    ASSIGNED: '已分配',
-    FOLLOWING: '跟进中',
-    CONVERTED: '已转客户',
-    ABANDONED: '已作废'
-  };
-  return map[status] || status;
-};
-
-// 获取 AI 评分配色
-const getScoreStyles = (score: number) => {
-  if (score >= 80) return 'bg-emerald-50 text-emerald-600 border-emerald-200';
-  if (score >= 50) return 'bg-amber-50 text-amber-600 border-amber-200';
-  return 'bg-red-50 text-red-600 border-red-200';
+const getScoreBadge = (score: number) => {
+  if (score >= 80) return <Badge variant="success" className="font-mono">{score}分</Badge>;
+  if (score >= 50) return <Badge variant="warning" className="font-mono">{score}分</Badge>;
+  return <Badge variant="destructive" className="font-mono">{score}分</Badge>;
 };
 
 export default function LeadsList() {
@@ -80,7 +87,7 @@ export default function LeadsList() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmAbandonId, setConfirmAbandonId] = useState<string | null>(null);
   const [abandonReason, setAbandonReason] = useState('');
-  const [batchActionType, setBatchActionType] = useState<'VOID' | null>(null); // 批量作废确认
+  const [batchActionType, setBatchActionType] = useState<'VOID' | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importStep, setImportStep] = useState<'UPLOAD' | 'PARSING' | 'PREVIEW'>('UPLOAD');
   const [importFileName, setImportFileName] = useState('');
@@ -91,7 +98,7 @@ export default function LeadsList() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 2. 从数据库中实时订阅所有线索与跟进
+  // 2. 从数据库中实时订阅所有线索
   const allLeads = useLiveQuery(() => db.leads.toArray()) || [];
 
   // P1-4: 自动回收超48小时未跟进的已分配线索
@@ -117,7 +124,6 @@ export default function LeadsList() {
       }
 
       if (timeoutIds.length > 0) {
-        console.log('检测到以下已分配线索超48h且无跟进，自动退回待分配池：', timeoutIds);
         await db.transaction('rw', db.leads, async () => {
           for (const id of timeoutIds) {
             await db.leads.update(id, {
@@ -145,7 +151,7 @@ export default function LeadsList() {
     return days > 7;
   };
 
-  // 判断公海是否可见 (待分配、或者已释放超7天，或者我是原负责人)
+  // 判断公海是否可见
   const isHighseasVisible = (lead: Lead) => {
     if (lead.status === 'PENDING_ASSIGN') return true;
     if (lead.status !== 'ABANDONED') return false;
@@ -165,14 +171,12 @@ export default function LeadsList() {
 
   // 4. 按 Tab 逻辑和筛选框过滤线索
   const filteredLeads = allLeads.filter(lead => {
-    // A. Tab 状态过滤
     if (activeTab === 'PENDING' && lead.status !== 'PENDING_ASSIGN') return false;
     if (activeTab === 'MY' && !(lead.owner === CURRENT_USER && ['DRAFT', 'ASSIGNED', 'FOLLOWING'].includes(lead.status))) return false;
     if (activeTab === 'HIGHSEAS' && !isHighseasVisible(lead)) return false;
     if (activeTab === 'CONVERTED' && lead.status !== 'CONVERTED') return false;
     if (activeTab === 'ABANDONED' && lead.status !== 'ABANDONED') return false;
 
-    // B. 查询条件过滤
     if (searchKeyword.trim()) {
       const kw = searchKeyword.toLowerCase();
       const matchId = lead.id.toLowerCase().includes(kw);
@@ -190,7 +194,7 @@ export default function LeadsList() {
     if (filterMaxScore && lead.score > parseInt(filterMaxScore)) return false;
 
     return true;
-  }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 创建时间倒序
+  }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   // 分页计算
   const totalCount = filteredLeads.length;
@@ -198,7 +202,6 @@ export default function LeadsList() {
   const pagedLeads = filteredLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 5. 核心交互函数
-  // 认领线索
   const handleClaim = async (id: string) => {
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const lead = await db.leads.get(id);
@@ -223,7 +226,6 @@ export default function LeadsList() {
     showToast(isOwnerAbandon ? '撤销放弃成功，线索已恢复' : '线索已认领，请及时跟进');
   };
 
-  // 确认删除草稿
   const handleDeleteDraft = async () => {
     if (!confirmDeleteId) return;
     await db.transaction('rw', db.leads, db.follow_up_records, async () => {
@@ -234,15 +236,13 @@ export default function LeadsList() {
     showToast('草稿线索已成功删除');
   };
 
-  // 确认放弃线索
   const handleAbandon = async () => {
     if (!confirmAbandonId || !abandonReason.trim()) return;
     await db.leads.update(confirmAbandonId, {
       status: 'ABANDONED',
       abandonedReason: abandonReason,
-      followedAt: new Date().toISOString().replace('T', ' ').slice(0, 19) // 用作作废日期判定公海保护
+      followedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
     });
-    // 添加放弃的一条跟进日志记录
     await db.follow_up_records.add({
       leadId: confirmAbandonId,
       time: new Date().toISOString().replace('T', ' ').slice(0, 19),
@@ -255,7 +255,6 @@ export default function LeadsList() {
     showToast('线索已退回公海');
   };
 
-  // 批量作废
   const handleBatchVoid = async () => {
     if (selectedLeadIds.length === 0) return;
     await db.transaction('rw', db.leads, async () => {
@@ -271,7 +270,6 @@ export default function LeadsList() {
     showToast('已成功批量作废选中线索');
   };
 
-  // 勾选切换
   const handleToggleSelect = (id: string) => {
     setSelectedLeadIds(prev => 
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -290,7 +288,7 @@ export default function LeadsList() {
     <div className="space-y-4">
       {/* 顶部 Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 animate-slide-in text-xs font-bold text-slate-800">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800">
           {toastMessage.type === 'success' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-red-500" />}
           <span>{toastMessage.text}</span>
         </div>
@@ -299,34 +297,34 @@ export default function LeadsList() {
       {/* 头部导航与操作 */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-slate-800" data-anno="leads-page-header">线索管理</h1>
-          <p className="text-xs text-slate-500" data-anno="leads-permissions">处理全渠道收集的线索并评估 AI 分数，推动转化为商机或客户。</p>
+          <h1 className="text-xl font-bold text-slate-900">线索管理</h1>
+          <p className="text-xs text-slate-500">处理全渠道收集的线索并评估 AI 分数，推动转化为商机或客户。</p>
         </div>
-        <div className="flex gap-2" data-anno="leads-create-tools">
-          <button 
-            type="button"
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            size="sm"
             onClick={() => {
               setIsImportModalOpen(true);
               setImportStep('UPLOAD');
               setImportFileName('');
             }}
-            className="flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-sm"
           >
+            <Upload size={14} className="mr-1" />
             <span>批量导入</span>
-          </button>
-          <button 
-            type="button"
+          </Button>
+          <Button 
+            size="sm"
             onClick={() => navigate('/leads/new')}
-            className="flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-white bg-[#1677ff] hover:bg-blue-500 active:bg-blue-600 rounded-md transition-colors shadow-sm"
           >
-            <Plus size={15} />
+            <Plus size={14} className="mr-1" />
             <span>新建线索</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* 6 状态 Tab 栏 */}
-      <div className="border-b border-slate-200" data-anno="leads-status-tabs">
+      <div className="border-b border-slate-200">
         <div className="flex gap-6">
           {[
             { id: 'ALL', label: '全部' },
@@ -346,16 +344,16 @@ export default function LeadsList() {
                   setActiveTab(tab.id as any);
                   setSelectedLeadIds([]);
                 }}
-                className={`pb-3 text-xs font-bold transition-all relative ${
-                  active ? 'text-[#1677ff]' : 'text-slate-500 hover:text-slate-800'
+                className={`pb-3 text-xs font-semibold transition-all relative cursor-pointer flex items-center gap-1.5 ${
+                  active ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <span>{tab.label}</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-500 text-[10px] font-mono">
+                <Badge variant={active ? 'default' : 'secondary'} className="h-4 px-1.5 text-[10px] font-mono">
                   {count > 99 ? '99+' : count}
-                </span>
+                </Badge>
                 {active && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1677ff] rounded-full animate-fade-in" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                 )}
               </button>
             );
@@ -364,236 +362,237 @@ export default function LeadsList() {
       </div>
 
       {/* 筛选与查询区 */}
-      <div className="forge-action-bar grid grid-cols-1 md:grid-cols-6 gap-3" data-anno="leads-filter-bar">
-        <div className="md:col-span-2 relative">
-          <input 
-            type="text" 
-            placeholder="搜索线索编号、公司、联系人、手机号..." 
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
-          />
-          <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
-        </div>
-        <div>
-          <select 
-            value={filterSource} 
-            onChange={(e) => setFilterSource(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-600 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">线索来源(全部)</option>
-            <option value="ONLINE">官网</option>
-            <option value="ACTIVITY">线下活动</option>
-            <option value="EXHIBITION">展会</option>
-            <option value="REFERRAL">转介绍</option>
-            <option value="IMPORT">批量导入</option>
-            <option value="OTHER">其他</option>
-          </select>
-        </div>
-        <div>
-          <select 
-            value={filterIndustry} 
-            onChange={(e) => setFilterIndustry(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-600 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">所属行业(全部)</option>
-            <option value="MANUFACTURING">制造业</option>
-            <option value="RETAIL">零售</option>
-            <option value="HEALTHCARE">医疗</option>
-            <option value="FINANCE">金融</option>
-            <option value="IT">信息技术</option>
-            <option value="OTHER">其他</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <input 
-            type="number" 
-            placeholder="最小评分" 
-            value={filterMinScore}
-            onChange={(e) => setFilterMinScore(e.target.value)}
-            className="w-full h-9 px-2 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
-          />
-          <span className="text-slate-400">-</span>
-          <input 
-            type="number" 
-            placeholder="最大评分" 
-            value={filterMaxScore}
-            onChange={(e) => setFilterMaxScore(e.target.value)}
-            className="w-full h-9 px-2 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
-          />
-        </div>
-        <div className="flex justify-between items-center gap-2">
-          <select 
-            value={filterOwner} 
-            onChange={(e) => setFilterOwner(e.target.value)}
-            className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-600 focus:outline-none focus:border-blue-500"
-          >
-            <option value="">负责人(全部)</option>
-            <option value="张三">张三 (当前用户)</option>
-            <option value="李四">李四</option>
-          </select>
-          <button 
-            type="button"
-            onClick={() => {
-              setSearchKeyword('');
-              setFilterSource('');
-              setFilterIndustry('');
-              setFilterMinScore('');
-              setFilterMaxScore('');
-              setFilterOwner('');
-              setSelectedLeadIds([]);
-            }}
-            className="h-9 px-3 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors shrink-0"
-          >
-            重置
-          </button>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div className="md:col-span-2 relative">
+            <Input 
+              placeholder="搜索线索编号、公司、联系人、手机号..." 
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="pl-8 text-xs h-9"
+            />
+            <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+          </div>
+          <div>
+            <select 
+              value={filterSource} 
+              onChange={(e) => setFilterSource(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">线索来源(全部)</option>
+              <option value="ONLINE">官网</option>
+              <option value="ACTIVITY">线下活动</option>
+              <option value="EXHIBITION">展会</option>
+              <option value="REFERRAL">转介绍</option>
+              <option value="IMPORT">批量导入</option>
+              <option value="OTHER">其他</option>
+            </select>
+          </div>
+          <div>
+            <select 
+              value={filterIndustry} 
+              onChange={(e) => setFilterIndustry(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">所属行业(全部)</option>
+              <option value="MANUFACTURING">制造业</option>
+              <option value="RETAIL">零售</option>
+              <option value="HEALTHCARE">医疗</option>
+              <option value="FINANCE">金融</option>
+              <option value="IT">信息技术</option>
+              <option value="OTHER">其他</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input 
+              type="number" 
+              placeholder="最小分" 
+              value={filterMinScore}
+              onChange={(e) => setFilterMinScore(e.target.value)}
+              className="text-xs h-9"
+            />
+            <span className="text-slate-400 text-xs">-</span>
+            <Input 
+              type="number" 
+              placeholder="最大分" 
+              value={filterMaxScore}
+              onChange={(e) => setFilterMaxScore(e.target.value)}
+              className="text-xs h-9"
+            />
+          </div>
+          <div className="flex justify-between items-center gap-2">
+            <select 
+              value={filterOwner} 
+              onChange={(e) => setFilterOwner(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">负责人(全部)</option>
+              <option value="张三">张三 (当前用户)</option>
+              <option value="李四">李四</option>
+            </select>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchKeyword('');
+                setFilterSource('');
+                setFilterIndustry('');
+                setFilterMinScore('');
+                setFilterMaxScore('');
+                setFilterOwner('');
+                setSelectedLeadIds([]);
+              }}
+              className="shrink-0 text-xs"
+            >
+              重置
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 批量操作工具条 */}
       {selectedLeadIds.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in text-xs" data-anno="leads-batch-tools">
-          <span className="font-bold text-blue-700">已选择 {selectedLeadIds.length} 项</span>
-          <button 
-            type="button" 
+        <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+          <span className="font-semibold text-blue-700">已选择 {selectedLeadIds.length} 项</span>
+          <Button 
+            variant="destructive"
+            size="sm"
             onClick={() => setBatchActionType('VOID')}
-            className="px-3 py-1 font-bold text-white bg-red-500 hover:bg-red-600 rounded"
+            className="h-7 px-2.5 text-xs"
           >
             批量作废
-          </button>
-          <button 
-            type="button"
+          </Button>
+          <Button 
+            variant="ghost"
+            size="sm"
             onClick={() => setSelectedLeadIds([])}
-            className="text-slate-500 hover:text-slate-800"
+            className="h-7 px-2 text-xs text-slate-600"
           >
             取消选择
-          </button>
+          </Button>
         </div>
       )}
 
       {/* 数据表格卡片 */}
-      <div className="forge-card p-0 overflow-hidden" data-anno="leads-table-fields">
-        <div className="overflow-x-auto">
-          <table className="forge-table">
-            <thead>
-              <tr>
-                <th className="w-12 text-center">
-                  <input 
-                    type="checkbox" 
-                    checked={pagedLeads.length > 0 && selectedLeadIds.length === pagedLeads.length}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                </th>
-                <th>线索单号</th>
-                <th>公司名称</th>
-                <th>联系人</th>
-                <th>手机号</th>
-                <th>邮箱</th>
-                <th>线索来源</th>
-                <th data-anno="leads-ai-score">AI评分</th>
-                <th>状态</th>
-                <th>负责人</th>
-                <th>最近跟进</th>
-                <th>创建时间</th>
-                <th className="text-right" data-anno="leads-row-operations">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {totalCount === 0 ? (
-                <tr>
-                  <td colSpan={13} className="text-center py-10 text-slate-400">
-                    暂无符合条件的线索数据
-                  </td>
-                </tr>
-              ) : (
-                pagedLeads.map((lead) => (
-                  <tr key={lead.id} className={selectedLeadIds.includes(lead.id) ? 'bg-blue-50/20' : ''}>
-                    <td className="text-center">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedLeadIds.includes(lead.id)}
-                        onChange={() => handleToggleSelect(lead.id)}
-                      />
-                    </td>
-                    <td className="font-mono font-bold text-[#1677ff] cursor-pointer hover:underline" onClick={() => navigate(`/leads/${lead.id}`)}>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12 text-center">
+                <input 
+                  type="checkbox" 
+                  checked={pagedLeads.length > 0 && selectedLeadIds.length === pagedLeads.length}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+              </TableHead>
+              <TableHead>线索单号</TableHead>
+              <TableHead>公司名称</TableHead>
+              <TableHead>联系人</TableHead>
+              <TableHead>手机号</TableHead>
+              <TableHead>邮箱</TableHead>
+              <TableHead>线索来源</TableHead>
+              <TableHead>AI评分</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>负责人</TableHead>
+              <TableHead>最近跟进</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead className="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {totalCount === 0 ? (
+              <TableRow>
+                <TableCell colSpan={13} className="text-center py-10 text-slate-400">
+                  暂无符合条件的线索数据
+                </TableCell>
+              </TableRow>
+            ) : (
+              pagedLeads.map((lead) => (
+                <TableRow key={lead.id} className={selectedLeadIds.includes(lead.id) ? 'bg-blue-50/40' : ''}>
+                  <TableCell className="text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedLeadIds.includes(lead.id)}
+                      onChange={() => handleToggleSelect(lead.id)}
+                      className="rounded border-slate-300"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <span 
+                      className="font-mono font-medium text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                    >
                       {lead.id}
-                    </td>
-                    <td className="font-semibold text-slate-800">{lead.company}</td>
-                    <td>{lead.contact || '—'}</td>
-                    <td className="font-mono">{lead.phone || '—'}</td>
-                    <td className="font-mono">{lead.email || '—'}</td>
-                    <td>
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 border border-slate-200">
-                        {lead.source === 'ONLINE' ? '官网' : 
-                         lead.source === 'ACTIVITY' ? '线下活动' : 
-                         lead.source === 'EXHIBITION' ? '展会' : 
-                         lead.source === 'REFERRAL' ? '转介绍' : 
-                         lead.source === 'IMPORT' ? '批量导入' : '其他'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getScoreStyles(lead.score)}`}>
-                        {lead.score}分
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusStyles(lead.status)}`}>
-                        {getStatusLabel(lead.status)}
-                      </span>
-                    </td>
-                    <td>{lead.owner || <span className="text-slate-400">—</span>}</td>
-                    <td className="text-slate-500 font-mono">{lead.followedAt?.substring(2, 16) || '—'}</td>
-                    <td className="text-slate-500 font-mono">{lead.createdAt.substring(2, 16)}</td>
-                    <td className="text-right space-x-2">
-                      {/* 按状态动态展示操作 (不渲染灰色 disabled 按钮) */}
-                      {lead.status === 'DRAFT' && (
-                        <>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}/edit`)} className="text-[#1677ff] hover:text-blue-500 text-xs font-semibold">编辑</button>
-                          <button type="button" onClick={() => setConfirmDeleteId(lead.id)} className="text-red-500 hover:text-red-600 text-xs font-semibold">删除</button>
-                        </>
-                      )}
-                      
-                      {(lead.status === 'PENDING_ASSIGN' || (lead.status === 'ABANDONED' && isHighseasVisible(lead))) && (
-                        <>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                          <button 
-                            type="button" 
-                            onClick={() => handleClaim(lead.id)} 
-                            className="text-[#1677ff] hover:text-blue-500 text-xs font-semibold"
-                          >
-                            {lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}
-                          </button>
-                        </>
-                      )}
- 
-                      {lead.status === 'ASSIGNED' && (
-                        <>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`, { state: { openFollowModal: true } })} className="text-emerald-600 hover:text-emerald-500 text-xs font-semibold">跟进</button>
-                          <button type="button" onClick={() => setConfirmAbandonId(lead.id)} className="text-amber-600 hover:text-amber-500 text-xs font-semibold">放弃</button>
-                        </>
-                      )}
- 
-                      {lead.status === 'FOLLOWING' && (
-                        <>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`, { state: { openFollowModal: true } })} className="text-emerald-600 hover:text-emerald-500 text-xs font-semibold">跟进</button>
-                          <button type="button" onClick={() => navigate(`/leads/${lead.id}`, { state: { triggerConvert: true } })} className="text-purple-600 hover:text-purple-550 text-xs font-semibold">转客户</button>
-                          <button type="button" onClick={() => setConfirmAbandonId(lead.id)} className="text-amber-600 hover:text-amber-500 text-xs font-semibold">放弃</button>
-                        </>
-                      )}
- 
-                      {(lead.status === 'CONVERTED' || (lead.status === 'ABANDONED' && !isHighseasVisible(lead))) && (
-                        <button type="button" onClick={() => navigate(`/leads/${lead.id}`)} className="text-slate-500 hover:text-slate-800 text-xs font-semibold">查看</button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">{lead.company}</TableCell>
+                  <TableCell>{lead.contact || '—'}</TableCell>
+                  <TableCell className="font-mono">{lead.phone || '—'}</TableCell>
+                  <TableCell className="font-mono">{lead.email || '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[11px] font-normal">
+                      {lead.source === 'ONLINE' ? '官网' : 
+                       lead.source === 'ACTIVITY' ? '线下活动' : 
+                       lead.source === 'EXHIBITION' ? '展会' : 
+                       lead.source === 'REFERRAL' ? '转介绍' : 
+                       lead.source === 'IMPORT' ? '批量导入' : '其他'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{getScoreBadge(lead.score)}</TableCell>
+                  <TableCell>{getStatusBadge(lead.status)}</TableCell>
+                  <TableCell>{lead.owner || <span className="text-slate-400">—</span>}</TableCell>
+                  <TableCell className="text-slate-500 font-mono">{lead.followedAt?.substring(2, 16) || '—'}</TableCell>
+                  <TableCell className="text-slate-500 font-mono">{lead.createdAt.substring(2, 16)}</TableCell>
+                  <TableCell className="text-right space-x-1.5">
+                    {lead.status === 'DRAFT' && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}/edit`)} className="h-7 px-2 text-xs text-blue-600">编辑</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(lead.id)} className="h-7 px-2 text-xs text-red-600">删除</Button>
+                      </>
+                    )}
+                    
+                    {(lead.status === 'PENDING_ASSIGN' || (lead.status === 'ABANDONED' && isHighseasVisible(lead))) && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleClaim(lead.id)} 
+                          className="h-7 px-2 text-xs text-blue-600 font-medium"
+                        >
+                          {lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}
+                        </Button>
+                      </>
+                    )}
+
+                    {lead.status === 'ASSIGNED' && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`, { state: { openFollowModal: true } })} className="h-7 px-2 text-xs text-emerald-600">跟进</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmAbandonId(lead.id)} className="h-7 px-2 text-xs text-amber-600">放弃</Button>
+                      </>
+                    )}
+
+                    {lead.status === 'FOLLOWING' && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`, { state: { openFollowModal: true } })} className="h-7 px-2 text-xs text-emerald-600">跟进</Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`, { state: { triggerConvert: true } })} className="h-7 px-2 text-xs text-purple-600">转客户</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmAbandonId(lead.id)} className="h-7 px-2 text-xs text-amber-600">放弃</Button>
+                      </>
+                    )}
+
+                    {(lead.status === 'CONVERTED' || (lead.status === 'ABANDONED' && !isHighseasVisible(lead))) && (
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
 
         {/* 分页 */}
         <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
@@ -606,7 +605,7 @@ export default function LeadsList() {
                 setCurrentPage(1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="h-7 px-2 text-xs bg-white border border-slate-200 rounded text-slate-650 focus:outline-none"
+              className="h-8 px-2 text-xs bg-white border border-slate-200 rounded text-slate-700 focus:outline-none"
             >
               <option value={20}>20 条/页</option>
               <option value={50}>50 条/页</option>
@@ -614,257 +613,228 @@ export default function LeadsList() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              type="button" 
+            <Button 
+              variant="outline"
+              size="sm"
               onClick={() => {
                 if (currentPage > 1) {
                   setCurrentPage(prev => prev - 1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
               disabled={currentPage === 1}
+              className="h-8 px-3 text-xs"
             >
               上一页
-            </button>
-            <span className="font-mono">{currentPage} / {totalPages}</span>
-            <button 
-              type="button" 
+            </Button>
+            <span className="font-mono text-slate-600">{currentPage} / {totalPages}</span>
+            <Button 
+              variant="outline"
+              size="sm"
               onClick={() => {
                 if (currentPage < totalPages) {
                   setCurrentPage(prev => prev + 1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
               disabled={currentPage === totalPages}
+              className="h-8 px-3 text-xs"
             >
               下一页
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* 6.1 删除草稿确认 Modal */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl border border-slate-100">
-            <div className="flex items-center gap-2 text-red-500">
+      {/* 删除草稿确认 Dialog */}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 text-sm">
               <AlertTriangle size={18} />
-              <h3 className="text-sm font-bold text-slate-800">确认删除</h3>
-            </div>
-            <p className="mt-3 text-xs text-slate-500 leading-relaxed">删除后不可恢复，确认删除？</p>
-            <div className="mt-6 flex justify-end gap-2 text-xs">
-              <button 
-                type="button" 
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-3 py-2 font-semibold text-slate-500 hover:bg-slate-50 rounded"
-              >
-                取消
-              </button>
-              <button 
-                type="button" 
-                onClick={handleDeleteDraft}
-                className="px-3 py-2 font-bold text-white bg-red-500 hover:bg-red-600 rounded"
-              >
-                确认删除
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <span>确认删除草稿</span>
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500 leading-relaxed">删除后不可恢复，确认删除该草稿线索？</p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>取消</Button>
+            <Button variant="destructive" size="sm" onClick={handleDeleteDraft}>确认删除</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* 6.2 放弃原因 Modal */}
-      {confirmAbandonId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-slate-100">
-            <div className="flex items-center gap-2 text-amber-500">
+      {/* 放弃原因 Dialog */}
+      <Dialog open={!!confirmAbandonId} onOpenChange={(open) => {
+        if (!open) {
+          setConfirmAbandonId(null);
+          setAbandonReason('');
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600 text-sm">
               <AlertTriangle size={18} />
-              <h3 className="text-sm font-bold text-slate-800">确认放弃线索</h3>
-            </div>
-            <p className="mt-2 text-xs text-slate-500">放弃后线索将回退至公海，请输入您的放弃原因（必填）：</p>
-            <textarea
-              placeholder="请输入放弃原因，例如：客户无采购预算、已采购竞品等..."
-              rows={3}
-              value={abandonReason}
-              onChange={(e) => setAbandonReason(e.target.value)}
-              className="mt-3 w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded text-slate-800 focus:outline-none focus:border-blue-500"
-            />
-            <div className="mt-6 flex justify-end gap-2 text-xs">
-              <button 
-                type="button" 
+              <span>确认放弃线索</span>
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500">放弃后线索将回退至公海，请输入您的放弃原因（必填）：</p>
+          <Textarea
+            placeholder="请输入放弃原因，例如：客户无采购预算、已采购竞品等..."
+            rows={3}
+            value={abandonReason}
+            onChange={(e) => setAbandonReason(e.target.value)}
+            className="text-xs"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => {
+              setConfirmAbandonId(null);
+              setAbandonReason('');
+            }}>取消</Button>
+            <Button 
+              variant="default"
+              size="sm"
+              disabled={!abandonReason.trim()}
+              onClick={handleAbandon}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              确认放弃
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 批量作废确认 Dialog */}
+      <Dialog open={batchActionType === 'VOID'} onOpenChange={(open) => !open && setBatchActionType(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 text-sm">
+              <AlertTriangle size={18} />
+              <span>确认批量作废</span>
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            已选择 <strong className="text-red-500">{selectedLeadIds.length}</strong> 条线索，作废后将无法修改及操作，确认作废？
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setBatchActionType(null)}>取消</Button>
+            <Button variant="destructive" size="sm" onClick={handleBatchVoid}>确认作废</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 批量导入 Dialog */}
+      <Dialog open={isImportModalOpen} onOpenChange={(open) => setIsImportModalOpen(open)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">批量导入线索 (Excel)</DialogTitle>
+          </DialogHeader>
+
+          {importStep === 'UPLOAD' && (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-lg p-10 bg-slate-50 space-y-3">
+              <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Upload size={24} />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-slate-700 text-xs">点击或拖拽 Excel 文件到此区域上传</p>
+                <p className="text-[10px] text-slate-400 mt-1">仅支持 .xlsx, .xls 格式，最大 10MB</p>
+              </div>
+              <Button
+                size="sm"
                 onClick={() => {
-                  setConfirmAbandonId(null);
-                  setAbandonReason('');
+                  setImportFileName('leads_import_template_20260718.xlsx');
+                  setImportStep('PARSING');
+                  setTimeout(() => {
+                    setImportStep('PREVIEW');
+                  }, 1200);
                 }}
-                className="px-3 py-2 font-semibold text-slate-500 hover:bg-slate-50 rounded"
               >
-                取消
-              </button>
-              <button 
-                type="button" 
-                disabled={!abandonReason.trim()}
-                onClick={handleAbandon}
-                className="px-3 py-2 font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-40 rounded"
-              >
-                确认放弃
-              </button>
+                选择模拟 Excel 文件
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* 6.3 批量作废确认 Modal */}
-      {batchActionType === 'VOID' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl border border-slate-100">
-            <div className="flex items-center gap-2 text-red-500">
-              <AlertTriangle size={18} />
-              <h3 className="text-sm font-bold text-slate-800">确认批量作废</h3>
+          {importStep === 'PARSING' && (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="text-center text-slate-500 text-xs">
+                正在解析 Excel 表格数据，联动 AI 评分模型计算转化分数...
+              </div>
             </div>
-            <p className="mt-3 text-xs text-slate-500 leading-relaxed">
-              已选择 <strong className="text-red-500">{selectedLeadIds.length}</strong> 条线索，作废后将无法修改及操作，确认作废？
-            </p>
-            <div className="mt-6 flex justify-end gap-2 text-xs">
-              <button 
-                type="button" 
-                onClick={() => setBatchActionType(null)}
-                className="px-3 py-2 font-semibold text-slate-500 hover:bg-slate-50 rounded"
-              >
-                取消
-              </button>
-              <button 
-                type="button" 
-                onClick={handleBatchVoid}
-                className="px-3 py-2 font-bold text-white bg-red-500 hover:bg-red-600 rounded"
-              >
-                确认作废
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* 6.4 批量导入 Modal (P2-2) */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl border border-slate-100 text-xs space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <span className="text-sm font-bold text-slate-800">批量导入线索 (Excel)</span>
-            </div>
-
-            {importStep === 'UPLOAD' && (
-              <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-lg p-10 bg-slate-50 space-y-3">
-                <div className="h-12 w-12 rounded-full bg-blue-50 text-[#1677ff] flex items-center justify-center">
-                  <Plus size={24} />
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-slate-700">点击或拖拽 Excel 文件到此区域上传</p>
-                  <p className="text-[10px] text-slate-400 mt-1">仅支持 .xlsx, .xls 格式，最大 10MB</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImportFileName('leads_import_template_20260718.xlsx');
-                    setImportStep('PARSING');
-                    setTimeout(() => {
-                      setImportStep('PREVIEW');
-                    }, 1200);
-                  }}
-                  className="px-4 h-8 text-[11px] font-bold text-white bg-[#1677ff] hover:bg-blue-500 rounded transition-colors shadow-sm"
+          {importStep === 'PREVIEW' && (
+            <div className="space-y-4">
+              <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 p-2.5 rounded text-xs font-medium flex items-center gap-2">
+                <CheckCircle size={14} />
+                <span>已解析文件「{importFileName}」，AI 评分预测已就绪，共找到 3 条新线索：</span>
+              </div>
+              <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>公司名称</TableHead>
+                      <TableHead>联系人</TableHead>
+                      <TableHead>手机号</TableHead>
+                      <TableHead>所属行业</TableHead>
+                      <TableHead>AI 预测评分</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[
+                      { company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', industry: 'MANUFACTURING', score: 78 },
+                      { company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', industry: 'HEALTHCARE', score: 85 },
+                      { company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', industry: 'IT', score: 92 }
+                    ].map((preview, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium text-slate-900">{preview.company}</TableCell>
+                        <TableCell>{preview.contact}</TableCell>
+                        <TableCell className="font-mono">{preview.phone}</TableCell>
+                        <TableCell>
+                          {preview.industry === 'MANUFACTURING' ? '制造业' : 
+                           preview.industry === 'HEALTHCARE' ? '医疗健康' : '信息技术'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="success" className="font-mono">{preview.score}分</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsImportModalOpen(false)}
                 >
-                  选择模拟 Excel 文件
-                </button>
-              </div>
-            )}
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                    const mockImportLeads = [
+                      { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', email: 'wukong@longxiang.com', industry: 'MANUFACTURING', region: '北京市-海淀区', score: 78, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
+                      { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', email: 'gujing@zhuoyue.com', industry: 'HEALTHCARE', region: '广东省-深圳市', score: 85, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
+                      { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', email: 'nezha@jiguang.com', industry: 'IT', region: '上海市-张江区', score: 92, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' }
+                    ];
 
-            {importStep === 'PARSING' && (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <div className="h-8 w-8 border-4 border-[#1677ff] border-t-transparent rounded-full animate-spin" />
-                <div className="text-center text-slate-500 font-medium">
-                  正在解析 Excel 表格数据，正在联动 AI 评分模型计算转化分数...
-                </div>
-              </div>
-            )}
+                    await db.transaction('rw', db.leads, async () => {
+                      await db.leads.bulkAdd(mockImportLeads);
+                    });
 
-            {importStep === 'PREVIEW' && (
-              <div className="space-y-4">
-                <div className="bg-emerald-50 text-emerald-700 border border-emerald-150 p-2.5 rounded text-[11px] font-bold flex items-center gap-2">
-                  <CheckCircle size={14} />
-                  <span>已成功解析文件「{importFileName}」，AI 评分预测已就绪，共找到 3 条新线索：</span>
-                </div>
-                <div className="border border-slate-150 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
-                  <table className="forge-table">
-                    <thead>
-                      <tr>
-                        <th>公司名称</th>
-                        <th>联系人</th>
-                        <th>手机号</th>
-                        <th>所属行业</th>
-                        <th>AI 预测评分</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', industry: 'MANUFACTURING', score: 78 },
-                        { company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', industry: 'HEALTHCARE', score: 85 },
-                        { company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', industry: 'IT', score: 92 }
-                      ].map((preview, i) => (
-                        <tr key={i}>
-                          <td className="font-bold text-slate-800">{preview.company}</td>
-                          <td>{preview.contact}</td>
-                          <td className="font-mono">{preview.phone}</td>
-                          <td>
-                            {preview.industry === 'MANUFACTURING' ? '制造业' : 
-                             preview.industry === 'HEALTHCARE' ? '医疗健康' : '信息技术'}
-                          </td>
-                          <td>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-emerald-50 text-emerald-600 border-emerald-200">
-                              {preview.score}分
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex justify-end gap-2 text-xs pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsImportModalOpen(false);
-                    }}
-                    className="px-3 py-2 font-semibold text-slate-500 hover:bg-slate-50 border border-slate-200 rounded"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-                      const mockImportLeads = [
-                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '龙翔智能科技有限公司', contact: '孙悟空', phone: '13911112222', email: 'wukong@longxiang.com', industry: 'MANUFACTURING', region: '北京市-海淀区', score: 78, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
-                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '卓越医疗器械有限公司', contact: '白骨精', phone: '13500009999', email: 'gujing@zhuoyue.com', industry: 'HEALTHCARE', region: '广东省-深圳市', score: 85, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' },
-                        { id: `LEAD20260718-${Math.floor(Math.random() * 9000 + 1000)}`, source: 'IMPORT', company: '极光微电子有限公司', contact: '哪吒', phone: '18877778888', email: 'nezha@jiguang.com', industry: 'IT', region: '上海市-张江区', score: 92, status: 'PENDING_ASSIGN' as const, createdAt: nowStr, createdBy: '张三' }
-                      ];
-
-                      await db.transaction('rw', db.leads, async () => {
-                        await db.leads.bulkAdd(mockImportLeads);
-                      });
-
-                      setIsImportModalOpen(false);
-                      showToast('成功导入 3 条新线索，AI 已自动计算转化分数并分发！', 'success');
-                    }}
-                    className="px-4 py-2 font-bold text-white bg-green-600 hover:bg-green-500 rounded shadow-sm"
-                  >
-                    确认导入
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                    setIsImportModalOpen(false);
+                    showToast('成功导入 3 条新线索，AI 已自动计算转化分数并分发！', 'success');
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  确认导入
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

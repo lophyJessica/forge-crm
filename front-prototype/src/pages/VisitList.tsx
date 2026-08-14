@@ -3,52 +3,45 @@ import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Search, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
-const getStatusBadgeColor = (status: string) => {
+const getStatusBadge = (status: string) => {
   switch (status) {
     case 'PLANNED':
-      return 'bg-blue-50 text-blue-600 border-blue-150';
+      return <Badge variant="info">已计划</Badge>;
     case 'CHECKED_IN':
-      return 'bg-orange-50 text-orange-600 border-orange-200';
+      return <Badge variant="warning">已签到</Badge>;
     case 'COMPLETED':
-      return 'bg-green-50 text-green-700 border-green-200';
+      return <Badge variant="success">已完成</Badge>;
     case 'CANCELLED':
-      return 'bg-red-50 text-red-650 border-red-150';
+      return <Badge variant="destructive">已取消</Badge>;
     default:
-      return 'bg-slate-50 text-slate-500 border-slate-200';
+      return <Badge variant="outline">{status}</Badge>;
   }
-};
-
-const getStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    PLANNED: '已计划',
-    CHECKED_IN: '已签到',
-    COMPLETED: '已完成',
-    CANCELLED: '已取消'
-  };
-  return map[status] || status;
 };
 
 const getAssociationBadge = (type: string) => {
   switch (type) {
     case 'LEAD':
-      return 'bg-blue-50 text-blue-600 border-blue-100';
+      return <Badge variant="info" className="text-[10px] h-4 px-1.5">线索</Badge>;
     case 'OPPORTUNITY':
-      return 'bg-amber-50 text-amber-600 border-amber-200';
+      return <Badge variant="warning" className="text-[10px] h-4 px-1.5">商机</Badge>;
     case 'CUSTOMER':
-      return 'bg-purple-50 text-purple-600 border-purple-150';
+      return <Badge variant="purple" className="text-[10px] h-4 px-1.5">客户</Badge>;
     default:
-      return 'bg-slate-50 text-slate-500 border-slate-250';
+      return <Badge variant="outline" className="text-[10px] h-4 px-1.5">{type}</Badge>;
   }
-};
-
-const getAssociationLabel = (type: string) => {
-  const map: Record<string, string> = {
-    LEAD: '线索',
-    OPPORTUNITY: '商机',
-    CUSTOMER: '客户'
-  };
-  return map[type] || type;
 };
 
 export default function VisitList() {
@@ -87,24 +80,22 @@ export default function VisitList() {
     }
 
     return true;
-  }).sort((a, b) => b.planTime.localeCompare(a.planTime)); // 按计划拜访时间倒序
+  }).sort((a, b) => b.planTime.localeCompare(a.planTime));
 
   const totalCount = filteredVisits.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
   const pagedVisits = filteredVisits.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 5. 核心交互函数
-  // 5.1 快速签到
   const handleCheckIn = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
     
-    // 仿真系统获取定位
     const mockAddresses = [
-      '江苏省南京市江宁区强盛科技园B座1楼大堂',
+      '江苏省南京市江宁区科技园B座1楼大堂',
       '上海市浦东新区张江高科智芯大厦12层前台',
       '北京市西城区金融街鼎泰大厦大堂东门',
-      '湖北省武汉市东西湖区瑞丰冷链仓A1大门'
+      '湖北省武汉市东西湖区冷链仓A1大门'
     ];
     const mockAddr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
 
@@ -117,7 +108,6 @@ export default function VisitList() {
     showToast(`签到成功！系统已打卡定位在 [${mockAddr}]`);
   };
 
-  // 5.2 取消计划
   const handleCancel = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
@@ -132,7 +122,7 @@ export default function VisitList() {
     <div className="space-y-4">
       {/* 顶部 Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 animate-slide-in text-xs font-bold text-slate-800">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800">
           {toastMessage.type === 'success' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-red-500" />}
           <span>{toastMessage.text}</span>
         </div>
@@ -141,169 +131,175 @@ export default function VisitList() {
       {/* 头部标题区 */}
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-slate-800">拜访计划</h1>
+          <h1 className="text-xl font-bold text-slate-900">拜访计划</h1>
           <p className="text-xs text-slate-500">统一销售外勤上门及远程沟通计划，支持位置打卡签到并联动同步至客户 360° 跟进时间轴。</p>
         </div>
-        <button 
-          type="button" 
+        <Button 
+          size="sm"
           onClick={() => navigate('/visits/new')}
-          className="flex items-center gap-1 px-4 h-9 text-xs font-bold text-white bg-[#1677ff] hover:bg-blue-500 rounded-md transition-colors shadow-sm"
         >
-          <Plus size={14} />
+          <Plus size={14} className="mr-1" />
           <span>新建计划</span>
-        </button>
+        </Button>
       </div>
 
       {/* 状态 Tab */}
-      <div className="forge-tabs">
-        {[
-          { key: 'ALL', label: '全部计划', count: visits.length },
-          { key: 'PLANNED', label: '已计划', count: visits.filter(v => v.status === 'PLANNED').length },
-          { key: 'CHECKED_IN', label: '已签到', count: visits.filter(v => v.status === 'CHECKED_IN').length },
-          { key: 'COMPLETED', label: '已完成', count: visits.filter(v => v.status === 'COMPLETED').length },
-          { key: 'CANCELLED', label: '已取消', count: visits.filter(v => v.status === 'CANCELLED').length }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key as any)}
-            className={`forge-tab-item text-xs font-bold px-4 py-2 border-b-2 transition-colors ${
-              activeTab === tab.key 
-                ? 'border-[#1677ff] text-[#1677ff]' 
-                : 'border-transparent text-slate-400 hover:text-slate-650'
-            }`}
-          >
-            <span>{tab.label}</span>
-            <span className="ml-1.5 px-1.5 py-0.2 text-[10px] rounded-full bg-slate-100 text-slate-500">{tab.count}</span>
-          </button>
-        ))}
+      <div className="border-b border-slate-200">
+        <div className="flex gap-6">
+          {[
+            { key: 'ALL', label: '全部计划', count: visits.length },
+            { key: 'PLANNED', label: '已计划', count: visits.filter(v => v.status === 'PLANNED').length },
+            { key: 'CHECKED_IN', label: '已签到', count: visits.filter(v => v.status === 'CHECKED_IN').length },
+            { key: 'COMPLETED', label: '已完成', count: visits.filter(v => v.status === 'COMPLETED').length },
+            { key: 'CANCELLED', label: '已取消', count: visits.filter(v => v.status === 'CANCELLED').length }
+          ].map(tab => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`pb-2.5 text-xs font-semibold transition-all relative cursor-pointer flex items-center gap-1.5 ${
+                  active ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <Badge variant={active ? 'default' : 'secondary'} className="h-4 px-1.5 text-[10px] font-mono">
+                  {tab.count}
+                </Badge>
+                {active && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 筛选过滤 */}
-      <div className="forge-action-bar flex gap-3 items-center">
-        <div className="relative flex-1">
-          <input 
-            type="text" 
-            placeholder="搜索拜访标题、单号、关联客户或商机名..." 
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 text-xs bg-white border border-slate-200 rounded-md text-slate-800 focus:outline-none focus:border-blue-500"
-          />
-          <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
-        </div>
-        <button 
-          type="button"
-          onClick={() => setKeyword('')}
-          className="h-9 px-3 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors"
-        >
-          重置
-        </button>
-      </div>
+      <Card>
+        <CardContent className="p-4 flex gap-3 items-center">
+          <div className="relative flex-1">
+            <Input 
+              placeholder="搜索拜访标题、单号、关联客户或商机名..." 
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="pl-8 text-xs h-9"
+            />
+            <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+          </div>
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => setKeyword('')}
+            className="text-xs"
+          >
+            重置
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* 拜访表格 */}
-      <div className="forge-card p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="forge-table text-xs">
-            <thead>
-              <tr>
-                <th className="w-[150px]">拜访编号</th>
-                <th className="w-[200px]">拜访标题</th>
-                <th className="w-[180px]">关联对象</th>
-                <th className="w-[100px]">拜访方式</th>
-                <th className="w-[150px]">计划拜访时间</th>
-                <th className="w-[100px]">状态</th>
-                <th className="w-[150px]">签到时间</th>
-                <th className="text-right w-[150px]">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {totalCount === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-400">
-                    没有找到符合条件的拜访计划
-                  </td>
-                </tr>
-              ) : (
-                pagedVisits.map(v => (
-                  <tr key={v.id}>
-                    <td 
-                      className="font-mono font-bold text-[#1677ff] cursor-pointer hover:underline"
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[150px]">拜访编号</TableHead>
+              <TableHead className="w-[200px]">拜访标题</TableHead>
+              <TableHead className="w-[180px]">关联对象</TableHead>
+              <TableHead className="w-[100px]">拜访方式</TableHead>
+              <TableHead className="w-[150px]">计划拜访时间</TableHead>
+              <TableHead className="w-[100px]">状态</TableHead>
+              <TableHead className="w-[150px]">签到时间</TableHead>
+              <TableHead className="text-right w-[150px]">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {totalCount === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-10 text-slate-400">
+                  没有找到符合条件的拜访计划
+                </TableCell>
+              </TableRow>
+            ) : (
+              pagedVisits.map(v => (
+                <TableRow key={v.id}>
+                  <TableCell>
+                    <span 
+                      className="font-mono font-medium text-blue-600 cursor-pointer hover:underline"
                       onClick={() => navigate(`/visits/${v.id}`)}
                     >
                       {v.id}
-                    </td>
-                    <td className="font-bold text-slate-850">{v.title}</td>
-                    <td>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${getAssociationBadge(v.associationType)}`}>
-                          {getAssociationLabel(v.associationType)}
-                        </span>
-                        <span className="truncate max-w-[120px] font-semibold text-slate-650">{v.associationName}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="font-semibold text-slate-600">{v.visitMethod}</span>
-                    </td>
-                    <td className="font-mono text-slate-650">{v.planTime}</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getStatusBadgeColor(v.status)}`}>
-                        {getStatusLabel(v.status)}
-                      </span>
-                    </td>
-                    <td className="font-mono text-slate-500">{v.checkedInAt || '—'}</td>
-                    <td className="text-right space-x-3">
-                      <button 
-                        type="button" 
-                        onClick={() => navigate(`/visits/${v.id}`)}
-                        className="text-slate-500 hover:text-slate-700 font-bold"
-                      >
-                        查看
-                      </button>
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">{v.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      {getAssociationBadge(v.associationType)}
+                      <span className="truncate max-w-[120px] font-medium text-slate-700">{v.associationName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-slate-700">{v.visitMethod}</TableCell>
+                  <TableCell className="font-mono text-slate-600">{v.planTime}</TableCell>
+                  <TableCell>{getStatusBadge(v.status)}</TableCell>
+                  <TableCell className="font-mono text-slate-500">{v.checkedInAt || '—'}</TableCell>
+                  <TableCell className="text-right space-x-1.5">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate(`/visits/${v.id}`)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      查看
+                    </Button>
 
-                      {v.status === 'PLANNED' && (
-                        <>
-                          <button 
-                            type="button" 
-                            onClick={(e) => handleCheckIn(v.id, e)}
-                            className="text-[#1677ff] hover:text-blue-500 font-bold"
-                          >
-                            位置签到
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={(e) => handleCancel(v.id, e)}
-                            className="text-red-650 hover:text-red-500 font-bold"
-                          >
-                            取消
-                          </button>
-                        </>
-                      )}
+                    {v.status === 'PLANNED' && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => handleCheckIn(v.id, e)}
+                          className="h-7 px-2 text-xs text-blue-600 font-medium"
+                        >
+                          位置签到
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => handleCancel(v.id, e)}
+                          className="h-7 px-2 text-xs text-red-600"
+                        >
+                          取消
+                        </Button>
+                      </>
+                    )}
 
-                      {v.status === 'CHECKED_IN' && (
-                        <>
-                          <button 
-                            type="button" 
-                            onClick={() => navigate(`/visits/${v.id}`, { state: { triggerComplete: true } })}
-                            className="text-green-700 hover:text-green-600 font-bold"
-                          >
-                            填写记录
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={(e) => handleCancel(v.id, e)}
-                            className="text-red-650 hover:text-red-500 font-bold"
-                          >
-                            取消
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    {v.status === 'CHECKED_IN' && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => navigate(`/visits/${v.id}`, { state: { triggerComplete: true } })}
+                          className="h-7 px-2 text-xs text-emerald-600 font-medium"
+                        >
+                          填写记录
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => handleCancel(v.id, e)}
+                          className="h-7 px-2 text-xs text-red-600"
+                        >
+                          取消
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
 
         {/* 分页 */}
         <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
@@ -316,7 +312,7 @@ export default function VisitList() {
                 setCurrentPage(1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="h-7 px-2 text-xs bg-white border border-slate-200 rounded text-slate-650 focus:outline-none"
+              className="h-8 px-2 text-xs bg-white border border-slate-200 rounded text-slate-700 focus:outline-none"
             >
               <option value={20}>20 条/页</option>
               <option value={50}>50 条/页</option>
@@ -324,36 +320,38 @@ export default function VisitList() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              type="button" 
+            <Button 
+              variant="outline"
+              size="sm"
               onClick={() => {
                 if (currentPage > 1) {
                   setCurrentPage(prev => prev - 1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
               disabled={currentPage === 1}
+              className="h-8 px-3 text-xs"
             >
               上一页
-            </button>
-            <span className="font-mono">{currentPage} / {totalPages}</span>
-            <button 
-              type="button" 
+            </Button>
+            <span className="font-mono text-slate-600">{currentPage} / {totalPages}</span>
+            <Button 
+              variant="outline"
+              size="sm"
               onClick={() => {
                 if (currentPage < totalPages) {
                   setCurrentPage(prev => prev + 1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="px-2 py-1 rounded bg-white border border-slate-200 disabled:opacity-40" 
               disabled={currentPage === totalPages}
+              className="h-8 px-3 text-xs"
             >
               下一页
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
