@@ -98,7 +98,7 @@ export default function Dashboard() {
           <CardContent className="pt-4 divide-y divide-slate-100">
             {[
               { time: '10:05', text: '高分线索 #1024 自动转入培育池', score: '88分', status: '已跟进' },
-              { time: '09:50', text: '客户「强盛科技」触发流失预警', score: '35分', status: '待审核' },
+              { time: '09:50', text: '客户「Forge」触发流失预警', score: '35分', status: '待审核' },
               { time: '09:12', text: '新商机「ERP集成采购」预测成交率上升', score: '92分', status: '已同步' }
             ].map((item, idx) => (
               <div key={idx} className="py-3 flex justify-between items-start text-xs gap-3">

@@ -18,7 +18,7 @@ const ERP_PRODUCTS = [
 
 // 模拟 CRM 正式客户列表
 const CRM_CUSTOMERS = [
-  { id: 'C001', name: '强盛科技有限公司', industry: 'IT' },
+  { id: 'C001', name: 'Forge科技有限公司', industry: 'IT' },
   { id: 'C002', name: '瑞丰生鲜连锁超市', industry: 'RETAIL' },
   { id: 'C003', name: '万达商贸进出口公司', industry: 'RETAIL' },
   { id: 'C004', name: '安泰医疗器械有限公司', industry: 'HEALTHCARE' },
@@ -224,7 +224,7 @@ export default function OppForm() {
                 type="text"
                 maxLength={100}
                 disabled={isReadOnly || loading}
-                placeholder="如：强盛科技WMS升级采购二期"
+                placeholder="如：ForgeWMS升级采购二期"
                 value={title}
                 onChange={(e) => {
                   setTitle(e.target.value);
