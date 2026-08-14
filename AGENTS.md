@@ -65,3 +65,9 @@ Forge CRM 客户关系管理系统，覆盖线索管理、商机管理、客户�
 2. 生成自检报告（# AI 自检报告 / 项目任务 / 改动文件清单 / 改动点说明 / 自检结果 / 遗留风险）→ 上传：`curl -X POST "https://pmlophy.com/p/jarvis/file/upload" -H "X-Jarvis-User: ai-reports" -F "file=@报告.md"`
 
 红线不变：不 commit / 不 push。
+
+## 报告统一归档（铁律）
+
+- 所有自检/审计/复核/部署报告 **统一放在 check-reports/ 目录**（禁止散落在项目根目录）
+- 报告命名：`{项目}-{任务}-{YYYYMMDD}.md` 或原任务名
+- 根目录只保留：AGENTS.md / CLAUDE.md / 项目结构文件
