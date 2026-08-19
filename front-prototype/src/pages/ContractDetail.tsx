@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CURRENT_USER } from '@/domain/businessRules';
+import { archiveContract, receiveMockSignedEvent, submitContractForSigning, voidContract } from '@/domain/contractActions';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -45,6 +47,8 @@ export default function ContractDetail() {
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [voidReasonModal, setVoidReasonModal] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  const [archiveReasonModal, setArchiveReasonModal] = useState(false);
+  const [archiveReason, setArchiveReason] = useState('');
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
@@ -68,94 +72,33 @@ export default function ContractDetail() {
 
   // 2. 交互操作函数
   const handleSubmitSign = async () => {
-    await db.contracts.update(contract.id, {
-      status: 'PENDING_SIGN',
-      updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
-    });
-    showToast('合同已提交，已成功通知签约方进行签署！');
+    if (!window.confirm('确认合同信息完整，并提交外部签署流程？')) return;
+    const result = await submitContractForSigning(contract.id);
+    showToast(result.message, result.ok ? 'success' : 'error');
   };
 
   const handleSign = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const todayYmd = nowStr.slice(0, 10);
-
-    await db.transaction('rw', db.contracts, db.opportunities, db.erp_orders, db.opportunity_follow_ups, async () => {
-      await db.contracts.update(contract.id, {
-        status: 'SIGNED',
-        signedDate: todayYmd,
-        updatedAt: nowStr
-      });
-
-      if (contract.oppId) {
-        await db.opportunities.update(contract.oppId, {
-          status: 'WON',
-          contractNo: contract.id,
-          wonAt: nowStr,
-          amount: contract.amount,
-          updatedAt: nowStr
-        });
-
-        await db.opportunity_follow_ups.add({
-          oppId: contract.oppId,
-          time: nowStr,
-          operator: contract.createdBy || '系统',
-          type: '系统',
-          content: `【合同回写】电子合同 [${contract.id}] 签署通过。商机自动达成 [赢单] 阶段，最终成交金额定格为 ${formatCurrency(contract.amount)}，并下推 ERP 发货单。`
-        });
-
-        const orderId = `ORD${todayYmd.replace(/-/g, '')}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-        await db.erp_orders.add({
-          id: orderId,
-          customerId: contract.customerId,
-          amount: contract.amount,
-          date: todayYmd,
-          status: 'PENDING_DELIVERY'
-        });
-      }
-    });
-
-    showToast('合同签署成功！已联动将商机推进至赢单状态并生成 ERP 发货单。');
+    if (!window.confirm('仅用于 Demo：确认模拟接收一条“已验签”的外部签署完成事件？')) return;
+    const result = await receiveMockSignedEvent(contract.id);
+    showToast(result.message, result.ok ? 'success' : 'error');
   };
 
   const handleArchive = async () => {
-    await db.contracts.update(contract.id, {
-      status: 'ARCHIVED',
-      updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
-    });
-    showToast('合同已成功归档。');
+    const result = await archiveContract(contract.id, CURRENT_USER.name, archiveReason);
+    showToast(result.message, result.ok ? 'success' : 'error');
+    if (result.ok) {
+      setArchiveReasonModal(false);
+      setArchiveReason('');
+    }
   };
 
   const handleVoid = async () => {
-    if (!voidReason.trim()) return;
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-
-    await db.transaction('rw', db.contracts, db.opportunities, db.opportunity_follow_ups, async () => {
-      await db.contracts.update(contract.id, {
-        status: 'VOIDED',
-        voidReason: voidReason,
-        updatedAt: nowStr
-      });
-
-      if (contract.oppId) {
-        await db.opportunities.update(contract.oppId, {
-          status: 'NEGOTIATION',
-          contractNo: undefined,
-          updatedAt: nowStr
-        });
-
-        await db.opportunity_follow_ups.add({
-          oppId: contract.oppId,
-          time: nowStr,
-          operator: '系统',
-          type: '系统',
-          content: `【合同作废】关联合同 [${contract.id}] 已被作废（原因：${voidReason}），商机解除绑定并重置退回到 [商务谈判] 阶段，以允许重新签订。`
-        });
-      }
-    });
-
-    setVoidReasonModal(false);
-    setVoidReason('');
-    showToast('合同已成功作废，关联商机已释放互锁退回谈判阶段。');
+    const result = await voidContract(contract.id, voidReason);
+    showToast(result.message, result.ok ? 'success' : 'error');
+    if (result.ok) {
+      setVoidReasonModal(false);
+      setVoidReason('');
+    }
   };
 
   return (
@@ -170,7 +113,7 @@ export default function ContractDetail() {
 
       {/* 作废状态警示 Banner */}
       {contract.status === 'VOIDED' && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-anno="contract-detail-void-banner">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs font-medium">
             本合同已被作废归档。作废原因：{contract.voidReason || '未指定'}。关联商机已退回至商务谈判阶段并重新开放签署绑定。
@@ -179,7 +122,7 @@ export default function ContractDetail() {
       )}
 
       {/* 顶部面包屑与导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="contract-detail-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -200,7 +143,7 @@ export default function ContractDetail() {
         {/* 左侧合同基本信息卡片 */}
         <div className="md:col-span-2 space-y-4">
           
-          <Card>
+          <Card data-anno="contract-detail-basic-info">
             <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-1.5 text-slate-900">
                 <FileText size={15} className="text-blue-600" />
@@ -235,6 +178,19 @@ export default function ContractDetail() {
                   <span className="text-[10px] text-slate-400 block font-medium">创建时间</span>
                   <span className="text-slate-600 font-mono block">{contract.createdAt}</span>
                 </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-medium">商机联动</span>
+                  <span className="text-slate-700 font-mono block">{contract.opportunitySyncStatus || 'NOT_TRIGGERED'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-medium">ERP 订单联动</span>
+                  <span className="text-slate-700 font-mono block">{contract.erpOrderSyncStatus || 'NOT_TRIGGERED'}</span>
+                </div>
+                {contract.syncError && (
+                  <div className="col-span-2 rounded border border-amber-200 bg-amber-50 p-2 text-amber-700">
+                    联动说明：{contract.syncError}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -243,7 +199,7 @@ export default function ContractDetail() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* 关联商机卡片 */}
-            <Card>
+            <Card data-anno="contract-detail-opportunity">
               <CardHeader className="border-b border-slate-100 pb-2.5 flex flex-row items-center gap-1.5 text-slate-900">
                 <TrendingUp size={14} className="text-blue-600" />
                 <CardTitle className="text-xs font-semibold">关联 CRM 商机</CardTitle>
@@ -278,7 +234,7 @@ export default function ContractDetail() {
             </Card>
 
             {/* 关联客户卡片 */}
-            <Card>
+            <Card data-anno="contract-detail-customer">
               <CardHeader className="border-b border-slate-100 pb-2.5 flex flex-row items-center gap-1.5 text-slate-900">
                 <Users size={14} className="text-blue-600" />
                 <CardTitle className="text-xs font-semibold">关联正式客户</CardTitle>
@@ -307,9 +263,9 @@ export default function ContractDetail() {
         </div>
 
         {/* 右侧电子合同演示区 */}
-        <Card>
+        <Card data-anno="contract-detail-signing-simulation">
           <CardHeader className="border-b border-slate-100 pb-3">
-            <CardTitle className="text-sm font-semibold">在线签署模拟仿真</CardTitle>
+            <CardTitle className="text-sm font-semibold">外部签署事件（Mock）</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="border border-slate-200 rounded-md p-4 h-64 bg-slate-50 flex flex-col justify-between items-center text-center relative overflow-hidden">
@@ -331,7 +287,7 @@ export default function ContractDetail() {
 
               <div className="text-[11px] text-slate-500">
                 {contract.status === 'DRAFT' && '📝 合同草稿，请提交以通知各方在线签署'}
-                {contract.status === 'PENDING_SIGN' && '⏳ 签约方认证已通过，等待签署盖章'}
+                {contract.status === 'PENDING_SIGN' && '⏳ 已提交签署，等待外部已验签事件'}
                 {(contract.status === 'SIGNED' || contract.status === 'ARCHIVED') && `✅ 双方已于 ${contract.signedDate} 在线签署生效`}
                 {contract.status === 'VOIDED' && '❌ 该合同已作废归档，法律效力已解除'}
               </div>
@@ -342,7 +298,7 @@ export default function ContractDetail() {
       </div>
 
       {/* 底部固定操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="contract-detail-action-bar">
         <Button
           variant="outline"
           size="sm"
@@ -384,7 +340,7 @@ export default function ContractDetail() {
               onClick={handleSign}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              确认在线签署
+              模拟接收签署完成事件
             </Button>
             <Button
               variant="destructive"
@@ -399,17 +355,17 @@ export default function ContractDetail() {
         {contract.status === 'SIGNED' && (
           <Button
             size="sm"
-            onClick={handleArchive}
+            onClick={() => setArchiveReasonModal(true)}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
-            归档封存
+            申请归档
           </Button>
         )}
       </div>
 
       {/* 作废原因确认 Dialog */}
       <Dialog open={voidReasonModal} onOpenChange={(open) => !open && setVoidReasonModal(false)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-anno="contract-detail-void-dialog">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-red-600">
               <AlertTriangle size={18} />
@@ -426,6 +382,7 @@ export default function ContractDetail() {
               value={voidReason}
               onChange={(e) => setVoidReason(e.target.value)}
             />
+            <p className="text-[11px] text-slate-400">至少10个字，已输入 {voidReason.trim().length}/10 字</p>
           </div>
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
             <Button 
@@ -441,11 +398,36 @@ export default function ContractDetail() {
             <Button 
               variant="destructive"
               size="sm"
-              disabled={!voidReason.trim()}
+              disabled={voidReason.trim().length < 10}
               onClick={handleVoid}
             >
               确认作废
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 归档前置条件确认 Dialog */}
+      <Dialog open={archiveReasonModal} onOpenChange={(open) => {
+        if (!open) {
+          setArchiveReasonModal(false);
+          setArchiveReason('');
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">申请合同归档</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500">只有商机联动和 ERP 订单联动均成功后才能归档。当前 ERP 串联未接入时会明确阻断。</p>
+          <Textarea
+            rows={3}
+            placeholder="请输入归档原因"
+            value={archiveReason}
+            onChange={(event) => setArchiveReason(event.target.value)}
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setArchiveReasonModal(false)}>取消</Button>
+            <Button size="sm" disabled={!archiveReason.trim()} onClick={handleArchive}>校验并归档</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

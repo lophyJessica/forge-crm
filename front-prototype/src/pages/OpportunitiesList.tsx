@@ -33,8 +33,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CURRENT_USER, calculateOpportunityScore, shanghaiNow } from '@/domain/businessRules';
+import { createContractFromOpportunity } from '@/domain/opportunityActions';
 
-const CURRENT_USER = '张三';
+const CURRENT_USER_NAME = CURRENT_USER.name;
 
 // 七阶段定义
 const STAGES = [
@@ -83,7 +85,6 @@ export default function OpportunitiesList() {
   const [lostModalOppId, setLostModalOppId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState('');
   const [contractModalOppId, setContractModalOppId] = useState<string | null>(null);
-  const [contractNoInput, setContractNoInput] = useState('');
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
@@ -96,7 +97,7 @@ export default function OpportunitiesList() {
 
   // 3. 校验函数
   const checkTransitionPreconditions = (opp: Opportunity, targetStage: string): { allowed: boolean; reason?: string } => {
-    const hasActiveContract = allContracts.some(c => c.oppId === opp.id && ['PENDING_SIGN', 'SIGNED', 'ARCHIVED'].includes(c.status));
+    const hasActiveContract = allContracts.some(c => c.oppId === opp.id && c.status !== 'VOIDED');
     if (hasActiveContract) {
       return { allowed: false, reason: '关联合同签署中,商机不可操作' };
     }
@@ -107,6 +108,10 @@ export default function OpportunitiesList() {
 
     if (targetStage === 'LOST') {
       return { allowed: true };
+    }
+
+    if (targetStage === 'WON') {
+      return { allowed: false, reason: '赢单只能由已验签的合同签署完成事件触发，商机页不可手工操作' };
     }
 
     const order = ['INITIAL_CONTACT', 'NEEDS_CONFIRM', 'PROPOSAL', 'NEGOTIATION', 'CONTRACT', 'WON'];
@@ -143,12 +148,6 @@ export default function OpportunitiesList() {
       return { allowed: true, reason: 'TRIGGER_CONTRACT_MODAL' };
     }
 
-    if (opp.status === 'CONTRACT' && targetStage === 'WON') {
-      if (!opp.contractNo || !opp.contractNo.trim()) {
-        return { allowed: false, reason: '推进失败：在赢单前，请先到详情页录入合同编号并完成在线签署' };
-      }
-    }
-
     return { allowed: true };
   };
 
@@ -156,24 +155,36 @@ export default function OpportunitiesList() {
   const executeTransition = async (oppId: string, targetStage: string, customParams: Partial<Opportunity> = {}) => {
     const opp = await db.opportunities.get(oppId);
     if (!opp) return;
-
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const additionalData: Partial<Opportunity> = { ...customParams };
     if (targetStage === 'WON') {
-      console.log(`[ERP Push] 自动向 ERP 下推销售订单草稿: OPP=${opp.id}, 客户=${opp.customerName}, 金额=${opp.amount}`);
-      showToast(`商机已赢单！ERP 销售订单草稿已生成并下推`, 'success');
+      showToast('赢单只能由合同签署完成事件触发', 'error');
+      return;
     }
+
+    const nowStr = shanghaiNow();
+    const additionalData: Partial<Opportunity> = { ...customParams };
+    const [customer, followUpCount] = await Promise.all([
+      db.customers.get(opp.customerId),
+      db.opportunity_follow_ups.where('oppId').equals(oppId).count(),
+    ]);
 
     await db.transaction('rw', db.opportunities, db.opportunity_follow_ups, async () => {
       await db.opportunities.update(oppId, {
         status: targetStage as any,
+        score: calculateOpportunityScore({
+          customerLevel: customer?.level,
+          customerRisk: customer?.riskLevel,
+          followUpCount,
+          items: opp.items,
+          status: targetStage as Opportunity['status'],
+        }),
         updatedAt: nowStr,
+        version: (opp.version || 0) + 1,
         ...additionalData
       });
       await db.opportunity_follow_ups.add({
         oppId,
         time: nowStr,
-        operator: CURRENT_USER,
+        operator: CURRENT_USER_NAME,
         type: targetStage === 'LOST' ? '电话' : '邮件',
         content: targetStage === 'LOST' 
           ? `商机输单变更，输单原因：${additionalData.lostReason}`
@@ -181,9 +192,7 @@ export default function OpportunitiesList() {
       });
     });
 
-    if (targetStage !== 'WON') {
-      showToast(`阶段成功流转至「${getStageLabel(targetStage)}」`);
-    }
+    showToast(`阶段成功流转至「${getStageLabel(targetStage)}」`);
   };
 
   // 看板拖拽处理器
@@ -211,7 +220,6 @@ export default function OpportunitiesList() {
 
     if (check.reason === 'TRIGGER_CONTRACT_MODAL') {
       setContractModalOppId(oppId);
-      setContractNoInput(`CT20260718-${Math.floor(Math.random() * 9000 + 1000)}`);
       return;
     }
 
@@ -260,10 +268,15 @@ export default function OpportunitiesList() {
 
   const handleContractConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contractModalOppId || !contractNoInput.trim()) return;
-    await executeTransition(contractModalOppId, 'CONTRACT', { contractNo: contractNoInput.trim() });
-    setContractModalOppId(null);
-    setContractNoInput('');
+    if (!contractModalOppId) return;
+    try {
+      const contract = await createContractFromOpportunity(contractModalOppId, CURRENT_USER_NAME);
+      setContractModalOppId(null);
+      showToast(`合同 ${contract.id} 已创建并绑定，商机进入合同签订阶段`);
+      navigate(`/contracts/${contract.id}/edit`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '合同创建失败', 'error');
+    }
   };
 
   const handleRowAdvance = async (opp: Opportunity) => {
@@ -280,7 +293,6 @@ export default function OpportunitiesList() {
 
     if (check.reason === 'TRIGGER_CONTRACT_MODAL') {
       setContractModalOppId(opp.id);
-      setContractNoInput(`CT20260718-${Math.floor(Math.random() * 9000 + 1000)}`);
       return;
     }
 
@@ -298,13 +310,13 @@ export default function OpportunitiesList() {
       )}
 
       {/* 头部导航及操作 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-anno="opportunities-list-page-header">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold text-slate-900">商机管理</h1>
-          <p className="text-xs text-slate-500">跟踪客户的采购意向与成交概率，驱动漏斗流转并同步生成 ERP 订单。</p>
+          <p className="text-xs text-slate-500">跟踪客户的采购意向与成交概率，驱动漏斗流转；ERP 订单串联由合同签署事件推进。</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-md border border-slate-200 p-0.5 bg-slate-50">
+          <div className="inline-flex rounded-md border border-slate-200 p-0.5 bg-slate-50" data-anno="opportunities-view-switcher">
             <button
               type="button"
               onClick={() => setViewMode('KANBAN')}
@@ -323,7 +335,8 @@ export default function OpportunitiesList() {
             </button>
           </div>
 
-          <Button 
+          <Button
+            data-anno="opportunities-create-tools"
             size="sm"
             onClick={() => navigate('/opportunities/new')}
           >
@@ -334,7 +347,7 @@ export default function OpportunitiesList() {
       </div>
 
       {/* 筛选与搜索区 */}
-      <Card>
+      <Card data-anno="opportunities-filter-bar">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-2 relative">
             <Input 
@@ -383,7 +396,7 @@ export default function OpportunitiesList() {
 
       {/* 看板视图 */}
       {viewMode === 'KANBAN' && (
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-start overflow-x-auto min-h-[500px] pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-start overflow-x-auto min-h-[500px] pb-4" data-anno="opportunities-kanban-view">
           {STAGES.map(stage => {
             const list = getGroupedOpps(stage.id);
             return (
@@ -404,7 +417,7 @@ export default function OpportunitiesList() {
                   {list.map(opp => (
                     <Card
                       key={opp.id}
-                      draggable
+                      draggable={!['CONTRACT', 'WON', 'LOST'].includes(opp.status)}
                       onDragStart={(e) => handleDragStart(e, opp.id)}
                       onClick={() => navigate(`/opportunities/${opp.id}`)}
                       className="p-3 shadow-xs hover:shadow hover:border-blue-300 transition-all cursor-pointer space-y-2 group"
@@ -442,7 +455,7 @@ export default function OpportunitiesList() {
       {viewMode === 'LIST' && (
         <div className="space-y-3">
           {/* 列表 Tab 栏 */}
-          <div className="border-b border-slate-200">
+          <div className="border-b border-slate-200" data-anno="opportunities-stage-tabs">
             <div className="flex gap-6">
               {[
                 { id: 'ALL', label: '全部' },
@@ -471,7 +484,7 @@ export default function OpportunitiesList() {
           </div>
 
           {/* 表格卡片 */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden" data-anno="opportunities-list-table">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -511,7 +524,7 @@ export default function OpportunitiesList() {
                       <TableCell>{getProbabilityBadge(opp.score)}</TableCell>
                       <TableCell className="font-mono text-slate-500">{opp.dealDate || '—'}</TableCell>
                       <TableCell className="font-mono text-slate-400 text-[11px]">{opp.createdAt.substring(2, 16)}</TableCell>
-                      <TableCell className="text-right space-x-1.5">
+                      <TableCell className="text-right space-x-1.5" data-anno="opportunities-row-operations">
                         {['INITIAL_CONTACT', 'NEEDS_CONFIRM', 'PROPOSAL'].includes(opp.status) && (
                           <>
                             <Button variant="ghost" size="sm" onClick={() => navigate(`/opportunities/${opp.id}`)} className="h-7 px-2 text-xs">查看</Button>
@@ -532,8 +545,9 @@ export default function OpportunitiesList() {
                         {opp.status === 'CONTRACT' && (
                           <>
                             <Button variant="ghost" size="sm" onClick={() => navigate(`/opportunities/${opp.id}`)} className="h-7 px-2 text-xs">查看</Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleRowAdvance(opp)} className="h-7 px-2 text-xs text-emerald-600">赢单</Button>
-                            <Button variant="ghost" size="sm" onClick={() => { setLostModalOppId(opp.id); setLostReason(''); }} className="h-7 px-2 text-xs text-red-600">输单</Button>
+                            {opp.contractNo && (
+                              <Button variant="ghost" size="sm" onClick={() => navigate(`/contracts/${opp.contractNo}`)} className="h-7 px-2 text-xs text-purple-600">查看合同</Button>
+                            )}
                           </>
                         )}
 
@@ -552,7 +566,7 @@ export default function OpportunitiesList() {
 
       {/* 输单原因 Dialog */}
       <Dialog open={!!lostModalOppId} onOpenChange={(open) => !open && setLostModalOppId(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-anno="opportunities-lost-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-red-600">
               <AlertTriangle size={16} />
@@ -592,7 +606,7 @@ export default function OpportunitiesList() {
 
       {/* 启动在线合同 Dialog */}
       <Dialog open={!!contractModalOppId} onOpenChange={(open) => !open && setContractModalOppId(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-anno="opportunities-contract-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-blue-600">
               <FileText size={16} />
@@ -600,28 +614,21 @@ export default function OpportunitiesList() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleContractConfirm} className="space-y-4 pt-2">
-            <p className="text-xs text-slate-500">系统将为该商机创建在线签署流程，请录入拟定的合同草案编号（系统已自动预分配）：</p>
-            <Input
-              type="text"
-              required
-              value={contractNoInput}
-              onChange={(e) => setContractNoInput(e.target.value)}
-            />
+            <p className="text-xs text-slate-500">系统将原子创建一份真实合同草稿并绑定当前商机，创建成功后商机才进入“合同签订”阶段。合同编号由系统生成，不能手工录入。</p>
             <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => { setContractModalOppId(null); setContractNoInput(''); }}
+                onClick={() => setContractModalOppId(null)}
               >
                 取消
               </Button>
               <Button
                 type="submit"
                 size="sm"
-                disabled={!contractNoInput.trim()}
               >
-                启动并进入合同阶段
+                创建合同并进入合同阶段
               </Button>
             </DialogFooter>
           </form>

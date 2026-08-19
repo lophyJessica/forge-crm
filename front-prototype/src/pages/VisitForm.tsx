@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CURRENT_USER, shanghaiNow, shanghaiToday } from '@/domain/businessRules';
 
 interface EntityOption {
   id: string;
@@ -24,6 +25,7 @@ export default function VisitForm() {
   const [associationId, setAssociationId] = useState('');
   const [visitMethod, setVisitMethod] = useState<'上门' | '电话' | '视频'>('上门');
   const [planTime, setPlanTime] = useState('');
+  const [planEndTime, setPlanEndTime] = useState('');
   const [address, setAddress] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ export default function VisitForm() {
           const list = await db.opportunities.filter(o => o.status !== 'WON' && o.status !== 'LOST').toArray();
           setOptions(list.map(o => ({ id: o.id, name: `[商机] ${o.title} (${o.customerName})` })));
         } else if (associationType === 'CUSTOMER') {
-          const list = await db.customers.toArray();
+          const list = await db.customers.filter(c => c.lifecycleStatus === 'ACTIVE' && c.syncStatus === 'AVAILABLE').toArray();
           setOptions(list.map(c => ({ id: c.id, name: `[客户] ${c.name}` })));
         }
       } catch (err) {
@@ -70,6 +72,7 @@ export default function VisitForm() {
           setAssociationId(v.associationId);
           setVisitMethod(v.visitMethod);
           setPlanTime(v.planTime.replace(' ', 'T'));
+          setPlanEndTime(v.planEndTime?.replace(' ', 'T') || '');
           setAddress(v.address || '');
 
           if (v.status !== 'PLANNED') {
@@ -104,9 +107,14 @@ export default function VisitForm() {
   }, [isEdit, id, location.state, navigate]);
 
   const generateVisitId = async () => {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await db.visits.count();
-    const indexStr = String(count + 1).padStart(4, '0');
+    const todayStr = shanghaiToday().replace(/-/g, '');
+    const prefix = `VS${todayStr}-`;
+    const ids = await db.visits.filter(item => item.id.startsWith(prefix)).primaryKeys();
+    const nextIndex = ids.reduce((max, key) => {
+      const suffix = Number(String(key).slice(prefix.length));
+      return Number.isFinite(suffix) ? Math.max(max, suffix) : max;
+    }, 0) + 1;
+    const indexStr = String(nextIndex).padStart(4, '0');
     return `VS${todayStr}-${indexStr}`;
   };
 
@@ -116,6 +124,8 @@ export default function VisitForm() {
     if (!title.trim()) newErrors.title = '请输入拜访标题';
     if (!associationId) newErrors.associationId = '请选择要关联的具体对象';
     if (!planTime) newErrors.planTime = '请选择计划拜访时间';
+    if (!planEndTime) newErrors.planEndTime = '请选择计划结束时间';
+    if (planTime && planEndTime && planEndTime <= planTime) newErrors.planEndTime = '计划结束时间必须晚于开始时间';
     if (visitMethod === '上门' && !address.trim()) newErrors.address = '上门拜访必须填写拜访地址';
 
     if (Object.keys(newErrors).length > 0) {
@@ -126,8 +136,9 @@ export default function VisitForm() {
 
     setLoading(true);
     try {
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const nowStr = shanghaiNow();
       const formattedPlanTime = planTime.replace('T', ' ');
+      const formattedPlanEndTime = planEndTime.replace('T', ' ');
 
       let associationName = '';
       if (associationType === 'LEAD') {
@@ -138,10 +149,15 @@ export default function VisitForm() {
         associationName = opp?.title || '';
       } else if (associationType === 'CUSTOMER') {
         const cust = await db.customers.get(associationId);
+        if (!cust || cust.lifecycleStatus !== 'ACTIVE' || cust.syncStatus !== 'AVAILABLE') {
+          throw new Error('关联客户已停用或快照不可用，禁止新建拜访');
+        }
         associationName = cust?.name || '';
       }
 
       if (isEdit && id) {
+        const current = await db.visits.get(id);
+        if (!current || current.status !== 'PLANNED') throw new Error('仅已计划状态可编辑');
         await db.visits.update(id, {
           title,
           associationType,
@@ -149,8 +165,12 @@ export default function VisitForm() {
           associationName,
           visitMethod,
           planTime: formattedPlanTime,
-          address,
-          updatedAt: nowStr
+          planEndTime: formattedPlanEndTime,
+          assigneeId: current.assigneeId || CURRENT_USER.id,
+          assigneeName: current.assigneeName || CURRENT_USER.name,
+          address: address.trim() || undefined,
+          version: (current.version || 0) + 1,
+          updatedAt: nowStr,
         });
       } else {
         const newId = await generateVisitId();
@@ -162,17 +182,26 @@ export default function VisitForm() {
           associationName,
           visitMethod,
           planTime: formattedPlanTime,
-          address,
+          planEndTime: formattedPlanEndTime,
+          assigneeId: CURRENT_USER.id,
+          assigneeName: CURRENT_USER.name,
+          address: address.trim() || undefined,
           status: 'PLANNED',
+          executionResult: 'NOT_STARTED',
+          executionException: 'NONE',
+          locationSource: 'NONE',
+          locationReliability: 'UNAVAILABLE',
+          authorizationResult: 'NOT_REQUESTED',
+          version: 1,
           createdAt: nowStr,
-          createdBy: '张三'
+          createdBy: CURRENT_USER.name,
         });
       }
 
       showToast('拜访计划保存成功');
       setTimeout(() => navigate('/visits'), 800);
     } catch (err) {
-      showToast('数据库操作失败，请重试', 'error');
+      showToast(err instanceof Error ? err.message : '数据库操作失败，请重试', 'error');
     } finally {
       setLoading(false);
     }
@@ -189,7 +218,7 @@ export default function VisitForm() {
       )}
 
       {/* 导航标题 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="visit-form-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -205,13 +234,13 @@ export default function VisitForm() {
       </div>
 
       {/* 表单卡片 */}
-      <Card>
+      <Card data-anno="visit-form-card">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">拜访计划详情</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 关联类型 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-anno="visit-form-association-fields">
             <div>
               <Label className="block mb-2">
                 关联对象类型 <span className="text-red-500">*</span>
@@ -253,7 +282,7 @@ export default function VisitForm() {
           </div>
 
           {/* 拜访标题 */}
-          <div>
+          <div data-anno="visit-form-title-field">
             <Label htmlFor="title" className="block mb-2">
               拜访计划主题 <span className="text-red-500">*</span>
             </Label>
@@ -268,7 +297,7 @@ export default function VisitForm() {
           </div>
 
           {/* 拜访方式 & 时间 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-anno="visit-form-method-time-fields">
             <div>
               <Label className="block mb-2">
                 拜访沟通方式 <span className="text-red-500">*</span>
@@ -297,10 +326,29 @@ export default function VisitForm() {
               />
               {errors.planTime && <p className="text-[11px] text-red-500 block mt-1">{errors.planTime}</p>}
             </div>
+
+            <div>
+              <Label htmlFor="planEndTime" className="block mb-2">
+                计划结束时间 <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="planEndTime"
+                type="datetime-local"
+                value={planEndTime}
+                onChange={(event) => setPlanEndTime(event.target.value)}
+                className={errors.planEndTime ? 'border-red-500' : ''}
+              />
+              {errors.planEndTime && <p className="text-[11px] text-red-500 block mt-1">{errors.planEndTime}</p>}
+            </div>
+
+            <div>
+              <Label className="block mb-2">负责人</Label>
+              <Input value={`${CURRENT_USER.name}（${CURRENT_USER.id}）`} disabled className="bg-slate-50" />
+            </div>
           </div>
 
           {/* 拜访地址 */}
-          <div>
+          <div data-anno="visit-form-address-field">
             <Label htmlFor="address" className="block mb-2">
               拜访地址 {visitMethod === '上门' && <span className="text-red-500">*</span>}
             </Label>
@@ -317,8 +365,9 @@ export default function VisitForm() {
       </Card>
 
       {/* 底部操作固定栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="visit-form-footer">
         <Button
+          data-anno="visit-form-save-action"
           variant="outline"
           size="sm"
           onClick={() => navigate('/visits')}

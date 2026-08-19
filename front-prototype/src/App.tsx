@@ -160,6 +160,7 @@ export default function App() {
           <Route path="/visits/:id" element={<VisitDetail />} />
           <Route path="/targets" element={<TargetList />} />
           <Route path="/targets/new" element={<TargetForm />} />
+          <Route path="/targets/:id/edit" element={<TargetForm />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </Layout>

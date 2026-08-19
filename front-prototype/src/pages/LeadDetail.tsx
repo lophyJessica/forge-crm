@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type FollowUpRecord } from '../db';
+import { db, type Customer, type FollowUpRecord } from '../db';
 import { addCustomerToErp, type ErpCustomer } from '../api/erpSync';
 import { 
   ChevronLeft, 
@@ -27,8 +27,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  CURRENT_USER,
+  calculateLeadScore,
+  getLeadRouting,
+  getPublicPoolEligibility,
+  shanghaiNow,
+} from '@/domain/businessRules';
 
-const CURRENT_USER = '张三';
+const CURRENT_USER_NAME = CURRENT_USER.name;
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -41,7 +48,7 @@ const getStatusBadge = (status: string) => {
     case 'FOLLOWING':
       return <Badge variant="success">跟进中</Badge>;
     case 'CONVERTED':
-      return <Badge variant="purple">已转客户</Badge>;
+      return <Badge variant="success">已转客户</Badge>;
     case 'ABANDONED':
       return <Badge variant="destructive">已作废</Badge>;
     default:
@@ -141,20 +148,34 @@ export default function LeadDetail() {
 
   // 认领线索
   const handleClaim = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    await db.leads.update(lead.id, {
-      status: 'ASSIGNED',
-      owner: CURRENT_USER,
-      assignedAt: nowStr
-    });
-    await db.follow_up_records.add({
-      leadId: lead.id,
-      time: nowStr,
-      operator: CURRENT_USER,
-      type: '电话',
-      content: '销售在公海中认领了该线索。'
-    });
-    showToast('线索认领成功，已加入您的跟进名单');
+    if (!window.confirm('确认认领该公海线索并开始 48 小时首次跟进计时？')) return;
+    try {
+      const nowStr = shanghaiNow();
+      await db.transaction('rw', db.leads, db.follow_up_records, async () => {
+        const current = await db.leads.get(lead.id);
+        if (!current) throw new Error('线索不存在或已被其他人处理');
+        const eligibility = getPublicPoolEligibility(current, CURRENT_USER_NAME);
+        if (!eligibility.claimable) throw new Error(eligibility.reason || '该线索当前不可认领');
+        await db.leads.update(lead.id, {
+          status: 'ASSIGNED',
+          owner: CURRENT_USER_NAME,
+          assignedAt: nowStr,
+          poolType: undefined,
+          claimRequestId: `CLAIM-${lead.id}-${Date.now()}`,
+          version: (current.version || 0) + 1,
+        });
+        await db.follow_up_records.add({
+          leadId: lead.id,
+          time: nowStr,
+          operator: CURRENT_USER_NAME,
+          type: '系统记录',
+          content: `销售 [${CURRENT_USER_NAME}] 从公海认领了该线索。`,
+        });
+      });
+      showToast('线索认领成功，请在 48 小时内完成首次跟进');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '线索认领失败', 'error');
+    }
   };
 
   // 添加跟进记录
@@ -162,21 +183,22 @@ export default function LeadDetail() {
     e.preventDefault();
     if (!followContent.trim()) return;
 
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowStr = shanghaiNow();
     const nextStatus = lead.status === 'ASSIGNED' ? 'FOLLOWING' : lead.status;
 
     await db.transaction('rw', db.leads, db.follow_up_records, async () => {
       await db.follow_up_records.add({
         leadId: lead.id,
         time: nowStr,
-        operator: CURRENT_USER,
+        operator: CURRENT_USER_NAME,
         type: followType,
         content: followContent.trim(),
         nextPlan: followNextPlan.trim() || undefined
       });
       await db.leads.update(lead.id, {
         status: nextStatus,
-        followedAt: nowStr
+        followedAt: nowStr,
+        version: (lead.version || 0) + 1,
       });
     });
 
@@ -189,21 +211,24 @@ export default function LeadDetail() {
   // 放弃线索
   const handleAbandon = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!abandonReason.trim()) return;
+    if (abandonReason.trim().length < 15) return;
 
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowStr = shanghaiNow();
     await db.transaction('rw', db.leads, db.follow_up_records, async () => {
       await db.leads.update(lead.id, {
         status: 'ABANDONED',
+        voidType: 'VOLUNTARY_ABANDON',
         abandonedReason: abandonReason.trim(),
-        followedAt: nowStr
+        abandonedAt: nowStr,
+        assignedAt: undefined,
+        version: (lead.version || 0) + 1,
       });
       await db.follow_up_records.add({
         leadId: lead.id,
         time: nowStr,
-        operator: CURRENT_USER,
-        type: '电话',
-        content: `销售主动放弃了线索，放弃原因：${abandonReason.trim()}`
+        operator: CURRENT_USER_NAME,
+        type: '系统记录',
+        content: `销售主动放弃线索；原负责人 7 天内不可重新认领。原因：${abandonReason.trim()}`,
       });
     });
 
@@ -214,7 +239,11 @@ export default function LeadDetail() {
 
   // 转为客户（CRM→ERP 同步）
   const handleConvertToCustomer = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    if (lead.status !== 'FOLLOWING') {
+      showToast('只有跟进中的线索可以转为客户', 'error');
+      return;
+    }
+    const nowStr = shanghaiNow();
     const customerCode = `CUST-${Date.now()}`;
     const erpCustomer: ErpCustomer = {
       id: customerCode,
@@ -232,23 +261,49 @@ export default function LeadDetail() {
     try {
       await addCustomerToErp(erpCustomer);
 
-      await db.transaction('rw', db.leads, db.follow_up_records, async () => {
+      const customerSnapshot: Customer = {
+        id: customerCode,
+        erpCustomerId: customerCode,
+        name: erpCustomer.name,
+        contact: erpCustomer.contact,
+        phone: erpCustomer.phone,
+        email: lead.email || '',
+        industry: lead.industry || 'OTHER',
+        region: lead.region || '',
+        level: 'C',
+        creditLimit: erpCustomer.creditLimit,
+        riskLevel: 'LOW',
+        owner: CURRENT_USER_NAME,
+        createdAt: nowStr,
+        lifecycleStatus: 'ACTIVE',
+        syncStatus: 'AVAILABLE',
+        sourceVersion: '1',
+        sourceEventId: `ERP-CUSTOMER-CREATED-${customerCode}`,
+        syncedAt: nowStr,
+        creditStatus: 'NORMAL',
+      };
+
+      await db.transaction('rw', db.customers, db.leads, db.follow_up_records, async () => {
+        await db.customers.put(customerSnapshot);
         await db.leads.update(lead.id, {
           status: 'CONVERTED',
-          followedAt: nowStr
+          convertedAt: nowStr,
+          convertedById: CURRENT_USER.id,
+          convertedToCustomerId: customerCode,
+          version: (lead.version || 0) + 1,
         });
 
         await db.follow_up_records.add({
           leadId: lead.id,
           time: nowStr,
-          operator: CURRENT_USER,
-          type: '拜访',
-          content: '线索成功转为客户快照，同步下发 ERP 数据库正式建档。'
+          operator: CURRENT_USER_NAME,
+          type: '系统记录',
+          content: `ERP 已完成客户建档，CRM 已生成可追溯快照 ${customerCode}。`,
         });
       });
 
       setIsConvertModalOpen(false);
-      showToast('已同步至ERP');
+      showToast('ERP 建档成功，CRM 客户快照已生成');
     } catch (err: any) {
       console.error(err);
       setIsConvertModalOpen(false);
@@ -256,56 +311,69 @@ export default function LeadDetail() {
     }
   };
 
-  // 删除草稿
+  // 作废草稿（保留原记录）
   const handleDeleteDraft = async () => {
+    if (lead.status !== 'DRAFT') return;
+    const nowStr = shanghaiNow();
     await db.transaction('rw', db.leads, db.follow_up_records, async () => {
-      await db.leads.delete(lead.id);
-      await db.follow_up_records.where('leadId').equals(lead.id).delete();
+      await db.leads.update(lead.id, {
+        status: 'ABANDONED',
+        voidType: 'DRAFT_VOID',
+        abandonedAt: nowStr,
+        abandonedReason: '创建人作废草稿',
+        version: (lead.version || 0) + 1,
+      });
+      await db.follow_up_records.add({
+        leadId: lead.id,
+        time: nowStr,
+        operator: CURRENT_USER_NAME,
+        type: '系统记录',
+        content: '创建人作废了草稿线索，原始记录已保留。',
+      });
     });
     setIsDeleteModalOpen(false);
-    showToast('草稿已成功删除');
+    showToast('草稿已作废，历史记录已保留');
     setTimeout(() => navigate('/leads'), 1500);
   };
 
   // 提交草稿
   const handleSubmitDraft = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const nowStr = shanghaiNow();
     if (!lead.phone && !lead.email) {
       showToast('无法提交：手机号和邮箱必须至少填写一个，请先编辑补充信息', 'error');
       return;
     }
 
-    const score = Math.floor(Math.random() * 30) + 60;
-    const nextStatus = score >= 80 ? 'ASSIGNED' : 'PENDING_ASSIGN';
-    const owner = score >= 80 ? CURRENT_USER : undefined;
-    const assignedAt = score >= 80 ? nowStr : undefined;
+    const score = calculateLeadScore(
+      { source: lead.source, industry: lead.industry, createdAt: lead.createdAt, followedAt: lead.followedAt },
+      { responseHours: 0.5, historicalConversionRate: 0.5, lastActivityAt: nowStr },
+    );
+    const routing = getLeadRouting(score);
 
     await db.leads.update(lead.id, {
-      status: nextStatus,
+      status: routing.status,
       score,
-      owner,
-      assignedAt,
-      createdAt: nowStr
+      owner: routing.owner,
+      assignedAt: routing.status === 'ASSIGNED' ? nowStr : undefined,
+      poolType: routing.poolType,
+      version: (lead.version || 0) + 1,
     });
 
-    if (nextStatus === 'ASSIGNED') {
+    if (routing.status === 'ASSIGNED') {
       await db.follow_up_records.add({
         leadId: lead.id,
         time: nowStr,
         operator: 'AI 自动引擎',
         type: '邮件',
-        content: `AI 评分完成：${score}分（≥80分触发自动派单）。已自动分配给最优销售 ${CURRENT_USER}。`
+        content: `AI 评分完成：${score}分（≥80分触发自动派单）。已自动分配给最优销售 ${CURRENT_USER_NAME}。`
       });
     }
 
     showToast(`线索提交成功，AI 评分: ${score}分`);
   };
 
-  const isHighseas = lead.status === 'PENDING_ASSIGN' || (() => {
-    if (lead.status !== 'ABANDONED' || !lead.followedAt) return false;
-    const days = (new Date().getTime() - new Date(lead.followedAt).getTime()) / (1000 * 60 * 60 * 24);
-    return days > 7;
-  })();
+  const publicPoolEligibility = getPublicPoolEligibility(lead, CURRENT_USER_NAME);
+  const isHighseas = publicPoolEligibility.visible;
 
   return (
     <div className="space-y-4 pb-24">
@@ -318,7 +386,7 @@ export default function LeadDetail() {
       )}
 
       {/* 头部导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="lead-detail-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -334,7 +402,7 @@ export default function LeadDetail() {
       </div>
 
       {/* 状态 Banner 卡片 */}
-      <Card>
+      <Card data-anno="lead-detail-status-owner">
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {getStatusBadge(lead.status)}
@@ -354,7 +422,7 @@ export default function LeadDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           {/* AI 评分折叠卡片 */}
-          <Card>
+          <Card data-anno="lead-detail-ai-score">
             <CardContent className="p-4 space-y-3">
               <button
                 type="button"
@@ -362,7 +430,7 @@ export default function LeadDetail() {
                 className="flex w-full items-center justify-between text-xs font-semibold text-slate-800 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <span>AI 评分权重拆解</span>
+                  <span>AI 评分依据</span>
                   <Badge variant={lead.score >= 80 ? 'success' : lead.score >= 50 ? 'warning' : 'destructive'} className="font-mono">
                     {lead.score}分
                   </Badge>
@@ -373,11 +441,11 @@ export default function LeadDetail() {
               {isScoreDetailOpen && (
                 <div className="pt-3 border-t border-slate-100 grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
                   {[
-                    { label: '渠道来源 (15%)', val: lead.source === 'ONLINE' || lead.source === 'REFERRAL' ? '15/15' : lead.source === 'ACTIVITY' || lead.source === 'EXHIBITION' ? '10/15' : '5/15' },
-                    { label: '所属行业 (20%)', val: lead.industry === 'IT' || lead.industry === 'FINANCE' ? '20/20' : lead.industry === 'MANUFACTURING' ? '15/20' : lead.industry === 'RETAIL' ? '10/20' : '5/20' },
-                    { label: '职位职级 (20%)', val: (lead.position || '').includes('总') || (lead.position || '').includes('CEO') ? '20/20' : '12/20' },
-                    { label: '地区评分 (20%)', val: (lead.region || '').includes('北京') || (lead.region || '').includes('上海') ? '20/20' : '12/20' },
-                    { label: '响应与活跃 (25%)', val: lead.score > 0 ? `${lead.score - 55}分` : '—' }
+                    { label: '渠道来源（最高15）', val: lead.source },
+                    { label: '行业匹配（最高20）', val: lead.industry || 'OTHER' },
+                    { label: '响应速度（最高25）', val: lead.followedAt ? '已首响' : '提交时评估' },
+                    { label: '历史转化（最高25）', val: '组织历史基线' },
+                    { label: '近期活跃（最高15）', val: lead.followedAt || lead.createdAt }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-slate-50 border border-slate-100 p-2 rounded-md">
                       <span className="text-[10px] text-slate-400 block font-medium">{item.label}</span>
@@ -390,7 +458,7 @@ export default function LeadDetail() {
           </Card>
 
           {/* 基本信息卡片 */}
-          <Card>
+          <Card data-anno="lead-detail-basic-info">
             <CardHeader className="border-b border-slate-100 pb-3">
               <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
             </CardHeader>
@@ -427,7 +495,7 @@ export default function LeadDetail() {
         </div>
 
         {/* 右侧跟进记录 */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col" data-anno="lead-detail-follow-up">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3">
             <CardTitle className="text-sm font-semibold">跟进记录</CardTitle>
             {['ASSIGNED', 'FOLLOWING'].includes(lead.status) && (
@@ -464,7 +532,7 @@ export default function LeadDetail() {
       </div>
 
       {/* 固定底部操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="lead-detail-action-bar">
         <Button
           variant="outline"
           size="sm"
@@ -480,7 +548,7 @@ export default function LeadDetail() {
               size="sm"
               onClick={() => setIsDeleteModalOpen(true)}
             >
-              删除
+              作废
             </Button>
             <Button
               variant="outline"
@@ -502,8 +570,10 @@ export default function LeadDetail() {
           <Button
             size="sm"
             onClick={handleClaim}
+            disabled={!publicPoolEligibility.claimable}
+            title={publicPoolEligibility.reason}
           >
-            认领线索
+            {publicPoolEligibility.claimable ? '认领线索' : '原负责人保护期中'}
           </Button>
         )}
 
@@ -557,17 +627,17 @@ export default function LeadDetail() {
         {lead.status === 'CONVERTED' && (
           <Button
             size="sm"
-            onClick={() => navigate('/customers')}
+            onClick={() => navigate(lead.convertedToCustomerId ? `/customers/${lead.convertedToCustomerId}` : '/customers')}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            查看 ERP 关联客户
+            查看 CRM 客户快照
           </Button>
         )}
       </div>
 
       {/* 添加跟进记录 Dialog */}
       <Dialog open={isFollowModalOpen} onOpenChange={(open) => setIsFollowModalOpen(open)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-anno="lead-detail-follow-up-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5">
               <Clock size={16} className="text-emerald-600" />
@@ -639,7 +709,7 @@ export default function LeadDetail() {
 
       {/* 放弃原因 Dialog */}
       <Dialog open={isAbandonModalOpen} onOpenChange={(open) => setIsAbandonModalOpen(open)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-anno="lead-detail-abandon-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-amber-600">
               <AlertTriangle size={16} />
@@ -647,7 +717,7 @@ export default function LeadDetail() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAbandon} className="space-y-4 pt-2">
-            <p className="text-xs text-slate-500">放弃后该线索将退回公海可供他人认领，请注明您的放弃原因：</p>
+            <p className="text-xs text-slate-500">放弃后进入公海：原负责人 7 天内不可重新认领，其他销售可立即认领。请填写至少15个字的原因：</p>
             <Textarea
               required
               rows={3}
@@ -655,6 +725,7 @@ export default function LeadDetail() {
               value={abandonReason}
               onChange={(e) => setAbandonReason(e.target.value)}
             />
+            <p className="text-[11px] text-slate-400">已输入 {abandonReason.trim().length}/15 字</p>
             <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button
                 type="button"
@@ -670,7 +741,7 @@ export default function LeadDetail() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={!abandonReason.trim()}
+                disabled={abandonReason.trim().length < 15}
                 className="bg-amber-600 hover:bg-amber-700 text-white"
               >
                 确认放弃
@@ -682,7 +753,7 @@ export default function LeadDetail() {
 
       {/* 转客户确认 Dialog */}
       <Dialog open={isConvertModalOpen} onOpenChange={(open) => setIsConvertModalOpen(open)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-anno="lead-detail-convert-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-purple-600">
               <CheckCircle size={16} />
@@ -713,17 +784,17 @@ export default function LeadDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* 删除草稿 Dialog */}
+      {/* 作废草稿 Dialog */}
       <Dialog open={isDeleteModalOpen} onOpenChange={(open) => setIsDeleteModalOpen(open)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-anno="lead-detail-draft-void-modal">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-1.5 text-red-600">
               <AlertTriangle size={16} />
-              <span>确认删除草稿</span>
+              <span>确认作废草稿</span>
             </DialogTitle>
           </DialogHeader>
           <p className="text-xs text-slate-500 leading-relaxed">
-            删除后不可恢复，确认删除该草稿线索？
+            作废后原记录与跟进历史仍会保留，并进入“已作废”状态。确认继续？
           </p>
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
             <Button
@@ -740,7 +811,7 @@ export default function LeadDetail() {
               size="sm"
               onClick={handleDeleteDraft}
             >
-              确认删除
+              确认作废
             </Button>
           </DialogFooter>
         </DialogContent>

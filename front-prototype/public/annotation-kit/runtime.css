@@ -564,6 +564,13 @@
   box-shadow: 0 10px 26px rgb(15 118 82 / 16%);
 }
 
+.vpa-panel-toggle.is-active {
+  border-color: #63b894;
+  background: #f2fbf6;
+  color: #13724d;
+  box-shadow: 0 10px 26px rgb(15 118 82 / 16%);
+}
+
 .vpa-entry svg {
   width: 16px;
   height: 16px;
@@ -593,6 +600,7 @@
   font-size: 11px;
   font-weight: 800;
   cursor: grab;
+  transition: border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .vpa-panel-toggle:hover {
@@ -1334,4 +1342,15 @@
     width: calc(100vw - 16px);
     height: calc(100vh - 62px);
   }
+}
+
+body.vpa-mode-annotate [data-anno] {
+  outline: 2px dashed rgb(26 154 107 / 50%) !important;
+  outline-offset: 3px;
+  transition: outline-color 0.18s ease, outline-offset 0.18s ease;
+}
+
+body.vpa-mode-annotate [data-anno]:hover {
+  outline: 2px solid rgb(26 154 107 / 90%) !important;
+  outline-offset: 4px;
 }

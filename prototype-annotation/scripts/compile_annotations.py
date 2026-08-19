@@ -31,6 +31,11 @@ def resolve_source(config_path: Path, config: dict, markdown_file: str) -> Path:
     return source_path
 
 
+def page_key(page: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", str(page).lower()).strip("-")
+    return normalized or "page"
+
+
 def compile_config(config_path: Path, allow_unmapped: bool = False, scope_override: str = "") -> tuple[dict, list[str], list[dict]]:
     config = json.loads(config_path.read_text(encoding="utf-8"))
     scope = scope_override or str(config.get("scope", "")).strip()
@@ -39,9 +44,10 @@ def compile_config(config_path: Path, allow_unmapped: bool = False, scope_overri
         errors.append(f"invalid scope '{scope}' in {config_path}; use lowercase kebab-case")
 
     compiled = []
-    seen_ids = set()
+    seen_page_ids = set()
     seen_keys = set()
     requirements = {}
+    annotation_items = config.get("annotations", [])
     for item in config.get("sourceRequirements", []):
         requirement_id = str(item.get("id", "")).strip()
         if not requirement_id:
@@ -52,16 +58,18 @@ def compile_config(config_path: Path, allow_unmapped: bool = False, scope_overri
             requirements[requirement_id] = item
     mapped_requirements = set()
 
-    for index, item in enumerate(config.get("annotations", [])):
+    for index, item in enumerate(annotation_items):
         annotation = dict(item)
         annotation_id = str(annotation.get("id", "")).strip()
         if not annotation_id:
             errors.append(f"{config_path}: annotations[{index}] is missing id")
             continue
-        if annotation_id in seen_ids:
-            errors.append(f"{config_path}: duplicate annotation id: {annotation_id}")
+        page = str(annotation.get("page", "")).strip()
+        page_id = (page, annotation_id)
+        if page_id in seen_page_ids:
+            errors.append(f"{config_path}: duplicate annotation id on page '{page}': {annotation_id}")
             continue
-        seen_ids.add(annotation_id)
+        seen_page_ids.add(page_id)
 
         selector = annotation.get("target", {}).get("selector", "").strip()
         if not selector:
@@ -90,7 +98,10 @@ def compile_config(config_path: Path, allow_unmapped: bool = False, scope_overri
             if ref not in requirements:
                 errors.append(f"annotation {annotation_id} references unknown requirement: {ref}")
 
-        annotation_key = str(annotation.get("key") or (f"{scope}:{annotation_id}" if scope else annotation_id))
+        default_key = annotation_id
+        if scope:
+            default_key = f"{scope}:{page_key(page)}:{annotation_id}" if page else f"{scope}:{annotation_id}"
+        annotation_key = str(annotation.get("key") or default_key)
         if annotation_key in seen_keys:
             errors.append(f"{config_path}: duplicate annotation key: {annotation_key}")
             continue

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CURRENT_USER, shanghaiNow } from '@/domain/businessRules';
+import { submitContractForSigning } from '@/domain/contractActions';
+import { createContractFromOpportunity } from '@/domain/opportunityActions';
 
 export default function ContractForm() {
   const navigate = useNavigate();
@@ -19,6 +22,9 @@ export default function ContractForm() {
   const [oppId, setOppId] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [oppTitle, setOppTitle] = useState('');
+  const [taxIncluded, setTaxIncluded] = useState(true);
+  const [taxRate, setTaxRate] = useState('6');
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -33,17 +39,16 @@ export default function ContractForm() {
   };
 
   useEffect(() => {
-    db.opportunities.toArray().then(allOpps => {
-      db.contracts.toArray().then(allContracts => {
+    Promise.all([db.opportunities.toArray(), db.contracts.toArray()]).then(([allOpps, allContracts]) => {
         const boundOppIds = allContracts
           .filter(c => c.status !== 'VOIDED' && c.id !== id)
           .map(c => c.oppId);
 
         const filtered = allOpps.filter(opp => 
-          opp.status === 'CONTRACT' && !boundOppIds.includes(opp.id)
+          (opp.status === 'NEGOTIATION' || opp.id === allContracts.find(c => c.id === id)?.oppId)
+          && !boundOppIds.includes(opp.id)
         );
         setAvailableOpps(filtered);
-      });
     });
   }, [id]);
 
@@ -57,6 +62,9 @@ export default function ContractForm() {
           setOppId(ct.oppId);
           setCustomerId(ct.customerId);
           setCustomerName(ct.customerName);
+          setOppTitle(ct.oppTitle);
+          setTaxIncluded(ct.taxIncluded ?? true);
+          setTaxRate(String(ct.taxRate ?? 6));
 
           if (ct.status !== 'DRAFT') {
             showToast('该合同已提交签署，处于只读状态', 'error');
@@ -73,6 +81,7 @@ export default function ContractForm() {
         db.opportunities.get(stateOppId).then(opp => {
           if (opp) {
             setCustomerName(opp.customerName);
+            setOppTitle(opp.title);
             setAmount(opp.amount ? String(opp.amount) : '');
             setTitle(`${opp.customerName} - ${opp.title}销售合同`);
           }
@@ -87,20 +96,15 @@ export default function ContractForm() {
     if (opp) {
       setCustomerId(opp.customerId);
       setCustomerName(opp.customerName);
+      setOppTitle(opp.title);
       setAmount(opp.amount ? String(opp.amount) : '');
       setTitle(`${opp.customerName} - ${opp.title}销售合同`);
     } else {
       setCustomerId('');
       setCustomerName('');
+      setOppTitle('');
       setTitle('');
     }
-  };
-
-  const generateContractId = async () => {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await db.contracts.count();
-    const indexStr = String(count + 1).padStart(4, '0');
-    return `CT${todayStr}-${indexStr}`;
   };
 
   // 保存或提交
@@ -109,6 +113,8 @@ export default function ContractForm() {
     if (!title.trim()) newErrors.title = '请输入合同名称';
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) newErrors.amount = '请输入合法金额';
     if (!oppId) newErrors.oppId = '请选择可签约的关联商机';
+    if (!taxRate || isNaN(Number(taxRate)) || Number(taxRate) < 0 || Number(taxRate) > 100) newErrors.taxRate = '税率须为0-100之间的数字';
+    if (!/^\d+(\.\d{1,2})?$/.test(amount)) newErrors.amount = '金额最多保留两位小数';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -118,46 +124,50 @@ export default function ContractForm() {
 
     setLoading(true);
     try {
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const nowStr = shanghaiNow();
       const contractAmount = Number(amount);
-      const opp = availableOpps.find(o => o.id === oppId) || { title: '' };
+      let savedId = id;
 
       if (isEdit && id) {
+        const current = await db.contracts.get(id);
+        if (!current || current.status !== 'DRAFT') throw new Error('仅草稿合同可编辑');
         await db.contracts.update(id, {
-          title,
+          title: title.trim(),
           amount: contractAmount,
           oppId,
-          oppTitle: opp.title,
+          oppTitle,
           customerId,
           customerName,
-          status: submitToSign ? 'PENDING_SIGN' : 'DRAFT',
-          updatedAt: nowStr
+          currency: 'CNY',
+          taxIncluded,
+          taxRate: Number(taxRate),
+          version: (current.version || 0) + 1,
+          updatedAt: nowStr,
         });
       } else {
-        const newId = await generateContractId();
-        await db.contracts.add({
-          id: newId,
-          title,
+        const created = await createContractFromOpportunity(oppId, CURRENT_USER.name);
+        savedId = created.id;
+        await db.contracts.update(created.id, {
+          title: title.trim(),
           amount: contractAmount,
-          oppId,
-          oppTitle: opp.title,
-          customerId,
-          customerName,
-          status: submitToSign ? 'PENDING_SIGN' : 'DRAFT',
-          createdAt: nowStr,
-          createdBy: '张三'
-        });
-
-        await db.opportunities.update(oppId, {
-          contractNo: newId,
-          updatedAt: nowStr
+          currency: 'CNY',
+          taxIncluded,
+          taxRate: Number(taxRate),
+          version: (created.version || 0) + 1,
+          updatedAt: nowStr,
         });
       }
 
-      showToast(submitToSign ? '合同提交签署成功，已通知各方' : '合同草稿保存成功');
-      setTimeout(() => navigate('/contracts'), 800);
+      if (submitToSign && savedId) {
+        const result = await submitContractForSigning(savedId);
+        if (!result.ok) throw new Error(result.message);
+        showToast(result.message);
+      } else {
+        showToast('合同草稿保存成功');
+      }
+      setTimeout(() => navigate(`/contracts/${savedId}`), 800);
     } catch (err) {
-      showToast('数据库写入失败，请重试', 'error');
+      showToast(err instanceof Error ? err.message : '数据库写入失败，请重试', 'error');
     } finally {
       setLoading(false);
     }
@@ -174,7 +184,7 @@ export default function ContractForm() {
       )}
 
       {/* 顶部面包屑与导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="contract-form-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -185,18 +195,18 @@ export default function ContractForm() {
         </Button>
         <div className="flex flex-col">
           <h1 className="text-lg font-bold text-slate-900">{isEdit ? '编辑合同' : '新建签署合同'}</h1>
-          <p className="text-xs text-slate-500">商机推进到 CONTRACT 阶段启动的电子归结契约</p>
+          <p className="text-xs text-slate-500">从商务谈判商机创建真实合同；创建成功后商机才进入合同签订阶段</p>
         </div>
       </div>
 
       {/* 主表单卡片 */}
-      <Card>
+      <Card data-anno="contract-form-card">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">合同基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 关联商机 */}
-          <div>
+          <div data-anno="contract-form-opportunity-field">
             <Label className="block mb-2">
               关联商机 <span className="text-red-500">*</span>
             </Label>
@@ -214,7 +224,7 @@ export default function ContractForm() {
                   errors.oppId ? 'border-red-500 focus:ring-red-500' : 'border-slate-200'
                 }`}
               >
-                <option value="">-- 选择待签商机 (仅列出处于 CONTRACT 阶段的商机) --</option>
+                <option value="">-- 选择可创建合同的商机（商务谈判阶段）--</option>
                 {availableOpps.map(opp => (
                   <option key={opp.id} value={opp.id}>[{opp.id}] {opp.title}</option>
                 ))}
@@ -224,7 +234,7 @@ export default function ContractForm() {
           </div>
 
           {/* 关联客户 */}
-          <div>
+          <div data-anno="contract-form-customer-inheritance">
             <Label className="block mb-2">关联客户</Label>
             <Input 
               value={customerName ? `[${customerId}] ${customerName}` : '（选择商机后自动继承带出）'}
@@ -235,7 +245,7 @@ export default function ContractForm() {
           </div>
 
           {/* 合同名称 */}
-          <div>
+          <div data-anno="contract-form-title-field">
             <Label htmlFor="title" className="block mb-2">
               合同名称 <span className="text-red-500">*</span>
             </Label>
@@ -250,7 +260,7 @@ export default function ContractForm() {
           </div>
 
           {/* 合同金额 */}
-          <div>
+          <div data-anno="contract-form-amount-field">
             <Label htmlFor="amount" className="block mb-2">
               合同最终签约金额 (元) <span className="text-red-500">*</span>
             </Label>
@@ -263,12 +273,38 @@ export default function ContractForm() {
             />
             {errors.amount && <p className="text-[11px] text-red-500 block mt-1">{errors.amount}</p>}
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="block mb-2">币种</Label>
+              <Input value="CNY" disabled className="bg-slate-50 font-mono" />
+            </div>
+            <div>
+              <Label htmlFor="taxRate" className="block mb-2">税率 (%)</Label>
+              <Input
+                id="taxRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={taxRate}
+                onChange={(event) => setTaxRate(event.target.value)}
+                className={errors.taxRate ? 'border-red-500' : ''}
+              />
+              {errors.taxRate && <p className="text-[11px] text-red-500 mt-1">{errors.taxRate}</p>}
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" checked={taxIncluded} onChange={(event) => setTaxIncluded(event.target.checked)} />
+            合同金额为含税金额
+          </label>
         </CardContent>
       </Card>
 
       {/* 底部操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="contract-form-footer">
         <Button
+          data-anno="contract-form-save-draft"
           variant="outline"
           size="sm"
           onClick={() => navigate('/contracts')}
@@ -277,6 +313,7 @@ export default function ContractForm() {
         </Button>
 
         <Button
+          data-anno="contract-form-submit-sign"
           variant="outline"
           size="sm"
           disabled={loading}

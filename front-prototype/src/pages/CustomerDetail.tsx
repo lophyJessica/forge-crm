@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { erpDb } from '../api/erpSync';
 import { 
   ChevronLeft, 
   AlertTriangle, 
   TrendingUp, 
   ShoppingCart,
   Plus,
-  ExternalLink,
   CheckCircle,
   XCircle
 } from 'lucide-react';
@@ -54,15 +52,6 @@ const getProbabilityBadge = (prob: number) => {
   return <Badge variant="destructive" className="font-mono">{prob}%</Badge>;
 };
 
-const getOrderStatusBadge = (status: string) => {
-  switch (status) {
-    case 'PENDING_DELIVERY': return <Badge variant="warning">待发货</Badge>;
-    case 'SHIPPED': return <Badge variant="info">已发货</Badge>;
-    case 'SIGNED': return <Badge variant="success">已签收</Badge>;
-    default: return <Badge variant="outline">{status}</Badge>;
-  }
-};
-
 const formatCurrency = (val?: number) => {
   if (val === undefined || val === null) return '—';
   return '¥' + val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -80,11 +69,14 @@ export default function CustomerDetail() {
   };
 
   // 1. 实时读取该客户、商机、订单、跟进与线索
-  const customer = useLiveQuery(() => {
-    return erpDb.table('customers').get(id || '');
-  }) || null;
-  const opportunities = useLiveQuery(() => db.opportunities.where('customerId').equals(id || '').toArray()) || [];
-  const erpOrders = useLiveQuery(() => db.erp_orders.where('customerId').equals(id || '').toArray()) || [];
+  const customer = useLiveQuery(() => db.customers.get(id || '')) || null;
+  const opportunities = useLiveQuery(async () => {
+    const snapshot = await db.customers.get(id || '');
+    if (!snapshot) return [];
+    return db.opportunities.filter(item =>
+      item.customerId === snapshot.id || Boolean(snapshot.erpCustomerId && item.erpCustomerId === snapshot.erpCustomerId)
+    ).toArray();
+  }, [id]) || [];
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const leadFollows = useLiveQuery(() => db.follow_up_records.toArray()) || [];
   const oppFollows = useLiveQuery(() => db.opportunity_follow_ups.toArray()) || [];
@@ -98,14 +90,14 @@ export default function CustomerDetail() {
   }
 
   // 2. 聚合历史跟进记录
-  const matchingLeads = leads.filter(l => l.company === customer.name);
+  const matchingLeads = leads.filter(l => l.convertedToCustomerId === customer.id);
   
   const currentLeadFollowRecords = leadFollows
     .filter(f => matchingLeads.some(l => l.id === f.leadId))
     .map(f => {
       const parentLead = matchingLeads.find(l => l.id === f.leadId);
       return {
-        id: `LEAD-${f.id || Math.random()}`,
+        id: `LEAD-${f.id || `${f.leadId}-${f.time}`}`,
         time: f.time,
         operator: f.operator,
         type: '线索跟进',
@@ -119,7 +111,7 @@ export default function CustomerDetail() {
     .map(f => {
       const parentOpp = opportunities.find(o => o.id === f.oppId);
       return {
-        id: `OPP-${f.id || Math.random()}`,
+        id: `OPP-${f.id || `${f.oppId}-${f.time}`}`,
         time: f.time,
         operator: f.operator,
         type: '商机跟进',
@@ -130,13 +122,13 @@ export default function CustomerDetail() {
 
   const aggregatedFollows = [...currentLeadFollowRecords, ...currentOppFollowRecords]
     .sort((a, b) => b.time.localeCompare(a.time));
-
-  const handleOpenErpOrder = (orderId: string) => {
-    showToast(`正在新窗口中打开 ERP 发货单 [${orderId}] 的履约详情页...`, 'success');
-    setTimeout(() => {
-      window.open(`https://example.com/erp/orders/${orderId}`, '_blank');
-    }, 800);
-  };
+  const isCustomerAvailable = customer.lifecycleStatus === 'ACTIVE' && customer.syncStatus === 'AVAILABLE';
+  const hasOngoingOpportunity = opportunities.some(item => !['WON', 'LOST'].includes(item.status));
+  const latestFollowAt = aggregatedFollows[0]?.time;
+  const daysSinceLastFollow = latestFollowAt
+    ? (Date.now() - new Date(latestFollowAt.replace(' ', 'T')).getTime()) / 86_400_000
+    : Number.POSITIVE_INFINITY;
+  const shouldWarnChurn = customer.riskLevel === 'HIGH' && hasOngoingOpportunity && daysSinceLastFollow > 30;
 
   return (
     <div className="space-y-4 pb-24">
@@ -149,17 +141,26 @@ export default function CustomerDetail() {
       )}
 
       {/* AI 流失预警 Banner */}
-      {customer.riskLevel === 'HIGH' && (
+      {!isCustomerAvailable && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="font-medium text-xs">
-            警告：该客户存在流失风险（上次跟进已超过 30 天，且近期未产生任何销售订单），建议尽快安排联系跟进并通知 ERP 系统冻结其信用额度！
+            客户快照当前为“{customer.lifecycleStatus === 'DISABLED' ? '已停用' : customer.syncStatus}”，禁止新建商机、拜访或跟进；历史信息仍可只读查看。
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {shouldWarnChurn && (
+        <Alert variant="destructive" data-anno="customer-detail-risk-banner">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="font-medium text-xs">
+            流失预警：该客户超过 30 天未跟进且仍有进行中商机。请安排跟进；是否冻结 ERP 信用须由独立通知及回执决定，风险等级本身不等于已冻结。
           </AlertDescription>
         </Alert>
       )}
 
       {/* 顶部面包屑与导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="customer-detail-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -170,14 +171,14 @@ export default function CustomerDetail() {
         </Button>
         <div className="flex flex-col">
           <h1 className="text-lg font-bold text-slate-900">{customer.name}</h1>
-          <p className="text-xs text-slate-500">客户编码 (ERP SSOT): {customer.code || customer.id} · 创建于 {customer.createdAt}</p>
+          <p className="text-xs text-slate-500">CRM 客户编号: {customer.id} · ERP 客户编号: {customer.erpCustomerId || '待同步'} · 快照版本: {customer.sourceVersion || '—'}</p>
         </div>
       </div>
 
       {/* 快照卡片 */}
-      <Card>
+      <Card data-anno="customer-detail-erp-snapshot">
         <CardHeader className="border-b border-slate-100 pb-3">
-          <CardTitle className="text-sm font-semibold">ERP 客户主数据快照</CardTitle>
+          <CardTitle className="text-sm font-semibold">CRM 客户快照（来源：ERP）</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
@@ -196,14 +197,12 @@ export default function CustomerDetail() {
                 <span className={`text-slate-700 font-semibold block ${field.mono ? 'font-mono' : ''}`}>{field.val}</span>
               </div>
             ))}
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 block font-medium">ERP信用状态</span>
+            <div className="space-y-1" data-anno="customer-detail-erp-sync-status">
+              <span className="text-[10px] text-slate-400 block font-medium">ERP信用状态（独立回执）</span>
               <div>
-                {customer.riskLevel === 'HIGH' ? (
-                  <Badge variant="destructive">冻结</Badge>
-                ) : (
-                  <Badge variant="success">正常</Badge>
-                )}
+                <Badge variant={customer.creditStatus === 'FROZEN' ? 'destructive' : customer.creditStatus === 'NORMAL' ? 'success' : 'outline'}>
+                  {customer.creditStatus === 'FROZEN' ? '冻结' : customer.creditStatus === 'NORMAL' ? '正常' : '未知'}
+                </Badge>
               </div>
             </div>
             <div className="col-span-2 md:col-span-4 bg-slate-50 border border-slate-100 p-2.5 rounded-md text-xs text-slate-500">
@@ -218,7 +217,7 @@ export default function CustomerDetail() {
         <div className="lg:col-span-2 space-y-4">
           
           {/* 关联商机卡片 */}
-          <Card>
+          <Card data-anno="customer-detail-opportunities">
             <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-1.5 text-slate-900">
                 <TrendingUp size={15} className="text-blue-600" />
@@ -227,7 +226,15 @@ export default function CustomerDetail() {
               <Button 
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/opportunities/new', { state: { defaultCustomerId: customer.code || customer.id } })}
+                onClick={() => {
+                  if (!isCustomerAvailable) {
+                    showToast('客户已停用或快照不可用，禁止新建商机', 'error');
+                    return;
+                  }
+                  navigate('/opportunities/new', { state: { defaultCustomerId: customer.id } });
+                }}
+                disabled={!isCustomerAvailable}
+                title={!isCustomerAvailable ? '客户已停用或快照不可用' : undefined}
                 className="h-7 px-2 text-xs text-blue-600 font-semibold"
               >
                 <Plus size={14} className="mr-0.5" />
@@ -274,76 +281,21 @@ export default function CustomerDetail() {
           </Card>
 
           {/* 关联订单卡片 */}
-          <Card>
-            <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
+          <Card data-anno="customer-detail-erp-orders">
+            <CardHeader className="border-b border-slate-100 pb-3">
               <div className="flex items-center gap-1.5 text-slate-900">
                 <ShoppingCart size={15} className="text-blue-600" />
-                <CardTitle className="text-sm font-semibold">关联 ERP 发货订单 ({erpOrders.length})</CardTitle>
+                <CardTitle className="text-sm font-semibold">ERP 销售订单快照</CardTitle>
               </div>
-              <Button 
-                variant="ghost"
-                size="sm"
-                onClick={() => showToast('正在请求 ERP 获取全部订单数据...', 'success')}
-                className="h-7 px-2 text-xs text-slate-500 hover:text-slate-800"
-              >
-                查看全部
-              </Button>
             </CardHeader>
-
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>订单编号</TableHead>
-                    <TableHead>金额</TableHead>
-                    <TableHead>下单日期</TableHead>
-                    <TableHead>发货履约状态</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {erpOrders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-slate-400 italic">
-                        该客户当前无任何销售履约订单。
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    erpOrders.map(order => (
-                      <TableRow key={order.id}>
-                        <TableCell>
-                          <span 
-                            className="font-mono font-medium text-blue-600 cursor-pointer hover:underline"
-                            onClick={() => handleOpenErpOrder(order.id)}
-                          >
-                            {order.id}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-mono font-medium text-slate-800">{formatCurrency(order.amount)}</TableCell>
-                        <TableCell className="font-mono text-slate-500">{order.date}</TableCell>
-                        <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenErpOrder(order.id)}
-                            className="h-7 px-2 text-xs text-blue-600"
-                          >
-                            <span>新窗口查看</span>
-                            <ExternalLink size={11} className="ml-1" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+            <CardContent className="py-8 text-center text-xs text-slate-500">
+              ERP 销售订单同步契约尚未接入，当前不展示 CRM 本地 Mock 订单，也不提供伪造的外部跳转。
             </CardContent>
           </Card>
         </div>
 
         {/* 右侧聚合跟进记录时间线 */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col" data-anno="customer-detail-follow-up">
           <CardHeader className="border-b border-slate-100 pb-3">
             <CardTitle className="text-sm font-semibold">CRM 聚合跟进时间线</CardTitle>
           </CardHeader>
@@ -382,7 +334,7 @@ export default function CustomerDetail() {
       </div>
 
       {/* 底部固定返回 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="customer-detail-action-bar">
         <Button
           variant="outline"
           size="sm"

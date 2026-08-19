@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "title": "Forge CRM 客户管理标注",
+  "scope": "customers",
+  "sourceBase": ".",
+  "runtime": { "zIndexBase": 2147480000, "initialMode": "preview" },
+  "routes": [
+    { "page": "#/customers", "matcher": "^.*#/customers$", "markdownFile": "pages/customers-list.md" },
+    { "page": "#/customers/:id", "matcher": "^.*#/customers/[^/]+$", "markdownFile": "pages/customer-detail.md" }
+  ],
+  "sourceRequirements": [
+    { "id": "REQ-CUSTOMER-LIST-PAGE-001", "source": "../客户_Demo_列表页.md#1-页面概述、../客户主PRD.md#1-业务背景", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-LIST-FILTER-001", "source": "../客户_Demo_列表页.md#3-查询区、../客户字段清单.md#六、展示规则", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-LIST-TABLE-001", "source": "../客户_Demo_列表页.md#6-表格规格、../客户字段清单.md#一、客户身份与生命周期字段、../客户字段清单.md#四、CRM 关联聚合字段", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-LIST-RISK-001", "source": "../客户_Demo_列表页.md#9-风险展示与筛选、../客户字段清单.md#六、展示规则", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-LIST-OPS-001", "source": "../客户_Demo_列表页.md#7-行内操作、../客户主PRD.md#8-权限设计", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-LIST-PAGING-001", "source": "../客户_Demo_列表页.md#10-分页、加载与空态、../客户_Demo_列表页.md#13-验收清单", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-DETAIL-PAGE-001", "source": "../客户_Demo_详情页.md#1-页面概述、../客户主PRD.md#4-业务场景", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-RISK-001", "source": "../客户_Demo_详情页.md#4-AI 流失风险 Banner、../客户主PRD.md#7-AI 串联规则", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-SNAPSHOT-001", "source": "../客户_Demo_详情页.md#5-ERP 客户快照卡片、../客户字段清单.md#二、快照字段(从 ERP 同步,只读)", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-SYNC-001", "source": "../客户_Demo_详情页.md#3-页头与同步状态、../客户_Demo_详情页.md#5.3-SSOT 提示、../客户字段清单.md#三、快照同步元数据", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-OPPS-001", "source": "../客户_Demo_详情页.md#7-关联商机表格、../客户_Demo_详情页.md#6-CRM 关系概览", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-ORDERS-001", "source": "../客户_Demo_详情页.md#8-ERP 关联订单表格、../客户字段清单.md#五、跨模块关联与展示规则", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-ORDER-ACTIONS-001", "source": "../客户_Demo_详情页.md#8.3-订单交互、../客户_Demo_详情页.md#12.2-ERP 外链", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-FOLLOW-001", "source": "../客户_Demo_详情页.md#9-跟进聚合组件、../客户主PRD.md#4-业务场景", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-DETAIL-ACTIONS-001", "source": "../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈", "page": "/customers/:id" }
+  ],
+  "annotations": [
+    { "id": "1", "type": "page", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户列表页面", "target": { "selector": "[data-anno='customers-list-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "1", "sourceRefs": ["REQ-CUSTOMER-LIST-PAGE-001"], "order": 1 },
+    { "id": "2", "type": "field", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户查询与筛选", "target": { "selector": "[data-anno='customers-list-filter-bar']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "2", "sourceRefs": ["REQ-CUSTOMER-LIST-FILTER-001"], "order": 2 },
+    { "id": "3", "type": "field", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户快照表格", "target": { "selector": "[data-anno='customers-list-table-fields']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "3", "sourceRefs": ["REQ-CUSTOMER-LIST-TABLE-001"], "order": 3 },
+    { "id": "4", "type": "rule", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "AI 流失风险展示", "target": { "selector": "[data-anno='customers-list-risk-display']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "4", "sourceRefs": ["REQ-CUSTOMER-LIST-RISK-001"], "order": 4 },
+    { "id": "5", "type": "interaction", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户行内查看操作", "target": { "selector": "[data-anno='customers-list-row-operations']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "5", "sourceRefs": ["REQ-CUSTOMER-LIST-OPS-001"], "order": 5 },
+    { "id": "6", "type": "interaction", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户列表分页与空态", "target": { "selector": "[data-anno='customers-list-pagination']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "6", "sourceRefs": ["REQ-CUSTOMER-LIST-PAGING-001"], "order": 6 },
+    { "id": "1", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "客户 360° 详情页", "target": { "selector": "[data-anno='customer-detail-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "1", "sourceRefs": ["REQ-CUSTOMER-DETAIL-PAGE-001"], "order": 1 },
+    { "id": "2", "type": "rule", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "AI 流失风险预警", "target": { "selector": "[data-anno='customer-detail-risk-banner']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "2", "sourceRefs": ["REQ-CUSTOMER-DETAIL-RISK-001"], "order": 2 },
+    { "id": "3", "type": "field", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 客户主数据快照", "target": { "selector": "[data-anno='customer-detail-erp-snapshot']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "3", "sourceRefs": ["REQ-CUSTOMER-DETAIL-SNAPSHOT-001"], "order": 3 },
+    { "id": "4", "type": "rule", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 信用与同步状态", "target": { "selector": "[data-anno='customer-detail-erp-sync-status']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "4", "sourceRefs": ["REQ-CUSTOMER-DETAIL-SYNC-001"], "order": 4 },
+    { "id": "5", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "关联商机区块", "target": { "selector": "[data-anno='customer-detail-opportunities']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "5", "sourceRefs": ["REQ-CUSTOMER-DETAIL-OPPS-001"], "order": 5 },
+    { "id": "6", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 关联订单区块", "target": { "selector": "[data-anno='customer-detail-erp-orders']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "6", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ORDERS-001"], "order": 6 },
+    { "id": "7", "type": "interaction", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 订单查看动作", "target": { "selector": "[data-anno='customer-detail-erp-order-actions']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "7", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ORDER-ACTIONS-001"], "order": 7 },
+    { "id": "8", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "CRM 聚合跟进时间线", "target": { "selector": "[data-anno='customer-detail-follow-up']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "8", "sourceRefs": ["REQ-CUSTOMER-DETAIL-FOLLOW-001"], "order": 8 },
+    { "id": "9", "type": "interaction", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "客户详情底部操作", "target": { "selector": "[data-anno='customer-detail-action-bar']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "9", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ACTIONS-001"], "order": 9 }
+  ]
+}

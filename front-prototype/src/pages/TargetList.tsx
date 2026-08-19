@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Target } from '../db';
-import { Trophy, Plus, CheckCircle, XCircle, Lock } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,19 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { shanghaiMonth } from '@/domain/businessRules';
 
 const salesIdMap: Record<string, string> = {
   '张三': 'S001',
   '李四': 'S002',
   '王五': 'S003'
 };
+const EMPTY_TARGETS: Target[] = [];
 
 const formatCurrency = (val: number) => {
   return '¥' + val.toLocaleString('zh-CN', { maximumFractionDigits: 0 });
@@ -58,33 +54,20 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const getStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    ACTIVE: '进行中',
-    ACHIEVED: '已达成',
-    UNACHIEVED: '未达成'
-  };
-  return map[status] || status;
-};
-
 export default function TargetList() {
   const navigate = useNavigate();
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  // 结算锁定弹窗
-  const [lockTargetId, setLockTargetId] = useState<string | null>(null);
-
-  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage({ text, type });
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const [selectedMonth, setSelectedMonth] = useState(shanghaiMonth());
 
   // 1. 实时读取数据库中所有的销售、线索和商机
-  const targets = useLiveQuery(() => db.targets.toArray()) || [];
+  const targets = useLiveQuery(() => db.targets.toArray()) ?? EMPTY_TARGETS;
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const opps = useLiveQuery(() => db.opportunities.toArray()) || [];
 
-  const currentMonth = '2026-07';
+  useEffect(() => {
+    if (targets.length === 0 || targets.some(target => target.month === selectedMonth)) return;
+    const latestMonth = [...new Set(targets.map(target => target.month))].sort().at(-1);
+    if (latestMonth) setSelectedMonth(latestMonth);
+  }, [targets, selectedMonth]);
 
   // 2. 核心实时计算函数
   const getTargetProgress = (tgt: Target) => {
@@ -93,9 +76,9 @@ export default function TargetList() {
       const actualOpp = tgt.lockedOppCount ?? 0;
       const actualAmount = tgt.lockedAmount ?? 0;
 
-      const leadPct = tgt.leadTarget > 0 ? Math.round((actualLead / tgt.leadTarget) * 100) : 0;
-      const oppPct = tgt.oppTarget > 0 ? Math.round((actualOpp / tgt.oppTarget) * 100) : 0;
-      const amountPct = tgt.amountTarget > 0 ? Math.round((actualAmount / tgt.amountTarget) * 100) : 0;
+      const leadPct = tgt.leadTarget > 0 ? Math.round((actualLead / tgt.leadTarget) * 100) : 100;
+      const oppPct = tgt.oppTarget > 0 ? Math.round((actualOpp / tgt.oppTarget) * 100) : 100;
+      const amountPct = tgt.amountTarget > 0 ? Math.round((actualAmount / tgt.amountTarget) * 100) : 100;
 
       return {
         actualLead,
@@ -108,28 +91,28 @@ export default function TargetList() {
     }
 
     const monthPrefix = tgt.month;
-    const sales = tgt.salesName;
+    const salesId = tgt.salesId || salesIdMap[tgt.salesName];
 
     const actualLead = leads.filter(l => 
       l.status === 'CONVERTED' && 
-      l.owner === sales && 
+      (l.convertedById === salesId || (!l.convertedById && l.owner === tgt.salesName)) &&
       l.convertedAt?.startsWith(monthPrefix)
     ).length;
 
     const actualOpp = opps.filter(o => 
-      o.createdBy === sales && 
+      (o.createdById === salesId || (!o.createdById && o.createdBy === tgt.salesName)) &&
       o.createdAt.startsWith(monthPrefix)
     ).length;
 
     const actualAmount = opps.filter(o => 
       o.status === 'WON' && 
-      o.createdBy === sales && 
+      (o.createdById === salesId || (!o.createdById && o.createdBy === tgt.salesName)) &&
       o.wonAt?.startsWith(monthPrefix)
     ).reduce((sum, o) => sum + (o.amount || 0), 0);
 
-    const leadPct = tgt.leadTarget > 0 ? Math.round((actualLead / tgt.leadTarget) * 100) : 0;
-    const oppPct = tgt.oppTarget > 0 ? Math.round((actualOpp / tgt.oppTarget) * 100) : 0;
-    const amountPct = tgt.amountTarget > 0 ? Math.round((actualAmount / tgt.amountTarget) * 100) : 0;
+    const leadPct = tgt.leadTarget > 0 ? Math.round((actualLead / tgt.leadTarget) * 100) : 100;
+    const oppPct = tgt.oppTarget > 0 ? Math.round((actualOpp / tgt.oppTarget) * 100) : 100;
+    const amountPct = tgt.amountTarget > 0 ? Math.round((actualAmount / tgt.amountTarget) * 100) : 100;
 
     return {
       actualLead,
@@ -141,38 +124,9 @@ export default function TargetList() {
     };
   };
 
-  // 业绩目标历史月份挂载结算逻辑
-  useEffect(() => {
-    if (targets.length === 0) return;
-    
-    const autoSettleHistoricTargets = async () => {
-      const historicActive = targets.filter(t => t.month < currentMonth && t.status === 'ACTIVE');
-      if (historicActive.length === 0) return;
-
-      await db.transaction('rw', db.targets, async () => {
-        for (const tgt of historicActive) {
-          const prog = getTargetProgress(tgt);
-          const isAchieved = prog.leadPct >= 100 && prog.oppPct >= 100 && prog.amountPct >= 100;
-          const finalStatus = isAchieved ? 'ACHIEVED' : 'UNACHIEVED';
-          const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-
-          await db.targets.update(tgt.id, {
-            status: finalStatus,
-            lockedLeadCount: prog.actualLead,
-            lockedOppCount: prog.actualOpp,
-            lockedAmount: prog.actualAmount,
-            updatedAt: nowStr
-          });
-        }
-      });
-      showToast('系统已自动结算并锁定历史月份的未结业绩目标', 'success');
-    };
-
-    autoSettleHistoricTargets();
-  }, [targets, leads, opps]);
-
   // 3. 计算当月全团队汇总数据
-  const currentMonthTargets = targets.filter(t => t.month === currentMonth);
+  const currentMonthTargets = targets.filter(t => t.month === selectedMonth);
+  const displayedTargets = [...currentMonthTargets].sort((a, b) => a.salesName.localeCompare(b.salesName, 'zh-CN'));
   let totalLeadTarget = 0;
   let totalLeadActual = 0;
   let totalOppTarget = 0;
@@ -190,61 +144,33 @@ export default function TargetList() {
     totalAmountActual += prog.actualAmount;
   });
 
-  const totalLeadPct = totalLeadTarget > 0 ? Math.min(100, Math.round((totalLeadActual / totalLeadTarget) * 100)) : 0;
-  const totalOppPct = totalOppTarget > 0 ? Math.min(100, Math.round((totalOppActual / totalOppTarget) * 100)) : 0;
-  const totalAmountPct = totalAmountTarget > 0 ? Math.min(100, Math.round((totalAmountActual / totalAmountTarget) * 100)) : 0;
-
-  // 4. 月底归档结算锁定逻辑
-  const handleLockTarget = async () => {
-    if (!lockTargetId) return;
-    const tgt = await db.targets.get(lockTargetId);
-    if (!tgt) return;
-
-    const prog = getTargetProgress(tgt);
-    const isAchieved = prog.leadPct >= 100 && prog.oppPct >= 100 && prog.amountPct >= 100;
-    const finalStatus = isAchieved ? 'ACHIEVED' : 'UNACHIEVED';
-
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-
-    await db.targets.update(lockTargetId, {
-      status: finalStatus,
-      lockedLeadCount: prog.actualLead,
-      lockedOppCount: prog.actualOpp,
-      lockedAmount: prog.actualAmount,
-      updatedAt: nowStr
-    });
-
-    setLockTargetId(null);
-    showToast(`业绩目标已锁定！最终判定状态：[${getStatusLabel(finalStatus)}]`);
-  };
+  const totalLeadPct = currentMonthTargets.length > 0 && totalLeadTarget === 0 ? 100 : totalLeadTarget > 0 ? Math.min(100, Math.round((totalLeadActual / totalLeadTarget) * 100)) : 0;
+  const totalOppPct = currentMonthTargets.length > 0 && totalOppTarget === 0 ? 100 : totalOppTarget > 0 ? Math.min(100, Math.round((totalOppActual / totalOppTarget) * 100)) : 0;
+  const totalAmountPct = currentMonthTargets.length > 0 && totalAmountTarget === 0 ? 100 : totalAmountTarget > 0 ? Math.min(100, Math.round((totalAmountActual / totalAmountTarget) * 100)) : 0;
 
   return (
     <div className="space-y-4">
-      {/* 顶部 Toast */}
-      {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800">
-          {toastMessage.type === 'success' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-red-500" />}
-          <span>{toastMessage.text}</span>
-        </div>
-      )}
-
       {/* 头部标题区 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-anno="target-list-page-header">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold text-slate-900">业绩目标</h1>
-          <p className="text-xs text-slate-500">设定并监控销售代表月度业绩达成指标，终态锁定防数据漂移，达成率采用多阶配色提示。</p>
+          <p className="text-xs text-slate-500">金额仅按 CRM 当月赢单（WON）归集；结算由服务端月末任务执行，浏览器页面不写结算结果。</p>
         </div>
-        <Button 
-          size="sm"
-          onClick={() => navigate('/targets/new')}
-        >
-          <Plus size={14} className="mr-1" />
-          <span>制定目标</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="h-9 w-36" aria-label="查看月份" />
+          <Button
+            data-anno="target-list-create-tool"
+            size="sm"
+            onClick={() => navigate('/targets/new')}
+          >
+            <Plus size={14} className="mr-1" />
+            <span>制定目标</span>
+          </Button>
+        </div>
       </div>
 
       {/* 当月目标总览卡片 */}
-      <Card>
+      <Card data-anno="target-list-overview">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* 线索转化总览 */}
           <div className="space-y-2">
@@ -303,29 +229,29 @@ export default function TargetList() {
       </Card>
 
       {/* 业绩目标主表格 */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden" data-anno="target-list-table-fields">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[140px]">目标编号</TableHead>
               <TableHead className="w-[110px]">销售代表</TableHead>
               <TableHead className="w-[90px]">目标月份</TableHead>
-              <TableHead className="w-[180px]">线索转化进度</TableHead>
+              <TableHead className="w-[180px]" data-anno="target-list-progress-fields">线索转化进度</TableHead>
               <TableHead className="w-[180px]">新增商机进度</TableHead>
               <TableHead className="w-[200px]">赢单金额进度</TableHead>
-              <TableHead className="w-[100px]">状态</TableHead>
+              <TableHead className="w-[100px]" data-anno="target-list-status">状态</TableHead>
               <TableHead className="text-right w-[110px]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {targets.length === 0 ? (
+            {displayedTargets.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-10 text-slate-400">
                   尚未录入任何业绩目标数据
                 </TableCell>
               </TableRow>
             ) : (
-              targets.map(tgt => {
+              displayedTargets.map(tgt => {
                 const prog = getTargetProgress(tgt);
                 const salesId = salesIdMap[tgt.salesName] || '—';
 
@@ -390,20 +316,21 @@ export default function TargetList() {
                     <TableCell>{getStatusBadge(tgt.status)}</TableCell>
 
                     {/* 操作 */}
-                    <TableCell className="text-right">
-                      {tgt.status === 'ACTIVE' ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLockTargetId(tgt.id)}
-                          className="h-7 px-2 text-xs text-blue-600 font-medium"
-                        >
-                          <Lock size={12} className="mr-0.5" />
-                          <span>月终结算</span>
+                    <TableCell className="text-right" data-anno="target-list-row-operations">
+                      {tgt.status === 'ACTIVE' && tgt.month >= shanghaiMonth() && (!tgt.settlementStatus || tgt.settlementStatus === 'NOT_STARTED') && (
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/targets/${tgt.id}/edit`)} className="h-7 px-2 text-xs text-blue-600">
+                          调整目标
                         </Button>
-                      ) : (
-                        <span className="text-[10px] text-slate-400 italic">🔒 数据已封存</span>
                       )}
+                      <span className="text-[10px] text-slate-500">
+                        {tgt.settlementStatus === 'SUCCESS'
+                          ? '🔒 服务端已结算'
+                          : tgt.settlementStatus === 'PROCESSING'
+                            ? '服务端结算中'
+                            : tgt.status === 'ACTIVE' && tgt.month < shanghaiMonth()
+                              ? '待服务端结算'
+                              : '实时进度'}
+                      </span>
                     </TableCell>
                   </TableRow>
                 );
@@ -413,38 +340,6 @@ export default function TargetList() {
         </Table>
       </Card>
 
-      {/* 结算锁定 Dialog */}
-      <Dialog open={!!lockTargetId} onOpenChange={(open) => !open && setLockTargetId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-blue-600">
-              <Trophy size={18} />
-              <span>业绩结算与快照锁定</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-xs text-slate-600 leading-relaxed space-y-2 pt-2">
-            <p>您正在对该销售本月的业绩目标执行<strong>归档结算与快照锁定</strong>。</p>
-            <p className="bg-slate-50 p-2.5 rounded-md border border-slate-200 text-slate-500 italic">
-              锁定后，系统将捕获当前的实时线索转化数、商机个数、赢单总额写入快照字段，防止未来销售数据变动造成报表漂移，状态变更为终态。
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => setLockTargetId(null)}
-            >
-              取消
-            </Button>
-            <Button 
-              size="sm"
-              onClick={handleLockTarget}
-            >
-              确认锁定归档
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -15,6 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CURRENT_USER, canCancelCheckedInVisit } from '@/domain/businessRules';
+import { cancelVisit, checkInVisit } from '@/domain/visitActions';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -53,6 +57,8 @@ export default function VisitList() {
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [cancelVisitId, setCancelVisitId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
@@ -89,33 +95,24 @@ export default function VisitList() {
   // 5. 核心交互函数
   const handleCheckIn = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    
-    const mockAddresses = [
-      '江苏省南京市江宁区科技园B座1楼大堂',
-      '上海市浦东新区张江高科智芯大厦12层前台',
-      '北京市西城区金融街鼎泰大厦大堂东门',
-      '湖北省武汉市东西湖区冷链仓A1大门'
-    ];
-    const mockAddr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
-
-    await db.visits.update(id, {
-      status: 'CHECKED_IN',
-      checkedInAt: nowStr,
-      checkedInAddress: mockAddr,
-      updatedAt: nowStr.replace(' ', ' ') + ':00'
-    });
-    showToast(`签到成功！系统已打卡定位在 [${mockAddr}]`);
+    const result = await checkInVisit(id);
+    showToast(result.message, result.ok ? 'success' : 'error');
   };
 
-  const handleCancel = async (id: string, e: React.MouseEvent) => {
+  const openCancelDialog = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    await db.visits.update(id, {
-      status: 'CANCELLED',
-      updatedAt: nowStr
-    });
-    showToast('拜访计划已取消。');
+    setCancelVisitId(id);
+    setCancelReason('');
+  };
+
+  const handleCancel = async () => {
+    if (!cancelVisitId) return;
+    const result = await cancelVisit(cancelVisitId, CURRENT_USER.role, cancelReason);
+    showToast(result.message, result.ok ? 'success' : 'error');
+    if (result.ok) {
+      setCancelVisitId(null);
+      setCancelReason('');
+    }
   };
 
   return (
@@ -129,7 +126,7 @@ export default function VisitList() {
       )}
 
       {/* 头部标题区 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-anno="visit-list-page-header">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold text-slate-900">拜访计划</h1>
           <p className="text-xs text-slate-500">统一销售外勤上门及远程沟通计划，支持位置打卡签到并联动同步至客户 360° 跟进时间轴。</p>
@@ -144,7 +141,7 @@ export default function VisitList() {
       </div>
 
       {/* 状态 Tab */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-slate-200" data-anno="visit-list-status-tabs">
         <div className="flex gap-6">
           {[
             { key: 'ALL', label: '全部计划', count: visits.length },
@@ -177,7 +174,7 @@ export default function VisitList() {
       </div>
 
       {/* 筛选过滤 */}
-      <Card>
+      <Card data-anno="visit-list-filter-bar">
         <CardContent className="p-4 flex gap-3 items-center">
           <div className="relative flex-1">
             <Input 
@@ -200,7 +197,7 @@ export default function VisitList() {
       </Card>
 
       {/* 拜访表格 */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden" data-anno="visit-list-table-fields">
         <Table>
           <TableHeader>
             <TableRow>
@@ -243,7 +240,7 @@ export default function VisitList() {
                   <TableCell className="font-mono text-slate-600">{v.planTime}</TableCell>
                   <TableCell>{getStatusBadge(v.status)}</TableCell>
                   <TableCell className="font-mono text-slate-500">{v.checkedInAt || '—'}</TableCell>
-                  <TableCell className="text-right space-x-1.5">
+                  <TableCell className="text-right space-x-1.5" data-anno="visit-list-row-operations">
                     <Button 
                       variant="ghost" 
                       size="sm"
@@ -258,6 +255,7 @@ export default function VisitList() {
                         <Button 
                           variant="ghost" 
                           size="sm"
+                          data-anno="visit-list-check-in-action"
                           onClick={(e) => handleCheckIn(v.id, e)}
                           className="h-7 px-2 text-xs text-blue-600 font-medium"
                         >
@@ -266,7 +264,8 @@ export default function VisitList() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={(e) => handleCancel(v.id, e)}
+                          data-anno="visit-list-cancel-action"
+                          onClick={(e) => openCancelDialog(v.id, e)}
                           className="h-7 px-2 text-xs text-red-600"
                         >
                           取消
@@ -284,14 +283,16 @@ export default function VisitList() {
                         >
                           填写记录
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => handleCancel(v.id, e)}
-                          className="h-7 px-2 text-xs text-red-600"
-                        >
-                          取消
-                        </Button>
+                        {canCancelCheckedInVisit(CURRENT_USER.role) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => openCancelDialog(v.id, e)}
+                            className="h-7 px-2 text-xs text-red-600"
+                          >
+                            主管取消
+                          </Button>
+                        )}
                       </>
                     )}
                   </TableCell>
@@ -302,7 +303,7 @@ export default function VisitList() {
         </Table>
 
         {/* 分页 */}
-        <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500" data-anno="visit-list-pagination">
           <div className="flex items-center gap-3">
             <span>共 {totalCount} 条记录</span>
             <select
@@ -352,6 +353,25 @@ export default function VisitList() {
           </div>
         </div>
       </Card>
+
+      <Dialog open={!!cancelVisitId} onOpenChange={(open) => {
+        if (!open) {
+          setCancelVisitId(null);
+          setCancelReason('');
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">确认取消拜访</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500">请输入至少10个字的取消原因。若拜访已签到，仅主管/管理员可取消，且签到事实会保留。</p>
+          <Textarea rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="请输入取消原因" />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setCancelVisitId(null)}>返回</Button>
+            <Button variant="destructive" size="sm" disabled={cancelReason.trim().length < 10} onClick={handleCancel}>确认取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

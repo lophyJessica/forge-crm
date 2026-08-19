@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "title": "Forge CRM 业绩目标标注",
+  "scope": "targets",
+  "sourceBase": ".",
+  "runtime": { "zIndexBase": 2147480000, "initialMode": "preview" },
+  "routes": [
+    { "page": "#/targets", "matcher": "^.*#/targets$", "markdownFile": "pages/target-list.md" },
+    { "page": "#/targets/new", "matcher": "^.*#/targets/new$", "markdownFile": "pages/target-form.md" }
+  ],
+  "sourceRequirements": [
+    { "id": "REQ-TARGET-LIST-PAGE-001", "source": "../业绩目标_Demo_列表页.md#1-页面概述、../业绩目标主PRD.md#3-对象定位", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-OVERVIEW-001", "source": "../业绩目标_Demo_列表页.md#6-表格规格、../业绩目标字段清单.md#三、实时进度字段", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-TABLE-001", "source": "../业绩目标_Demo_列表页.md#6-表格规格、../业绩目标字段清单.md#一、基础字段、../业绩目标字段清单.md#二、销售归属字段", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-PROGRESS-001", "source": "../业绩目标_Demo_列表页.md#10-防漂移展示、../业绩目标主PRD.md#6.2-进度与归属规则", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-STATUS-001", "source": "../业绩目标_Demo_列表页.md#3-状态 Tab 与后台计数、../业绩目标主PRD.md#5-状态机与执行路径", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-OPS-001", "source": "../业绩目标_Demo_列表页.md#5-工具条、../业绩目标主PRD.md#5.4-组合动作能力矩阵", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-SETTLEMENT-001", "source": "../业绩目标_Demo_列表页.md#9-编辑/结算 dialogs、../业绩目标主PRD.md#6.3-结算与防漂移规则", "page": "/targets" },
+    { "id": "REQ-TARGET-LIST-CREATE-001", "source": "../业绩目标_Demo_列表页.md#5-工具条、../业绩目标_Demo_新增编辑页.md#2-路由与初始化", "page": "/targets" },
+    { "id": "REQ-TARGET-FORM-PAGE-001", "source": "../业绩目标_Demo_新增编辑页.md#1-页面概述、../业绩目标主PRD.md#10-页面与交互要求", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-BASE-001", "source": "../业绩目标_Demo_新增编辑页.md#3-页面布局、../业绩目标_Demo_新增编辑页.md#4-字段控件规格、../业绩目标字段清单.md#一、基础字段", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-SALES-001", "source": "../业绩目标_Demo_新增编辑页.md#4.1-销售、../业绩目标字段清单.md#二、销售归属字段", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-MONTH-001", "source": "../业绩目标_Demo_新增编辑页.md#4.2-目标月份、../业绩目标主PRD.md#6.1-创建与唯一性规则", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-LEAD-001", "source": "../业绩目标_Demo_新增编辑页.md#4.3-线索目标数、../业绩目标主PRD.md#6.1-创建与唯一性规则", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-OPP-001", "source": "../业绩目标_Demo_新增编辑页.md#4.4-商机目标数、../业绩目标字段清单.md#一、基础字段", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-AMOUNT-001", "source": "../业绩目标_Demo_新增编辑页.md#4.5-赢单目标金额、../业绩目标字段清单.md#三、实时进度字段", "page": "/targets/new" },
+    { "id": "REQ-TARGET-FORM-FOOTER-001", "source": "../业绩目标_Demo_新增编辑页.md#10-底部操作、../业绩目标_Demo_新增编辑页.md#11-保存", "page": "/targets/new" }
+  ],
+  "annotations": [
+    { "id": "1", "type": "page", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "业绩目标列表", "target": { "selector": "[data-anno='target-list-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "1", "sourceRefs": ["REQ-TARGET-LIST-PAGE-001"], "order": 1 },
+    { "id": "2", "type": "field", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "当月目标总览", "target": { "selector": "[data-anno='target-list-overview']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "2", "sourceRefs": ["REQ-TARGET-LIST-OVERVIEW-001"], "order": 2 },
+    { "id": "3", "type": "field", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "业绩目标表格", "target": { "selector": "[data-anno='target-list-table-fields']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "3", "sourceRefs": ["REQ-TARGET-LIST-TABLE-001"], "order": 3 },
+    { "id": "4", "type": "field", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "三项达成进度", "target": { "selector": "[data-anno='target-list-progress-fields']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "4", "sourceRefs": ["REQ-TARGET-LIST-PROGRESS-001"], "order": 4 },
+    { "id": "5", "type": "rule", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "目标状态展示", "target": { "selector": "[data-anno='target-list-status']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "5", "sourceRefs": ["REQ-TARGET-LIST-STATUS-001"], "order": 5 },
+    { "id": "6", "type": "interaction", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "目标行结算操作", "target": { "selector": "[data-anno='target-list-row-operations']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "6", "sourceRefs": ["REQ-TARGET-LIST-OPS-001"], "order": 6 },
+    { "id": "7", "type": "interaction", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "月终结算与快照锁定", "target": { "selector": "[data-anno='target-list-settlement-dialog']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "7", "sourceRefs": ["REQ-TARGET-LIST-SETTLEMENT-001"], "order": 7 },
+    { "id": "8", "type": "interaction", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "制定目标入口", "target": { "selector": "[data-anno='target-list-create-tool']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "8", "sourceRefs": ["REQ-TARGET-LIST-CREATE-001"], "order": 8 },
+    { "id": "1", "type": "page", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "业绩目标新增编辑页", "target": { "selector": "[data-anno='target-form-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "1", "sourceRefs": ["REQ-TARGET-FORM-PAGE-001"], "order": 1 },
+    { "id": "2", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "目标设定表单", "target": { "selector": "[data-anno='target-form-card']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "2", "sourceRefs": ["REQ-TARGET-FORM-BASE-001"], "order": 2 },
+    { "id": "3", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "销售代表字段", "target": { "selector": "[data-anno='target-form-sales-field']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "3", "sourceRefs": ["REQ-TARGET-FORM-SALES-001"], "order": 3 },
+    { "id": "4", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "目标月份字段", "target": { "selector": "[data-anno='target-form-month-field']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "4", "sourceRefs": ["REQ-TARGET-FORM-MONTH-001"], "order": 4 },
+    { "id": "5", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "线索目标数量", "target": { "selector": "[data-anno='target-form-lead-target-field']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "5", "sourceRefs": ["REQ-TARGET-FORM-LEAD-001"], "order": 5 },
+    { "id": "6", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "商机目标数量", "target": { "selector": "[data-anno='target-form-opp-target-field']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "6", "sourceRefs": ["REQ-TARGET-FORM-OPP-001"], "order": 6 },
+    { "id": "7", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "赢单金额目标", "target": { "selector": "[data-anno='target-form-amount-target-field']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "7", "sourceRefs": ["REQ-TARGET-FORM-AMOUNT-001"], "order": 7 },
+    { "id": "8", "type": "interaction", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "目标保存底栏", "target": { "selector": "[data-anno='target-form-footer']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "8", "sourceRefs": ["REQ-TARGET-FORM-FOOTER-001"], "order": 8 }
+  ]
+}

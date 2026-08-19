@@ -1,29 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Opportunity, type OpportunityItem } from '../db';
+import { getAvailableErpProducts, type ErpProductSnapshot } from '@/api/erpCatalog';
 import { ChevronLeft, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-
-const CURRENT_USER = '张三';
-
-// 模拟 ERP 商品数据列表
-const ERP_PRODUCTS = [
-  { code: 'SKU001', name: 'Forge WMS 标准版', price: 50000 },
-  { code: 'SKU002', name: 'Forge ERP 标准版', price: 80000 },
-];
-
-// 模拟 CRM 正式客户列表
-const CRM_CUSTOMERS = [
-  { id: 'C001', name: 'Forge科技有限公司', industry: 'IT' },
-  { id: 'C002', name: '瑞丰生鲜连锁超市', industry: 'RETAIL' },
-  { id: 'C003', name: '万达商贸进出口公司', industry: 'RETAIL' },
-  { id: 'C004', name: '安泰医疗器械有限公司', industry: 'HEALTHCARE' },
-  { id: 'C005', name: '远东重工制造集团', industry: 'MANUFACTURING' }
-];
+import { CURRENT_USER, calculateOpportunityScore, shanghaiNow, shanghaiToday } from '@/domain/businessRules';
 
 export default function OppForm() {
   const navigate = useNavigate();
@@ -33,21 +19,31 @@ export default function OppForm() {
 
   // 表单字段状态
   const [title, setTitle] = useState('');
-  const [customerId, setCustomerId] = useState('C001');
+  const [customerId, setCustomerId] = useState('');
   const [amount, setAmount] = useState('');
   const [dealDate, setDealDate] = useState('');
   const [desc, setDesc] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
+  const [erpProducts, setErpProducts] = useState<ErpProductSnapshot[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const customers = useLiveQuery(
+    () => db.customers.filter(item => item.lifecycleStatus === 'ACTIVE' && item.syncStatus === 'AVAILABLE').toArray(),
+    [],
+  ) || [];
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  useEffect(() => {
+    getAvailableErpProducts().then(setErpProducts);
+  }, []);
 
   // 1. 编辑模式加载数据
   useEffect(() => {
@@ -62,6 +58,7 @@ export default function OppForm() {
           
           if (opp.items) {
             setSelectedProducts(opp.items.map(x => x.productCode));
+            setProductQuantities(Object.fromEntries(opp.items.map(item => [item.productCode, item.quantity])));
           }
 
           if (!['INITIAL_CONTACT', 'NEEDS_CONFIRM'].includes(opp.status)) {
@@ -79,9 +76,14 @@ export default function OppForm() {
   }, [isEdit, id, location.state]);
 
   const generateOpportunityId = async () => {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await db.opportunities.count();
-    const indexStr = String(count + 1).padStart(4, '0');
+    const todayStr = shanghaiToday().replace(/-/g, '');
+    const prefix = `OPP${todayStr}-`;
+    const ids = await db.opportunities.filter(item => item.id.startsWith(prefix)).primaryKeys();
+    const nextIndex = ids.reduce((max, key) => {
+      const suffix = Number(String(key).slice(prefix.length));
+      return Number.isFinite(suffix) ? Math.max(max, suffix) : max;
+    }, 0) + 1;
+    const indexStr = String(nextIndex).padStart(4, '0');
     return `OPP${todayStr}-${indexStr}`;
   };
 
@@ -90,6 +92,7 @@ export default function OppForm() {
     setSelectedProducts(prev => 
       prev.includes(code) ? prev.filter(x => x !== code) : [...prev, code]
     );
+    setProductQuantities(prev => ({ ...prev, [code]: prev[code] || 1 }));
   };
 
   // 保存表单
@@ -100,6 +103,9 @@ export default function OppForm() {
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = '请输入商机名称';
     if (!customerId) newErrors.customerId = '请选择关联客户';
+    if (amount && (!/^\d+(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0)) newErrors.amount = '预计金额须大于0且最多两位小数';
+    if (dealDate && dealDate < shanghaiToday()) newErrors.dealDate = '预计成交日期不能早于今天';
+    if (selectedProducts.some(code => !productQuantities[code] || productQuantities[code] <= 0)) newErrors.products = '商品数量必须大于0';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -109,69 +115,73 @@ export default function OppForm() {
 
     setLoading(true);
     try {
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-      const selectedCust = CRM_CUSTOMERS.find(c => c.id === customerId);
+      const nowStr = shanghaiNow();
+      const selectedCust = await db.customers.get(customerId);
+      if (!selectedCust || selectedCust.lifecycleStatus !== 'ACTIVE' || selectedCust.syncStatus !== 'AVAILABLE') {
+        throw new Error('关联客户已停用或快照不可用，禁止创建/修改商机');
+      }
       
       const itemsPayload: OpportunityItem[] = selectedProducts.map(code => {
-        const prod = ERP_PRODUCTS.find(p => p.code === code);
+        const prod = erpProducts.find(p => p.code === code);
         return {
+          erpProductId: prod?.erpProductId,
           productCode: code,
           productName: prod?.name || '',
           price: prod?.price || 0,
-          quantity: 1
+          quantity: productQuantities[code] || 1,
+          priceVersion: prod?.priceVersion,
         };
       });
 
-      let score = 35;
-      if (itemsPayload.length > 0) score += 20;
-      if (amount && parseFloat(amount) > 0) score += 15;
-      if (selectedCust?.industry === 'IT') score += 15;
-      score = Math.min(95, score);
-
-      let targetId = id;
-      let status: any = 'INITIAL_CONTACT';
-
-      if (isEdit && id) {
-        const exist = await db.opportunities.get(id);
-        if (exist) {
-          status = exist.status;
-        }
-      } else {
-        targetId = await generateOpportunityId();
-      }
+      const existing = id ? await db.opportunities.get(id) : undefined;
+      const targetId = id || await generateOpportunityId();
+      const status = existing?.status || 'INITIAL_CONTACT';
+      const followUpCount = existing ? await db.opportunity_follow_ups.where('oppId').equals(existing.id).count() : 0;
+      const score = calculateOpportunityScore({
+        customerLevel: selectedCust.level,
+        customerRisk: selectedCust.riskLevel,
+        followUpCount,
+        items: itemsPayload,
+        status,
+      });
 
       const oppData: Opportunity = {
-        id: targetId!,
+        id: targetId,
         title: title.trim(),
         customerId,
-        customerName: selectedCust?.name || '',
+        erpCustomerId: selectedCust.erpCustomerId,
+        customerName: selectedCust.name,
         amount: amount ? parseFloat(amount) : undefined,
         dealDate: dealDate || undefined,
         desc: desc.trim() || undefined,
         score,
         status,
-        createdAt: nowStr,
-        createdBy: CURRENT_USER,
-        items: itemsPayload.length > 0 ? itemsPayload : undefined
+        createdAt: existing?.createdAt || nowStr,
+        createdBy: existing?.createdBy || CURRENT_USER.name,
+        createdById: existing?.createdById || CURRENT_USER.id,
+        updatedAt: nowStr,
+        version: (existing?.version || 0) + 1,
+        items: itemsPayload.length > 0 ? itemsPayload : undefined,
       };
 
-      await db.opportunities.put(oppData);
-      
-      await db.opportunity_follow_ups.add({
-        oppId: targetId!,
-        time: nowStr,
-        operator: CURRENT_USER,
-        type: '电话',
-        content: isEdit 
-          ? `销售修改了商机草案基本信息。重新评估 AI 成交概率：${score}%`
-          : `销售创建了新商机。初始评估 AI 成交概率：${score}%`
+      await db.transaction('rw', db.opportunities, db.opportunity_follow_ups, async () => {
+        await db.opportunities.put(oppData);
+        await db.opportunity_follow_ups.add({
+          oppId: targetId,
+          time: nowStr,
+          operator: CURRENT_USER.name,
+          type: '系统记录',
+          content: isEdit
+            ? `销售修改了商机基本信息。规则引擎重新评估成交概率：${score}%`
+            : `销售创建了新商机。规则引擎初始评估成交概率：${score}%`,
+        });
       });
 
       showToast('商机信息已成功保存');
-      setTimeout(() => navigate('/opportunities'), 1500);
+      setTimeout(() => navigate(`/opportunities/${targetId}`), 1200);
     } catch (err) {
       console.error(err);
-      showToast('商机保存失败，请检查输入后重试', 'error');
+      showToast(err instanceof Error ? err.message : '商机保存失败，请检查输入后重试', 'error');
     } finally {
       setLoading(false);
     }
@@ -188,7 +198,7 @@ export default function OppForm() {
       )}
 
       {/* 头部导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="opportunity-form-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -213,9 +223,9 @@ export default function OppForm() {
           <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-5" data-anno="opportunity-form-validation">
             {/* 字段 1：商机名称 */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2" data-anno="opportunity-form-title-field">
               <Label htmlFor="title" className="block mb-2">
                 商机名称 <span className="text-red-500">*</span>
               </Label>
@@ -236,7 +246,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 2：关联客户 */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2" data-anno="opportunity-form-customer-field">
               <Label htmlFor="customer" className="block mb-2">
                 关联客户 <span className="text-red-500">*</span>
               </Label>
@@ -252,7 +262,8 @@ export default function OppForm() {
                   errors.customerId ? 'border-red-500' : 'border-slate-200'
                 }`}
               >
-                {CRM_CUSTOMERS.map(c => (
+                <option value="">-- 选择可用 CRM 客户快照 --</option>
+                {customers.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -260,7 +271,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 3：预计金额 */}
-            <div>
+            <div data-anno="opportunity-form-forecast-fields">
               <Label htmlFor="amount" className="block mb-2">
                 预计金额 (¥) <span className="text-slate-400 font-normal text-[11px]">(推进至谈判时必填)</span>
               </Label>
@@ -272,7 +283,9 @@ export default function OppForm() {
                 placeholder="请输入预计成交金额(元)"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                className={errors.amount ? 'border-red-500' : ''}
               />
+              {errors.amount && <span className="text-[11px] text-red-500 block mt-1">{errors.amount}</span>}
             </div>
 
             {/* 字段 4：预计成交日期 */}
@@ -284,35 +297,53 @@ export default function OppForm() {
                 disabled={isReadOnly || loading}
                 value={dealDate}
                 onChange={(e) => setDealDate(e.target.value)}
+                className={errors.dealDate ? 'border-red-500' : ''}
               />
+              {errors.dealDate && <span className="text-[11px] text-red-500 block mt-1">{errors.dealDate}</span>}
             </div>
 
             {/* 字段 5：关联商品 */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2" data-anno="opportunity-form-product-fields">
               <Label className="block mb-2">
                 关联商品 <span className="text-slate-400 font-normal text-[11px]">(推进至报价时必填)</span>
               </Label>
-              <div className="flex gap-4 items-center h-9">
-                {ERP_PRODUCTS.map(prod => {
+              <div className="space-y-2">
+                {erpProducts.map(prod => {
                   const checked = selectedProducts.includes(prod.code);
                   return (
-                    <label key={prod.code} className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        disabled={isReadOnly || loading}
-                        checked={checked}
-                        onChange={() => handleProductToggle(prod.code)}
-                        className="rounded border-slate-300"
-                      />
-                      <span>{prod.name} (¥{prod.price.toLocaleString()})</span>
-                    </label>
+                    <div key={prod.code} className="flex items-center justify-between gap-3 rounded border border-slate-200 px-3 py-2">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          disabled={isReadOnly || loading}
+                          checked={checked}
+                          onChange={() => handleProductToggle(prod.code)}
+                          className="rounded border-slate-300"
+                        />
+                        <span>{prod.name} · {prod.code} · ¥{prod.price.toLocaleString()} · {prod.priceVersion}</span>
+                      </label>
+                      {checked && (
+                        <Input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={productQuantities[prod.code] || 1}
+                          onChange={(event) => setProductQuantities(prev => ({ ...prev, [prod.code]: Number(event.target.value) }))}
+                          disabled={isReadOnly || loading}
+                          className="h-8 w-24 font-mono"
+                          aria-label={`${prod.name}数量`}
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
+              {errors.products && <span className="text-[11px] text-red-500 block mt-1">{errors.products}</span>}
+              <p className="text-[11px] text-slate-400 mt-1">商品来自 ERP Mock 适配层，保存稳定商品 ID 与价格版本；CRM 不维护商品主数据。</p>
             </div>
 
             {/* 字段 6：需求描述 */}
-            <div className="md:col-span-4">
+            <div className="md:col-span-4" data-anno="opportunity-form-requirement-field">
               <Label htmlFor="desc" className="block mb-2">
                 需求描述 <span className="text-slate-400 font-normal text-[11px]">(推进至需求确认时必填)</span>
               </Label>
@@ -331,7 +362,7 @@ export default function OppForm() {
       </Card>
 
       {/* 固定底部操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="opportunity-form-submit-bar">
         <Button
           variant="outline"
           size="sm"
@@ -341,6 +372,7 @@ export default function OppForm() {
         </Button>
         {!isReadOnly && (
           <Button
+            data-anno="opportunity-form-save-action"
             size="sm"
             disabled={loading}
             onClick={handleSave}

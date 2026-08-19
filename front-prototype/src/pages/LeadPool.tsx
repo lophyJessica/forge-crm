@@ -20,8 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CURRENT_USER, getPublicPoolEligibility, shanghaiNow } from '@/domain/businessRules';
 
-const CURRENT_USER = '张三';
+const CURRENT_USER_NAME = CURRENT_USER.name;
+const EMPTY_LEADS: Lead[] = [];
 
 const SOURCE_MAP: Record<string, string> = {
   ONLINE: '线上申请',
@@ -42,8 +44,8 @@ const INDUSTRY_MAP: Record<string, string> = {
 };
 
 const getScoreBadge = (score: number) => {
-  if (score >= 70) return <Badge variant="success" className="font-mono">{score}分</Badge>;
-  if (score >= 40) return <Badge variant="warning" className="font-mono">{score}分</Badge>;
+  if (score >= 80) return <Badge variant="success" className="font-mono">{score}分</Badge>;
+  if (score >= 50) return <Badge variant="warning" className="font-mono">{score}分</Badge>;
   return <Badge variant="destructive" className="font-mono">{score}分</Badge>;
 };
 
@@ -67,7 +69,7 @@ export default function LeadPool() {
   };
 
   // 1. 获取所有线索
-  const leads = useLiveQuery(() => db.leads.toArray()) || [];
+  const leads = useLiveQuery(() => db.leads.toArray()) ?? EMPTY_LEADS;
 
   // 自动回收超48小时未跟进的已分配线索
   useEffect(() => {
@@ -94,10 +96,13 @@ export default function LeadPool() {
       if (timeoutIds.length > 0) {
         await db.transaction('rw', db.leads, async () => {
           for (const id of timeoutIds) {
+            const current = await db.leads.get(id);
             await db.leads.update(id, {
               status: 'PENDING_ASSIGN',
               owner: undefined,
-              assignedAt: undefined
+              assignedAt: undefined,
+              poolType: 'ASSIGN_POOL',
+              version: (current?.version || 0) + 1,
             });
           }
         });
@@ -108,24 +113,13 @@ export default function LeadPool() {
     checkTimeoutLeads();
   }, [leads]);
 
-  // 判断是否已被释放满7天
-  const isAbandonedAndReleased = (lead: Lead) => {
-    if (lead.status !== 'ABANDONED') return false;
-    const timeStr = lead.abandonedAt || lead.followedAt;
-    if (!timeStr) return false;
-    const abandonedTime = new Date(timeStr).getTime();
-    const now = new Date().getTime();
-    const diffDays = (now - abandonedTime) / (1000 * 60 * 60 * 24);
-    return diffDays >= 7;
-  };
-
   // 2. 筛选在公海里的线索
   const poolLeads = leads.filter(lead => {
+    const eligibility = getPublicPoolEligibility(lead, CURRENT_USER_NAME);
     const isNew = lead.status === 'PENDING_ASSIGN';
-    const isReleased = isAbandonedAndReleased(lead);
-    const isOwnerAbandon = lead.status === 'ABANDONED' && lead.owner === CURRENT_USER;
+    const isReleased = lead.status === 'ABANDONED';
     
-    if (!isNew && !isReleased && !isOwnerAbandon) return false;
+    if (!eligibility.visible) return false;
 
     if (keyword.trim()) {
       const kw = keyword.toLowerCase();
@@ -151,41 +145,45 @@ export default function LeadPool() {
     const isNew = lead.status === 'PENDING_ASSIGN';
     return {
       ...lead,
-      poolType: isNew ? 'NEW' : 'RELEASED',
-      poolTime: isNew ? lead.createdAt : (lead.abandonedAt || lead.followedAt || lead.createdAt)
+      entryType: isNew ? 'NEW' as const : 'RELEASED' as const,
+      poolTime: isNew ? lead.createdAt : (lead.abandonedAt || lead.followedAt || lead.createdAt),
+      eligibility: getPublicPoolEligibility(lead, CURRENT_USER_NAME),
     };
   }).sort((a, b) => b.score - a.score);
 
   // 3. 认领交互
   const handleClaim = async (leadId: string) => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    if (!window.confirm('确认认领该公海线索并开始 48 小时首次跟进计时？')) return;
+    const nowStr = shanghaiNow();
     try {
-      let isOwnerAbandon = false;
       await db.transaction('rw', db.leads, db.follow_up_records, async () => {
         const lead = await db.leads.get(leadId);
-        isOwnerAbandon = !!(lead && lead.status === 'ABANDONED' && lead.owner === CURRENT_USER);
+        if (!lead) throw new Error('线索不存在或已被其他人处理');
+        const eligibility = getPublicPoolEligibility(lead, CURRENT_USER_NAME);
+        if (!eligibility.claimable) throw new Error(eligibility.reason || '该线索当前不可认领');
 
         await db.leads.update(leadId, {
           status: 'ASSIGNED',
-          owner: CURRENT_USER,
-          assignedAt: nowStr
+          owner: CURRENT_USER_NAME,
+          assignedAt: nowStr,
+          poolType: undefined,
+          claimRequestId: `CLAIM-${leadId}-${Date.now()}`,
+          version: (lead.version || 0) + 1,
         });
 
         await db.follow_up_records.add({
           leadId,
           time: nowStr,
-          operator: CURRENT_USER,
+          operator: CURRENT_USER_NAME,
           type: '系统记录',
-          content: isOwnerAbandon 
-            ? `销售 [${CURRENT_USER}] 撤销了放弃，重新恢复跟进该线索。`
-            : `销售 [${CURRENT_USER}] 从公海主动认领了该线索。`
+          content: `销售 [${CURRENT_USER_NAME}] 从公海主动认领了该线索。`,
         });
       });
 
-      showToast(isOwnerAbandon ? '撤销放弃成功，线索已恢复' : '线索已认领，请及时跟进', 'success');
+      showToast('线索已认领，请在 48 小时内完成首次跟进', 'success');
     } catch (err) {
       console.error(err);
-      showToast('认领失败，请重试', 'error');
+      showToast(err instanceof Error ? err.message : '认领失败，请重试', 'error');
     }
   };
 
@@ -200,7 +198,7 @@ export default function LeadPool() {
       )}
 
       {/* 顶部标题栏 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-anno="lead-pool-page-header">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold text-slate-900">线索公海</h1>
           <p className="text-xs text-slate-500">展示所有等待分配的新线索或被放弃流失的呆滞线索，销售可主动认领直接跟进。</p>
@@ -208,7 +206,7 @@ export default function LeadPool() {
       </div>
 
       {/* 查询检索栏 */}
-      <Card>
+      <Card data-anno="lead-pool-filter-bar">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="relative md:col-span-2">
             <Input
@@ -300,7 +298,7 @@ export default function LeadPool() {
       </Card>
 
       {/* 公海表格区 */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden" data-anno="lead-pool-table-fields">
         <Table>
           <TableHeader>
             <TableRow>
@@ -308,10 +306,10 @@ export default function LeadPool() {
               <TableHead className="w-[180px]">公司名称</TableHead>
               <TableHead className="w-[100px]">线索来源</TableHead>
               <TableHead className="w-[120px]">所属行业</TableHead>
-              <TableHead className="w-[80px]">AI评分</TableHead>
-              <TableHead className="w-[100px]">入池类型</TableHead>
+              <TableHead className="w-[80px]" data-anno="lead-pool-ai-score">AI评分</TableHead>
+              <TableHead className="w-[100px]" data-anno="lead-pool-entry-type">入池类型</TableHead>
               <TableHead className="w-[160px]">入池时间</TableHead>
-              <TableHead>放弃原因</TableHead>
+              <TableHead data-anno="lead-pool-release-rules">放弃原因</TableHead>
               <TableHead className="text-right w-[100px]">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -338,7 +336,7 @@ export default function LeadPool() {
                   <TableCell className="text-slate-600">{INDUSTRY_MAP[lead.industry || ''] || lead.industry || '—'}</TableCell>
                   <TableCell>{getScoreBadge(lead.score)}</TableCell>
                   <TableCell>
-                    {lead.poolType === 'NEW' ? (
+                    {lead.entryType === 'NEW' ? (
                       <Badge variant="info">新线索</Badge>
                     ) : (
                       <Badge variant="secondary">已释放</Badge>
@@ -346,20 +344,18 @@ export default function LeadPool() {
                   </TableCell>
                   <TableCell className="font-mono text-slate-500 text-[11px]">{lead.poolTime}</TableCell>
                   <TableCell className="max-w-[200px] truncate text-slate-500" title={lead.abandonedReason}>
-                    {lead.poolType === 'RELEASED' ? lead.abandonedReason : '—'}
+                    {lead.entryType === 'RELEASED' ? lead.abandonedReason : '—'}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" data-anno="lead-pool-claim-actions">
                     <Button
                       size="sm"
                       onClick={() => handleClaim(lead.id)}
-                      className={`h-7 px-2.5 text-xs ${
-                        lead.owner === CURRENT_USER && lead.status === 'ABANDONED'
-                          ? 'bg-amber-600 hover:bg-amber-700'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                      disabled={!lead.eligibility.claimable}
+                      title={lead.eligibility.reason}
+                      className="h-7 px-2.5 text-xs bg-blue-600 hover:bg-blue-700"
                     >
                       <UserCheck size={12} className="mr-1" />
-                      <span>{lead.owner === CURRENT_USER && lead.status === 'ABANDONED' ? '撤销放弃' : '认领'}</span>
+                      <span>{lead.eligibility.claimable ? '认领' : '保护期中'}</span>
                     </Button>
                   </TableCell>
                 </TableRow>

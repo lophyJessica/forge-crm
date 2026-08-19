@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../db';
 import { ChevronLeft, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { shanghaiMonth, shanghaiNow } from '@/domain/businessRules';
 
 const salesOptions = [
   { name: '张三', id: 'S001' },
@@ -15,13 +17,16 @@ const salesOptions = [
 
 export default function TargetForm() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
 
   // 表单字段
   const [salesName, setSalesName] = useState('张三');
-  const [month, setMonth] = useState('2026-07');
+  const [month, setMonth] = useState(shanghaiMonth());
   const [leadTarget, setLeadTarget] = useState('');
   const [oppTarget, setOppTarget] = useState('');
   const [amountTarget, setAmountTarget] = useState('');
+  const [adjustmentReason, setAdjustmentReason] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,24 +37,42 @@ export default function TargetForm() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  useEffect(() => {
+    if (!id) return;
+    db.targets.get(id).then(target => {
+      if (!target) return;
+      if (target.month < shanghaiMonth() || target.status !== 'ACTIVE' || !['NOT_STARTED', undefined].includes(target.settlementStatus)) {
+        showToast('仅进行中且尚未结算的目标可调整', 'error');
+        navigate('/targets');
+        return;
+      }
+      setSalesName(target.salesName);
+      setMonth(target.month);
+      setLeadTarget(String(target.leadTarget));
+      setOppTarget(String(target.oppTarget));
+      setAmountTarget(String(target.amountTarget));
+    });
+  }, [id, navigate]);
+
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!month) newErrors.month = '请选择目标月份';
     
     const leadNum = Number(leadTarget);
-    if (!leadTarget || isNaN(leadNum) || leadNum <= 0 || !Number.isInteger(leadNum)) {
-      newErrors.leadTarget = '请输入合法的线索转化目标个数 (正整数)';
+    if (leadTarget === '' || isNaN(leadNum) || leadNum < 0 || leadNum > 999999 || !Number.isInteger(leadNum)) {
+      newErrors.leadTarget = '请输入0-999999之间的整数';
     }
 
     const oppNum = Number(oppTarget);
-    if (!oppTarget || isNaN(oppNum) || oppNum <= 0 || !Number.isInteger(oppNum)) {
-      newErrors.oppTarget = '请输入合法的商机目标个数 (正整数)';
+    if (oppTarget === '' || isNaN(oppNum) || oppNum < 0 || oppNum > 999999 || !Number.isInteger(oppNum)) {
+      newErrors.oppTarget = '请输入0-999999之间的整数';
     }
 
     const amtNum = Number(amountTarget);
-    if (!amountTarget || isNaN(amtNum) || amtNum <= 0) {
-      newErrors.amountTarget = '请输入合法的赢单金额目标 (大于 0 的数字)';
+    if (amountTarget === '' || !/^\d+(\.\d{1,2})?$/.test(amountTarget) || isNaN(amtNum) || amtNum < 0 || amtNum > 1_000_000_000_000) {
+      newErrors.amountTarget = '请输入0-1万亿元、最多两位小数的普通数字';
     }
+    if (isEdit && adjustmentReason.trim().length < 10) newErrors.adjustmentReason = '调整原因至少填写10个字';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -63,31 +86,47 @@ export default function TargetForm() {
       const salesId = salesOptions.find(o => o.name === salesName)?.id || 'S999';
       const targetId = `TGT${cleanMonth}-${salesId}`;
 
-      const existing = await db.targets.get(targetId);
-      if (existing) {
+      const existing = await db.targets.get(id || targetId);
+      if (!isEdit && existing) {
         showToast('该销售代表在当前月份的业绩目标已设定，请勿重复创建！', 'error');
         setLoading(false);
         return;
       }
 
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const nowStr = shanghaiNow();
 
-      await db.targets.add({
-        id: targetId,
-        salesName,
-        month,
-        leadTarget: leadNum,
-        oppTarget: oppNum,
-        amountTarget: amtNum,
-        status: 'ACTIVE',
-        createdAt: nowStr,
-        createdBy: '系统主管'
-      });
-
-      showToast('业绩目标设定成功！');
+      if (isEdit && existing) {
+        await db.targets.update(existing.id, {
+          leadTarget: leadNum,
+          oppTarget: oppNum,
+          amountTarget: amtNum,
+          adjustmentCount: (existing.adjustmentCount || 0) + 1,
+          lastAdjustmentReason: adjustmentReason.trim(),
+          version: (existing.version || 0) + 1,
+          updatedAt: nowStr,
+        });
+        showToast('业绩目标已调整并记录原因');
+      } else {
+        await db.targets.add({
+          id: targetId,
+          salesId,
+          salesName,
+          month,
+          leadTarget: leadNum,
+          oppTarget: oppNum,
+          amountTarget: amtNum,
+          status: 'ACTIVE',
+          settlementStatus: 'NOT_STARTED',
+          version: 1,
+          adjustmentCount: 0,
+          createdAt: nowStr,
+          createdBy: '系统主管',
+        });
+        showToast('业绩目标设定成功！');
+      }
       setTimeout(() => navigate('/targets'), 800);
     } catch (err) {
-      showToast('保存失败，请刷新重试', 'error');
+      showToast(err instanceof Error ? err.message : '保存失败，请刷新重试', 'error');
     } finally {
       setLoading(false);
     }
@@ -104,7 +143,7 @@ export default function TargetForm() {
       )}
 
       {/* 导航标题 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="target-form-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -114,25 +153,26 @@ export default function TargetForm() {
           <ChevronLeft size={16} />
         </Button>
         <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-slate-900">设定业绩目标</h1>
-          <p className="text-xs text-slate-500">为指定的销售代表分配新月份的各项 KPI 核心考核指标</p>
+          <h1 className="text-lg font-bold text-slate-900">{isEdit ? '调整业绩目标' : '设定业绩目标'}</h1>
+          <p className="text-xs text-slate-500">赢单金额仅按 CRM WON 口径；数量与金额目标允许设置为0</p>
         </div>
       </div>
 
       {/* 表单卡片 */}
-      <Card>
+      <Card data-anno="target-form-card">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">业绩目标指标设定</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 销售代表 & 目标月份 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div data-anno="target-form-sales-field">
               <Label className="block mb-2">
                 销售代表 <span className="text-red-500">*</span>
               </Label>
               <select
                 value={salesName}
+                disabled={isEdit}
                 onChange={(e) => setSalesName(e.target.value)}
                 className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
@@ -142,7 +182,7 @@ export default function TargetForm() {
               </select>
             </div>
 
-            <div>
+            <div data-anno="target-form-month-field">
               <Label htmlFor="month" className="block mb-2">
                 目标考核月份 <span className="text-red-500">*</span>
               </Label>
@@ -150,6 +190,7 @@ export default function TargetForm() {
                 id="month"
                 type="month"
                 value={month}
+                disabled={isEdit}
                 onChange={(e) => setMonth(e.target.value)}
                 className={errors.month ? 'border-red-500' : ''}
               />
@@ -158,13 +199,15 @@ export default function TargetForm() {
           </div>
 
           {/* 考核线索数 */}
-          <div>
+          <div data-anno="target-form-lead-target-field">
             <Label htmlFor="leadTarget" className="block mb-2">
               转化线索目标数量 (个) <span className="text-red-500">*</span>
             </Label>
             <Input 
               id="leadTarget"
               type="number" 
+              min="0"
+              max="999999"
               placeholder="请输入线索转化目标 KPI 额度"
               value={leadTarget}
               onChange={(e) => setLeadTarget(e.target.value)}
@@ -174,13 +217,15 @@ export default function TargetForm() {
           </div>
 
           {/* 考核商机数 */}
-          <div>
+          <div data-anno="target-form-opp-target-field">
             <Label htmlFor="oppTarget" className="block mb-2">
               新增商机目标数量 (个) <span className="text-red-500">*</span>
             </Label>
             <Input 
               id="oppTarget"
               type="number" 
+              min="0"
+              max="999999"
               placeholder="请输入新增商机目标 KPI 额度"
               value={oppTarget}
               onChange={(e) => setOppTarget(e.target.value)}
@@ -190,13 +235,14 @@ export default function TargetForm() {
           </div>
 
           {/* 考核赢单金额 */}
-          <div>
+          <div data-anno="target-form-amount-target-field">
             <Label htmlFor="amountTarget" className="block mb-2">
               最终赢单金额目标 (元) <span className="text-red-500">*</span>
             </Label>
             <Input 
               id="amountTarget"
               type="text" 
+              inputMode="decimal"
               placeholder="请输入赢单目标金额"
               value={amountTarget}
               onChange={(e) => setAmountTarget(e.target.value)}
@@ -204,11 +250,26 @@ export default function TargetForm() {
             />
             {errors.amountTarget && <p className="text-[11px] text-red-500 block mt-1">{errors.amountTarget}</p>}
           </div>
+
+          {isEdit && (
+            <div>
+              <Label htmlFor="adjustmentReason" className="block mb-2">调整原因 <span className="text-red-500">*</span></Label>
+              <Textarea
+                id="adjustmentReason"
+                rows={3}
+                value={adjustmentReason}
+                onChange={(event) => setAdjustmentReason(event.target.value)}
+                placeholder="请输入至少10个字的调整原因，防止移动目标线"
+                className={errors.adjustmentReason ? 'border-red-500' : ''}
+              />
+              {errors.adjustmentReason && <p className="text-[11px] text-red-500 mt-1">{errors.adjustmentReason}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* 底部操作 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="target-form-footer">
         <Button
           variant="outline"
           size="sm"
@@ -222,7 +283,7 @@ export default function TargetForm() {
           disabled={loading}
           onClick={handleSave}
         >
-          保存目标
+          {isEdit ? '确认调整' : '保存目标'}
         </Button>
       </div>
     </div>

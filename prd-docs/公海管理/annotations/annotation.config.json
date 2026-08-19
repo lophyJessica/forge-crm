@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "title": "Forge CRM 公海管理标注",
+  "scope": "lead-pool",
+  "sourceBase": ".",
+  "runtime": {
+    "zIndexBase": 2147480000,
+    "initialMode": "preview"
+  },
+  "mermaid": {
+    "enabled": false,
+    "src": "",
+    "options": {}
+  },
+  "sourceRequirements": [
+    { "id": "REQ-POOL-PAGE-001", "source": "../公海_Demo_列表页.md#1-页面概述、../公海主PRD.md#4-业务场景", "page": "/lead-pool" },
+    { "id": "REQ-POOL-FILTER-001", "source": "../公海_Demo_列表页.md#3-查询区、../公海字段清单.md#一、公海视图列表列", "page": "/lead-pool" },
+    { "id": "REQ-POOL-TABLE-001", "source": "../公海_Demo_列表页.md#6-表格规格、../公海主PRD.md#6.1-入池与展示规则", "page": "/lead-pool" },
+    { "id": "REQ-POOL-AI-001", "source": "../公海主PRD.md#7-AI串联规则、../公海字段清单.md#一、公海视图列表列", "page": "/lead-pool" },
+    { "id": "REQ-POOL-ENTRY-001", "source": "../公海_Demo_列表页.md#5-入池类型Tag、../公海字段清单.md#二、入池类型标签", "page": "/lead-pool" },
+    { "id": "REQ-POOL-PROTECT-001", "source": "../公海_Demo_列表页.md#7-原负责人例外规则、../公海主PRD.md#6.3-保护期规则、../公海主PRD.md#9-边界与异常处理", "page": "/lead-pool" },
+    { "id": "REQ-POOL-CLAIM-001", "source": "../公海_Demo_列表页.md#8-认领交互、../公海主PRD.md#5-状态机、../公海主PRD.md#6.2-认领与归属规则", "page": "/lead-pool" }
+  ],
+  "annotations": [
+    { "id": "1", "type": "page", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "线索公海页面", "target": { "selector": "[data-anno='lead-pool-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "1", "sourceRefs": ["REQ-POOL-PAGE-001"], "order": 1 },
+    { "id": "2", "type": "field", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "公海查询筛选", "target": { "selector": "[data-anno='lead-pool-filter-bar']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "2", "sourceRefs": ["REQ-POOL-FILTER-001"], "order": 2 },
+    { "id": "3", "type": "field", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "公海线索表格", "target": { "selector": "[data-anno='lead-pool-table-fields']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "3", "sourceRefs": ["REQ-POOL-TABLE-001"], "order": 3 },
+    { "id": "4", "type": "rule", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "公海AI评分展示", "target": { "selector": "[data-anno='lead-pool-ai-score']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "4", "sourceRefs": ["REQ-POOL-AI-001"], "order": 4 },
+    { "id": "5", "type": "rule", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "入池类型标签", "target": { "selector": "[data-anno='lead-pool-entry-type']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "5", "sourceRefs": ["REQ-POOL-ENTRY-001"], "order": 5 },
+    { "id": "6", "type": "rule", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "主动放弃与保护期", "target": { "selector": "[data-anno='lead-pool-release-rules']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "6", "sourceRefs": ["REQ-POOL-PROTECT-001"], "order": 6 },
+    { "id": "7", "type": "interaction", "page": "#/lead-pool", "routeMatcher": "^.*#/lead-pool$", "moduleName": "公海认领动作", "target": { "selector": "[data-anno='lead-pool-claim-actions']", "fallbackSelectors": [] }, "markdownFile": "pages/lead-pool.md", "blockId": "7", "sourceRefs": ["REQ-POOL-CLAIM-001"], "order": 7 }
+  ]
+}

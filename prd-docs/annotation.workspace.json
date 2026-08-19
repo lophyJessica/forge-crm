@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "title": "Forge CRM 全量页面标注",
+  "inputs": [
+    { "scope": "leads", "config": "线索管理/annotations/annotation.config.json", "order": 1 },
+    { "scope": "lead-pool", "config": "公海管理/annotations/annotation.config.json", "order": 2 },
+    { "scope": "opportunities", "config": "商机管理/annotations/annotation.config.json", "order": 3 },
+    { "scope": "customers", "config": "客户管理/annotations/annotation.config.json", "order": 4 },
+    { "scope": "contracts", "config": "合同管理/annotations/annotation.config.json", "order": 5 },
+    { "scope": "visits", "config": "拜访管理/annotations/annotation.config.json", "order": 6 },
+    { "scope": "targets", "config": "业绩目标/annotations/annotation.config.json", "order": 7 }
+  ],
+  "runtime": {
+    "zIndexBase": 2147480000,
+    "initialMode": "preview"
+  },
+  "output": "../front-prototype/public/annotation-kit/annotation.bundle.json",
+  "coverage": "annotation-coverage.md"
+}

@@ -3,13 +3,14 @@ import { db } from '../db';
 import { BarChart3, TrendingUp, Users, Wallet } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { shanghaiToday } from '@/domain/businessRules';
 
 export default function Dashboard() {
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const opportunities = useLiveQuery(() => db.opportunities.toArray()) || [];
   const customers = useLiveQuery(() => db.customers.toArray()) || [];
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = shanghaiToday();
   const todayLeadsCount = leads.filter(l => l.createdAt.startsWith(todayStr)).length;
   const activeOppsCount = opportunities.filter(o => o.status !== 'WON' && o.status !== 'LOST').length;
   const customerCount = customers.length;
@@ -19,10 +20,10 @@ export default function Dashboard() {
     .reduce((sum, o) => sum + ((o.amount || 0) * (o.score || 0) / 100), 0);
 
   const stats = [
-    { label: '今日新增线索', value: String(todayLeadsCount), change: '+12%', icon: Users, iconBg: 'bg-blue-50 text-blue-600 border border-blue-100' },
-    { label: '活跃商机总数', value: String(activeOppsCount), change: '+5%', icon: TrendingUp, iconBg: 'bg-amber-50 text-amber-600 border border-amber-100' },
-    { label: '正式客户总数', value: String(customerCount), change: '+8%', icon: BarChart3, iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
-    { label: '预测销售额 (CNY)', value: `￥${predictedSales.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`, change: '+15%', icon: Wallet, iconBg: 'bg-violet-50 text-violet-600 border border-violet-100' },
+    { label: '今日新增线索', value: String(todayLeadsCount), note: '实时值', icon: Users, iconBg: 'bg-blue-50 text-blue-600 border border-blue-100' },
+    { label: '活跃商机总数', value: String(activeOppsCount), note: '实时值', icon: TrendingUp, iconBg: 'bg-amber-50 text-amber-600 border border-amber-100' },
+    { label: '正式客户总数', value: String(customerCount), note: 'ERP 快照', icon: BarChart3, iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
+    { label: '预测销售额 (CNY)', value: `￥${predictedSales.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`, note: '实时计算', icon: Wallet, iconBg: 'bg-violet-50 text-violet-600 border border-violet-100' },
   ];
 
   return (
@@ -44,7 +45,7 @@ export default function Dashboard() {
                   <span className="text-xs font-medium text-slate-500 block">{stat.label}</span>
                   <div className="flex items-baseline gap-2">
                     <strong className="text-2xl font-bold text-slate-900 font-mono tracking-tight">{stat.value}</strong>
-                    <span className="text-[11px] font-semibold text-emerald-600">{stat.change}</span>
+                    <span className="text-[11px] font-medium text-slate-400">{stat.note}</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.iconBg}`}>
@@ -91,13 +92,13 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <CardTitle className="text-sm font-semibold">最近 AI 分配动态</CardTitle>
-              <CardDescription>系统全自动流转事件日志</CardDescription>
+              <CardDescription>用于说明规则的 Mock 事件示例</CardDescription>
             </div>
-            <Badge variant="secondary" className="text-[10px]">实时</Badge>
+            <Badge variant="secondary" className="text-[10px]">示例</Badge>
           </CardHeader>
           <CardContent className="pt-4 divide-y divide-slate-100">
             {[
-              { time: '10:05', text: '高分线索 #1024 自动转入培育池', score: '88分', status: '已跟进' },
+              { time: '10:05', text: '高分线索 #1024 自动分配给最优销售', score: '88分', status: '已分配' },
               { time: '09:50', text: '客户「Forge」触发流失预警', score: '35分', status: '待审核' },
               { time: '09:12', text: '新商机「ERP集成采购」预测成交率上升', score: '92分', status: '已同步' }
             ].map((item, idx) => (

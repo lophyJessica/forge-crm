@@ -20,7 +20,13 @@ export interface Lead {
   followedAt?: string;
   abandonedAt?: string;
   abandonedReason?: string;
+  poolType?: 'ASSIGN_POOL' | 'NURTURE_POOL';
+  voidType?: 'VOLUNTARY_ABANDON' | 'MANAGER_VOID' | 'DRAFT_VOID';
   convertedAt?: string; // 联动业绩目标的线索转化时间
+  convertedById?: string;
+  convertedToCustomerId?: string;
+  version?: number;
+  claimRequestId?: string;
   createdAt: string;
   createdBy: string;
 }
@@ -33,14 +39,17 @@ export interface FollowUpRecord {
   type: string; // 电话 | 拜访 | 邮件
   content: string;
   nextPlan?: string;
+  sourceVisitId?: string;
 }
 
 // 商机明细商品结构
 export interface OpportunityItem {
+  erpProductId?: string;
   productCode: string;
   productName: string;
   price: number;
   quantity: number;
+  priceVersion?: string;
 }
 
 // 商机数据结构
@@ -48,6 +57,7 @@ export interface Opportunity {
   id: string;
   title: string;
   customerId: string;
+  erpCustomerId?: string;
   customerName: string;
   amount?: number;
   dealDate?: string;
@@ -58,9 +68,11 @@ export interface Opportunity {
   contractNo?: string;
   createdAt: string;
   createdBy: string;
+  createdById?: string;
   updatedAt?: string;
   wonAt?: string; // 赢单日期
   items?: OpportunityItem[];
+  version?: number;
 }
 
 export interface OpportunityFollowUp {
@@ -70,11 +82,13 @@ export interface OpportunityFollowUp {
   operator: string;
   type: string; // 电话 | 拜访 | 邮件
   content: string;
+  sourceVisitId?: string;
 }
 
 // 客户快照数据结构 (SSOT 在 ERP)
 export interface Customer {
   id: string;
+  erpCustomerId?: string;
   name: string;
   contact: string;
   phone: string;
@@ -86,6 +100,12 @@ export interface Customer {
   riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
   owner: string;
   createdAt: string;
+  lifecycleStatus?: 'ACTIVE' | 'DISABLED' | 'MERGED';
+  syncStatus?: 'PENDING_RECEIVE' | 'VALIDATING' | 'AVAILABLE' | 'SYNC_FAILED';
+  sourceVersion?: string;
+  sourceEventId?: string;
+  syncedAt?: string;
+  creditStatus?: 'NORMAL' | 'FROZEN' | 'UNKNOWN';
 }
 
 // ERP 订单快照结构
@@ -106,9 +126,25 @@ export interface Contract {
   oppId: string;
   oppTitle: string;
   amount: number;
+  currency?: 'CNY';
+  taxIncluded?: boolean;
+  taxRate?: number;
   status: 'DRAFT' | 'PENDING_SIGN' | 'SIGNED' | 'ARCHIVED' | 'VOIDED';
   signedDate?: string;
+  signedAt?: string;
+  signReceivedAt?: string;
+  signingRequestId?: string;
+  signEventId?: string;
+  signSource?: 'MOCK_SIGN_SERVICE';
+  opportunitySyncStatus?: 'NOT_TRIGGERED' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+  erpOrderSyncStatus?: 'NOT_TRIGGERED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'RETRYING';
+  performanceSyncStatus?: 'NOT_TRIGGERED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'RETRYING';
+  syncError?: string;
   voidReason?: string;
+  archivedAt?: string;
+  archivedBy?: string;
+  archiveReason?: string;
+  version?: number;
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
@@ -123,10 +159,25 @@ export interface Visit {
   associationName: string;
   visitMethod: '上门' | '电话' | '视频';
   planTime: string;
+  planEndTime?: string;
+  assigneeId?: string;
+  assigneeName?: string;
   address?: string;
   status: 'PLANNED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED';
+  executionResult?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'MISSED' | 'RESCHEDULED';
+  executionException?: 'NONE' | 'CHECK_IN_FAILED' | 'CUSTOMER_NO_SHOW' | 'FOLLOW_UP_PENDING';
   checkedInAt?: string;
   checkedInAddress?: string;
+  locationSource?: 'BROWSER' | 'MOCK' | 'NONE';
+  locationReliability?: 'VERIFIED' | 'MOCK' | 'UNAVAILABLE';
+  authorizationResult?: 'GRANTED' | 'DENIED' | 'NOT_REQUESTED' | 'MOCKED';
+  completedAt?: string;
+  cancelReason?: string;
+  visitResult?: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'CUSTOMER_NO_SHOW';
+  feedbackContent?: string;
+  followUpStatus?: 'NOT_REQUIRED' | 'SUCCESS' | 'PENDING';
+  followUpRecordId?: string;
+  version?: number;
   content?: string;
   createdAt: string;
   createdBy: string;
@@ -137,15 +188,24 @@ export interface Visit {
 export interface Target {
   id: string; // TGT{YYYYMM}-{销售ID}
   salesName: string;
+  salesId?: string;
   month: string; // YYYY-MM
   leadTarget: number;
   oppTarget: number;
   amountTarget: number;
   status: 'ACTIVE' | 'ACHIEVED' | 'UNACHIEVED';
+  settlementStatus?: 'NOT_STARTED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'RETRYING';
   // 锁定快照值 (锁定时写入，防止未来数据漂移)
   lockedLeadCount?: number;
   lockedOppCount?: number;
   lockedAmount?: number;
+  settlementVersion?: number;
+  settlementCutoffAt?: string;
+  settledAt?: string;
+  settlementError?: string;
+  version?: number;
+  adjustmentCount?: number;
+  lastAdjustmentReason?: string;
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
@@ -175,6 +235,17 @@ class ForgeCrmDatabase extends Dexie {
       contracts: 'id, customerId, oppId, status, createdAt',
       visits: 'id, associationId, associationType, status, planTime',
       targets: 'id, salesName, month, status'
+    });
+    this.version(7).stores({
+      leads: 'id, phone, email, status, owner, poolType, voidType, createdAt',
+      follow_up_records: '++id, leadId, time, sourceVisitId',
+      opportunities: 'id, customerId, erpCustomerId, status, createdAt, createdById',
+      opportunity_follow_ups: '++id, oppId, time, sourceVisitId',
+      customers: 'id, erpCustomerId, name, riskLevel, level, lifecycleStatus, syncStatus',
+      erp_orders: 'id, customerId, date',
+      contracts: 'id, customerId, oppId, status, createdAt, signingRequestId, signEventId',
+      visits: 'id, associationId, associationType, status, executionResult, planTime',
+      targets: 'id, salesId, salesName, month, status, settlementStatus'
     });
   }
 }
@@ -222,7 +293,7 @@ const MOCK_OPPORTUNITIES: Opportunity[] = [
   { id: 'OPP20260717-0002', title: '海纳商贸零售配仓ERP升级', customerId: 'C007', customerName: '海纳商贸有限公司', amount: 150000, dealDate: '2026-09-15', desc: '海纳商贸零售配仓，正在搜集需求。', score: 30, status: 'INITIAL_CONTACT', createdAt: '2026-07-17 10:30:00', createdBy: '张三' },
 
   // NEEDS_CONFIRM (3条)
-  { id: 'OPP20260717-0003', title: '智芯微电子芯片封装条码管理', customerId: 'C008', customerName: '智芯微电子技术公司', amount: 200000, dealDate: '2026-10-10', desc: '智芯微电子需要封装条码追溯。', score: 45, status: 'NEEDS_CONFIRM', createdAt: '2026-07-17 11:15:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 4 }] },
+  { id: 'OPP20260717-0003', title: '智芯微电子芯片封装条码管理', customerId: 'C008', customerName: '智芯微电子技术公司', amount: 200000, dealDate: '2026-10-10', desc: '智芯微电子需要封装条码追溯。', score: 85, status: 'CONTRACT', contractNo: 'CT20260718-0008', createdAt: '2026-07-17 11:15:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 4 }] },
   { id: 'OPP20260717-0004', title: '安泰医疗高值耗材WMS追溯', customerId: 'C004', customerName: '安泰医疗器械有限公司', amount: 120000, dealDate: '2026-08-15', desc: '耗材防混淆追溯。', score: 50, status: 'NEEDS_CONFIRM', createdAt: '2026-07-17 12:00:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1 }] },
   { id: 'OPP20260717-0005', title: '金石金融信托文档电子仓采购', customerId: 'C009', customerName: '金石金融信息服务公司', amount: 90000, dealDate: '2026-08-20', desc: '信托实体文档存储仓开发。', score: 40, status: 'NEEDS_CONFIRM', createdAt: '2026-07-17 13:00:00', createdBy: '张三' },
 
@@ -232,7 +303,7 @@ const MOCK_OPPORTUNITIES: Opportunity[] = [
 
   // NEGOTIATION (2条)
   { id: 'OPP20260717-0010', title: 'Forge多基地仓储协同系统', customerId: 'C001', customerName: 'Forge科技有限公司', amount: 130000, dealDate: '2026-08-10', desc: '谈判焦点在于二期扩容授权。已完成报价与演示，近期需签单。', score: 75, status: 'NEGOTIATION', createdAt: '2026-07-17 15:00:00', createdBy: '张三', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1 }, { productCode: 'SKU002', productName: 'Forge ERP 标准版', price: 80000, quantity: 1 }] },
-  { id: 'OPP20260717-0011', title: '瑞丰生鲜连锁配仓WMS部署', customerId: 'C002', customerName: '瑞丰生鲜连锁超市', amount: 50000, dealDate: '2026-08-18', desc: '生鲜恒温冷库条码仓实施。', score: 70, status: 'NEGOTIATION', createdAt: '2026-07-17 15:45:00', createdBy: '张三', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1 }] },
+  { id: 'OPP20260717-0011', title: '瑞丰生鲜连锁配仓WMS部署', customerId: 'C002', customerName: '瑞丰生鲜连锁超市', amount: 50000, dealDate: '2026-08-18', desc: '生鲜恒温冷库条码仓实施。', score: 82, status: 'CONTRACT', contractNo: 'CT20260718-0003', createdAt: '2026-07-17 15:45:00', createdBy: '张三', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1 }] },
 
   // CONTRACT (3条)
   { id: 'OPP20260717-0012', title: '百盛生物医药试剂冷链WMS采购', customerId: 'C003', customerName: '万达商贸进出口公司', amount: 60000, dealDate: '2026-07-28', desc: '合同审批中。', score: 85, status: 'CONTRACT', createdAt: '2026-07-17 16:30:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1.2 }] },
@@ -240,7 +311,7 @@ const MOCK_OPPORTUNITIES: Opportunity[] = [
   { id: 'OPP20260717-0014', title: '星河泛娱周边仓智能配货WMS', customerId: 'C010', customerName: '天河云网络科技有限公司', amount: 50000, dealDate: '2026-07-30', desc: '周边仓储配货。', score: 88, status: 'CONTRACT', createdAt: '2026-07-17 17:30:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 1 }] },
 
   // WON (2条)
-  { id: 'OPP20260717-0015', title: '万达商贸华北仓冷链WMS', customerId: 'C003', customerName: '万达商贸进出口公司', amount: 100000, dealDate: '2026-07-18', desc: '万达商贸二期冷链，已经生成ERP销售订单。', score: 100, status: 'WON', contractNo: 'CT20260717-9004', createdAt: '2026-07-17 18:15:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 2 }] },
+  { id: 'OPP20260717-0015', title: '万达商贸华北仓冷链WMS', customerId: 'C003', customerName: '万达商贸进出口公司', amount: 100000, dealDate: '2026-07-18', desc: '万达商贸二期冷链历史赢单；ERP 订单串联未接入 Demo。', score: 100, status: 'WON', contractNo: 'CT20260718-0006', wonAt: '2026-07-18 11:00:00', createdAt: '2026-07-17 18:15:00', createdBy: '李四', items: [{ productCode: 'SKU001', productName: 'Forge WMS 标准版', price: 50000, quantity: 2 }] },
 
   // LOST (1条)
   { id: 'OPP20260717-0016', title: '智能工厂ERP升级采购丢单', customerId: 'C005', customerName: '蓝天制造厂', amount: 130000, dealDate: '2026-07-17', desc: '蓝天制造升级。', score: 0, status: 'LOST', lostReason: '竞争对手报价低30%,我方无法匹配', createdAt: '2026-07-17 19:00:00', createdBy: '张三', items: [{ productCode: 'SKU002', productName: 'Forge ERP 标准版', price: 80000, quantity: 1 }] }
@@ -254,22 +325,15 @@ const MOCK_OPP_FOLLOW_UPS: OpportunityFollowUp[] = [
 
 // MOCK_CUSTOMERS 已移除，客户列表改为直接从 ERP 获取。
 
-const MOCK_ERP_ORDERS: ErpOrder[] = [
-  { id: 'ORD20260717-0001', customerId: 'C001', amount: 50000, date: '2026-07-17', status: 'SIGNED' },
-  { id: 'ORD20260717-0002', customerId: 'C001', amount: 80000, date: '2026-07-18', status: 'PENDING_DELIVERY' },
-  { id: 'ORD20260717-0003', customerId: 'C002', amount: 30000, date: '2026-07-17', status: 'SHIPPED' },
-  { id: 'ORD20260717-0004', customerId: 'C004', amount: 80000, date: '2026-07-18', status: 'PENDING_DELIVERY' }
-];
-
 const MOCK_CONTRACTS: Contract[] = [
   { id: 'CT20260717-0001', title: 'Forge多基地仓储系统实施合同', customerId: 'C001', customerName: 'Forge科技有限公司', oppId: 'OPP20260717-0010', oppTitle: 'Forge多基地仓储协同系统', amount: 130000, status: 'SIGNED', signedDate: '2026-07-17', createdAt: '2026-07-17 15:30:00', createdBy: '张三' },
   { id: 'CT20260718-0002', title: 'Forge智能出入库升级采购合同', customerId: 'C001', customerName: 'Forge科技有限公司', oppId: 'OPP20260717-0001', oppTitle: 'Forge智能出入库WMS采购', amount: 80000, status: 'DRAFT', createdAt: '2026-07-18 10:00:00', createdBy: '张三' },
-  { id: 'CT20260718-0003', title: '瑞丰生鲜冷链配仓WMS部署签署书', customerId: 'C002', customerName: '瑞丰生鲜连锁超市', oppId: 'OPP20260717-0011', oppTitle: '瑞丰生鲜连锁配仓WMS部署', amount: 50000, status: 'PENDING_SIGN', createdAt: '2026-07-18 10:15:00', createdBy: '张三' },
+  { id: 'CT20260718-0003', title: '瑞丰生鲜冷链配仓WMS部署签署书', customerId: 'C002', customerName: '瑞丰生鲜连锁超市', oppId: 'OPP20260717-0011', oppTitle: '瑞丰生鲜连锁配仓WMS部署', amount: 50000, status: 'PENDING_SIGN', signingRequestId: 'SIGN-REQ-CT20260718-0003-V1', opportunitySyncStatus: 'NOT_TRIGGERED', erpOrderSyncStatus: 'NOT_TRIGGERED', performanceSyncStatus: 'NOT_TRIGGERED', createdAt: '2026-07-18 10:15:00', createdBy: '张三' },
   { id: 'CT20260718-0004', title: '安泰医疗耗材追溯WMS采购合同', customerId: 'C004', customerName: '安泰医疗器械有限公司', oppId: 'OPP20260717-0004', oppTitle: '安泰医疗高值耗材WMS追溯', amount: 120000, status: 'SIGNED', signedDate: '2026-07-18', createdAt: '2026-07-18 10:30:00', createdBy: '李四' },
   { id: 'CT20260718-0005', title: '远东重工制造MES对接合同(已废)', customerId: 'C005', customerName: '远东重工制造集团', oppId: 'OPP20260717-0007', oppTitle: '远东重工制造一期MES对接WMS', amount: 350000, status: 'VOIDED', voidReason: '方案变更，重新谈判', createdAt: '2026-07-18 10:45:00', createdBy: '李四' },
-  { id: 'CT20260718-0006', title: '聚百川化工材料销售主合同', customerId: 'C006', customerName: '龙腾实业有限公司', oppId: 'OPP20260717-0001', oppTitle: 'Forge智能出入库WMS采购', amount: 50000, status: 'ARCHIVED', signedDate: '2026-07-17', createdAt: '2026-07-17 11:00:00', createdBy: '张三' },
+  { id: 'CT20260718-0006', title: '万达商贸华北仓冷链WMS合同', customerId: 'C003', customerName: '万达商贸进出口公司', oppId: 'OPP20260717-0015', oppTitle: '万达商贸华北仓冷链WMS', amount: 100000, status: 'SIGNED', signedDate: '2026-07-18', signedAt: '2026-07-18 11:00:00', signEventId: 'SEED-HISTORICAL-SIGN-0006', signSource: 'MOCK_SIGN_SERVICE', opportunitySyncStatus: 'SUCCESS', erpOrderSyncStatus: 'NOT_TRIGGERED', performanceSyncStatus: 'NOT_TRIGGERED', syncError: 'ERP 串联未接入，历史演示数据未生成 ERP 订单', createdAt: '2026-07-17 11:00:00', createdBy: '张三' },
   { id: 'CT20260718-0007', title: '海纳商贸零售配仓ERP实施协议', customerId: 'C007', customerName: '海纳商贸有限公司', oppId: 'OPP20260717-0002', oppTitle: '海纳商贸零售配仓ERP升级', amount: 150000, status: 'DRAFT', createdAt: '2026-07-18 11:15:00', createdBy: '张三' },
-  { id: 'CT20260718-0008', title: '智芯微电子芯片条码实施采购合同', customerId: 'C008', customerName: '智芯微电子技术公司', oppId: 'OPP20260717-0003', oppTitle: '智芯微电子芯片封装条码管理', amount: 200000, status: 'PENDING_SIGN', createdAt: '2026-07-18 11:30:00', createdBy: '李四' }
+  { id: 'CT20260718-0008', title: '智芯微电子芯片条码实施采购合同', customerId: 'C008', customerName: '智芯微电子技术公司', oppId: 'OPP20260717-0003', oppTitle: '智芯微电子芯片封装条码管理', amount: 200000, status: 'PENDING_SIGN', signingRequestId: 'SIGN-REQ-CT20260718-0008-V1', opportunitySyncStatus: 'NOT_TRIGGERED', erpOrderSyncStatus: 'NOT_TRIGGERED', performanceSyncStatus: 'NOT_TRIGGERED', createdAt: '2026-07-18 11:30:00', createdBy: '李四' }
 ];
 
 const MOCK_VISITS: Visit[] = [
@@ -300,7 +364,6 @@ export async function seedDatabase() {
   const leadCount = await db.leads.count();
   const oppCount = await db.opportunities.count();
   const customerCount = await db.customers.count();
-  const orderCount = await db.erp_orders.count();
   const contractCount = await db.contracts.count();
   const visitCount = await db.visits.count();
   const targetCount = await db.targets.count();
@@ -321,36 +384,39 @@ export async function seedDatabase() {
     console.log('IndexedDB 商机种子数据已初始化！');
   }
 
-  if (customerCount === 0) {
-    const erpCustomers = await getErpCustomers();
-    if (erpCustomers && erpCustomers.length > 0) {
-      await db.transaction('rw', db.customers, async () => {
-        const syncedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
-        const formatted: Customer[] = erpCustomers.map(cust => ({
-          id: String(cust.id),
+  const erpCustomers = await getErpCustomers();
+  if (erpCustomers && erpCustomers.length > 0) {
+    await db.transaction('rw', db.customers, async () => {
+      const syncedAt = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' });
+      const existingCustomers = new Map((await db.customers.toArray()).map(customer => [customer.id, customer]));
+      const formatted: Customer[] = erpCustomers.map(cust => {
+        const id = String(cust.id);
+        const existing = existingCustomers.get(id);
+        return {
+          id,
+          erpCustomerId: id,
           name: cust.name,
           contact: cust.contact,
           phone: cust.phone,
-          email: '',
-          industry: 'OTHER',
-          region: '',
+          email: existing?.email || '',
+          industry: existing?.industry || 'OTHER',
+          region: existing?.region || '',
           level: cust.priceLevel === '一级' ? 'A' : cust.priceLevel === '二级' ? 'B' : 'C',
           creditLimit: cust.creditLimit,
-          riskLevel: 'LOW',
-          owner: 'ERP 同步',
-          createdAt: syncedAt
-        }));
-        await db.customers.bulkAdd(formatted);
+          riskLevel: existing?.riskLevel || 'LOW',
+          owner: existing?.owner || 'ERP 同步',
+          createdAt: existing?.createdAt || syncedAt,
+          lifecycleStatus: cust.status === 'active' ? 'ACTIVE' : 'DISABLED',
+          syncStatus: 'AVAILABLE',
+          sourceVersion: syncedAt.replace(/\D/g, ''),
+          sourceEventId: `erp-customer-sync-${id}-${syncedAt}`,
+          syncedAt,
+          creditStatus: existing?.creditStatus || 'UNKNOWN'
+        };
       });
-      console.log('IndexedDB 客户数据已从 ERP 同步加载初始化！');
-    }
-  }
-
-  if (orderCount === 0) {
-    await db.transaction('rw', db.erp_orders, async () => {
-      await db.erp_orders.bulkAdd(MOCK_ERP_ORDERS);
+      await db.customers.bulkPut(formatted);
     });
-    console.log('IndexedDB ERP 销售订单种子数据已初始化！');
+    console.log(customerCount === 0 ? 'IndexedDB 客户快照已从 ERP 初始化！' : 'IndexedDB 客户快照已从 ERP 刷新！');
   }
 
   if (contractCount === 0) {

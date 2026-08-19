@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { erpDb } from '../api/erpSync';
 import { Search, Download, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +91,7 @@ export default function CustomersList() {
   };
 
   // 实时拉取多表数据用于聚合计算
-  const customers = useLiveQuery(() => erpDb.table('customers').toArray()) || [];
+  const customers = useLiveQuery(() => db.customers.toArray()) || [];
   const opportunities = useLiveQuery(() => db.opportunities.toArray()) || [];
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const leadFollowUps = useLiveQuery(() => db.follow_up_records.toArray()) || [];
@@ -100,7 +99,9 @@ export default function CustomersList() {
 
   // 多表聚合计算客户扩展字段
   const enrichedCustomers = customers.map(cust => {
-    const associatedOpps = opportunities.filter(o => o.customerId === String(cust.id || cust.code));
+    const associatedOpps = opportunities.filter(o =>
+      o.customerId === cust.id || Boolean(cust.erpCustomerId && o.erpCustomerId === cust.erpCustomerId)
+    );
     
     let latestOppStage = '—';
     if (associatedOpps.length > 0) {
@@ -108,7 +109,7 @@ export default function CustomersList() {
       latestOppStage = getStageLabel(sortedOpps[0].status);
     }
 
-    const matchingLeads = leads.filter(l => l.company === cust.name);
+    const matchingLeads = leads.filter(l => l.convertedToCustomerId === cust.id);
     
     const currentLeadFollowTimes = leadFollowUps
       .filter(f => matchingLeads.some(l => l.id === f.leadId))
@@ -119,7 +120,7 @@ export default function CustomersList() {
       .map(f => f.time);
 
     const allFollowTimes = [...currentLeadFollowTimes, ...currentOppFollowTimes].sort((a, b) => b.localeCompare(a));
-    const latestFollowTime = allFollowTimes.length > 0 ? allFollowTimes[0] : (cust.createdAt || '—');
+    const latestFollowTime = allFollowTimes.length > 0 ? allFollowTimes[0] : cust.createdAt;
 
     return {
       ...cust,
@@ -136,7 +137,7 @@ export default function CustomersList() {
       const matchName = cust.name.toLowerCase().includes(kw);
       const matchContact = (cust.contact || '').toLowerCase().includes(kw);
       const matchPhone = (cust.phone || '').includes(kw);
-      const matchId = String(cust.id || cust.code || '').toLowerCase().includes(kw);
+      const matchId = `${cust.id} ${cust.erpCustomerId || ''}`.toLowerCase().includes(kw);
       if (!matchName && !matchContact && !matchPhone && !matchId) return false;
     }
 
@@ -167,7 +168,7 @@ export default function CustomersList() {
       )}
 
       {/* 头部标题区 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-anno="customers-list-page-header">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold text-slate-900">客户管理</h1>
           <p className="text-xs text-slate-500">同步展示 ERP 客户正式建档快照，汇聚线索、商机、发货订单与流失风险监控。</p>
@@ -185,7 +186,7 @@ export default function CustomersList() {
       </div>
 
       {/* 筛选过滤区 */}
-      <Card>
+      <Card data-anno="customers-list-filter-bar">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="relative md:col-span-2">
             <Input 
@@ -253,20 +254,20 @@ export default function CustomersList() {
       </Card>
 
       {/* 客户表格 */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden" data-anno="customers-list-table-fields">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[160px]">客户编号 (ERP)</TableHead>
+              <TableHead className="w-[160px]">客户编号 (CRM)</TableHead>
               <TableHead className="w-[200px]">公司名称</TableHead>
               <TableHead className="w-[100px]">首要联系人</TableHead>
               <TableHead className="w-[120px]">所属行业</TableHead>
               <TableHead className="w-[100px]">客户等级</TableHead>
               <TableHead className="w-[100px]">关联商机数</TableHead>
               <TableHead className="w-[120px]">最近商机阶段</TableHead>
-              <TableHead className="w-[100px]">AI流失风险</TableHead>
+              <TableHead className="w-[100px]" data-anno="customers-list-risk-display">AI流失风险</TableHead>
               <TableHead className="w-[160px]">最近跟进时间</TableHead>
-              <TableHead className="text-right w-[80px]">操作</TableHead>
+              <TableHead className="text-right w-[80px]" data-anno="customers-list-row-operations">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -278,10 +279,13 @@ export default function CustomersList() {
               </TableRow>
             ) : (
               pagedCustomers.map(cust => {
-                const custId = cust.id ? String(cust.id) : (cust.code || '');
+                const custId = cust.id;
                 return (
                   <TableRow key={custId}>
-                    <TableCell className="font-mono text-slate-500 font-medium">{custId}</TableCell>
+                    <TableCell className="font-mono text-slate-500 font-medium">
+                      <span className="block">{custId}</span>
+                      <span className="block text-[10px] text-slate-400">ERP: {cust.erpCustomerId || '待同步'}</span>
+                    </TableCell>
                     <TableCell>
                       <span 
                         className="font-medium text-blue-600 cursor-pointer hover:underline"
@@ -289,6 +293,9 @@ export default function CustomersList() {
                       >
                         {cust.name}
                       </span>
+                      <Badge variant={cust.lifecycleStatus === 'DISABLED' ? 'destructive' : 'success'} className="ml-2 text-[10px]">
+                        {cust.lifecycleStatus === 'DISABLED' ? '已停用' : '可用'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-slate-700">{cust.contact || '—'}</TableCell>
                     <TableCell className="text-slate-600">{INDUSTRY_MAP[cust.industry] || cust.industry || '—'}</TableCell>
@@ -315,7 +322,7 @@ export default function CustomersList() {
         </Table>
 
         {/* 分页 */}
-        <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex justify-between items-center px-4 py-3 border-t border-slate-100 text-xs text-slate-500" data-anno="customers-list-pagination">
           <div className="flex items-center gap-3">
             <span>共 {totalCount} 条记录</span>
             <select

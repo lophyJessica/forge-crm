@@ -1,20 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>front-prototype</title>
-    <link rel="stylesheet" href="/annotation-kit/runtime.css">
+    <title>Forge CRM 客户关系管理系统</title>
+    <script>
+      (function() {
+        const basePath = window.location.pathname.endsWith('/') 
+          ? window.location.pathname 
+          : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = basePath + 'annotation-kit/runtime.css?v=20260819-css-active';
+        document.head.appendChild(cssLink);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      const vitaminAnnotationRuntime = document.createElement('script');
-      vitaminAnnotationRuntime.type = 'module';
-      vitaminAnnotationRuntime.src = '/project/forge-crm/annotation-kit/runtime.js';
-      document.head.appendChild(vitaminAnnotationRuntime);
+      (function() {
+        const basePath = window.location.pathname.endsWith('/') 
+          ? window.location.pathname 
+          : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = basePath + 'annotation-kit/runtime.js?v=20260819-css-active';
+        document.head.appendChild(script);
+      })();
     </script>
   </body>
 </html>

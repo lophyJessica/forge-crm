@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "Forge CRM 线索列表页标注",
+  "title": "Forge CRM 线索模块标注",
   "scope": "leads",
   "sourceBase": ".",
   "runtime": {
@@ -87,6 +87,96 @@
       "id": "REQ-LEADS-EXCEPTIONS-001",
       "source": "../线索主PRD.md#9-边界与异常处理",
       "page": "/leads"
+    },
+    {
+      "id": "REQ-LEAD-FORM-PAGE-001",
+      "source": "../线索_Demo_新增编辑页.md#1-页面概述",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-FIELDS-001",
+      "source": "../线索_Demo_新增编辑页.md#3-表单卡片；../线索字段清单.md#一、基础信息字段",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-DEDUP-001",
+      "source": "../线索主PRD.md#r01-全局唯一去重规则；../线索主PRD.md#9.2-去重与幂等",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-VALIDATION-001",
+      "source": "../线索主PRD.md#r02-字段完整性规则；../线索_Demo_新增编辑页.md#5.2-提交",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-MODE-001",
+      "source": "../线索_Demo_新增编辑页.md#4-编辑模式差异",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-DRAFT-001",
+      "source": "../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.1-保存草稿；../线索主PRD.md#5.3-状态流转表",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-SUBMIT-001",
+      "source": "../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.2-提交",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-FORM-AI-001",
+      "source": "../线索主PRD.md#r08-ai-评分静态加权计算模型；../线索主PRD.md#r09-ai-评分分级流向规则；../线索主PRD.md#7-ai-串联规则",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-PAGE-001",
+      "source": "../线索_Demo_详情页.md#1-页面概述",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-STATUS-001",
+      "source": "../线索_Demo_详情页.md#2-状态区；../线索主PRD.md#5.1-对象状态；../线索主PRD.md#5.3-状态流转表",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-AI-001",
+      "source": "../线索_Demo_详情页.md#3-ai-评分卡片；../线索主PRD.md#r08-ai-评分静态加权计算模型；../线索主PRD.md#r09-ai-评分分级流向规则",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-BASIC-001",
+      "source": "../线索_Demo_详情页.md#4-基本信息卡片；../线索字段清单.md#一、基础信息字段；../线索字段清单.md#二、分配与跟进字段；../线索字段清单.md#三、系统字段",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-FOLLOW-001",
+      "source": "../线索_Demo_详情页.md#5-跟进记录时间线；../线索_Demo_详情页.md#7.1-添加跟进；../线索主PRD.md#5.3-状态流转表",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-ACTIONS-001",
+      "source": "../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示）；../线索主PRD.md#5.4-动作能力矩阵；../线索主PRD.md#8.2-操作权限矩阵",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-CLAIM-001",
+      "source": "../线索_Demo_详情页.md#7.4-认领；../线索主PRD.md#r10-公海认领与撤销放弃规则",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-ABANDON-001",
+      "source": "../线索_Demo_详情页.md#7.3-放弃；../线索字段清单.md#二、分配与跟进字段；../线索主PRD.md#r07-放弃/作废原因约束；../线索主PRD.md#r10-公海认领与撤销放弃规则",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-CONVERT-001",
+      "source": "../线索_Demo_详情页.md#7.2-转客户；../线索主PRD.md#r05-转客户强一致性与-ssot-规则；../线索主PRD.md#r06-终态只读保护规则",
+      "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-DRAFT-VOID-001",
+      "source": "../线索主PRD.md#5.3-状态流转表；../线索主PRD.md#r07-放弃/作废原因约束；../线索主PRD.md#r11-回收与作废动作分离规则；../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示）",
+      "page": "/leads/:id"
     }
   ],
   "annotations": [
@@ -228,6 +318,291 @@
       "blockId": "9",
       "sourceRefs": ["REQ-LEADS-PERMS-001", "REQ-LEADS-EXCEPTIONS-001", "REQ-LEADS-R04-001"],
       "order": 9
+    },
+    {
+      "id": "1",
+      "type": "page",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "线索新增编辑页面",
+      "target": {
+        "selector": "[data-anno='lead-form-page-header']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "1",
+      "sourceRefs": ["REQ-LEAD-FORM-PAGE-001", "REQ-LEAD-FORM-MODE-001"],
+      "order": 10
+    },
+    {
+      "id": "2",
+      "type": "field",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "线索来源字段",
+      "target": {
+        "selector": "[data-anno='lead-form-source-field']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "2",
+      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
+      "order": 11
+    },
+    {
+      "id": "3",
+      "type": "field",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "公司名称字段",
+      "target": {
+        "selector": "[data-anno='lead-form-company-field']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "3",
+      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001", "REQ-LEAD-FORM-VALIDATION-001"],
+      "order": 12
+    },
+    {
+      "id": "4",
+      "type": "field",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "联系人与联系方式字段",
+      "target": {
+        "selector": "[data-anno='lead-form-contact-fields']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "4",
+      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001", "REQ-LEAD-FORM-DEDUP-001", "REQ-LEAD-FORM-VALIDATION-001"],
+      "order": 13
+    },
+    {
+      "id": "5",
+      "type": "field",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "职位行业与地区字段",
+      "target": {
+        "selector": "[data-anno='lead-form-profile-fields']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "5",
+      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
+      "order": 14
+    },
+    {
+      "id": "6",
+      "type": "field",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "线索备注字段",
+      "target": {
+        "selector": "[data-anno='lead-form-remark-field']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "6",
+      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
+      "order": 15
+    },
+    {
+      "id": "7",
+      "type": "rule",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "表单完整性与去重拦截",
+      "target": {
+        "selector": "[data-anno='lead-form-validation']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "7",
+      "sourceRefs": ["REQ-LEAD-FORM-DEDUP-001", "REQ-LEAD-FORM-VALIDATION-001"],
+      "order": 16
+    },
+    {
+      "id": "8",
+      "type": "interaction",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "保存草稿流程",
+      "target": {
+        "selector": "[data-anno='lead-form-save-draft']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "8",
+      "sourceRefs": ["REQ-LEAD-FORM-DRAFT-001"],
+      "order": 17
+    },
+    {
+      "id": "9",
+      "type": "interaction",
+      "page": "#/leads/new",
+      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
+      "moduleName": "提交线索与AI分流",
+      "target": {
+        "selector": "[data-anno='lead-form-submit']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-form.md",
+      "blockId": "9",
+      "sourceRefs": ["REQ-LEAD-FORM-SUBMIT-001", "REQ-LEAD-FORM-AI-001", "REQ-LEAD-FORM-VALIDATION-001"],
+      "order": 18
+    },
+    {
+      "id": "1",
+      "type": "page",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "线索详情页面",
+      "target": {
+        "selector": "[data-anno='lead-detail-page-header']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "1",
+      "sourceRefs": ["REQ-LEAD-DETAIL-PAGE-001"],
+      "order": 19
+    },
+    {
+      "id": "2",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "状态与归属信息",
+      "target": {
+        "selector": "[data-anno='lead-detail-status-owner']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "2",
+      "sourceRefs": ["REQ-LEAD-DETAIL-STATUS-001"],
+      "order": 20
+    },
+    {
+      "id": "3",
+      "type": "rule",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "AI评分与评分维度",
+      "target": {
+        "selector": "[data-anno='lead-detail-ai-score']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "3",
+      "sourceRefs": ["REQ-LEAD-DETAIL-AI-001"],
+      "order": 21
+    },
+    {
+      "id": "4",
+      "type": "field",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "线索基本信息",
+      "target": {
+        "selector": "[data-anno='lead-detail-basic-info']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "4",
+      "sourceRefs": ["REQ-LEAD-DETAIL-BASIC-001"],
+      "order": 22
+    },
+    {
+      "id": "5",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "跟进记录时间线",
+      "target": {
+        "selector": "[data-anno='lead-detail-follow-up']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "5",
+      "sourceRefs": ["REQ-LEAD-DETAIL-FOLLOW-001"],
+      "order": 23
+    },
+    {
+      "id": "6",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "状态操作栏与动作入口",
+      "target": {
+        "selector": "[data-anno='lead-detail-action-bar']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "6",
+      "sourceRefs": ["REQ-LEAD-DETAIL-ACTIONS-001", "REQ-LEAD-DETAIL-CLAIM-001"],
+      "order": 24
+    },
+    {
+      "id": "7",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "添加跟进记录弹窗",
+      "target": {
+        "selector": "[data-anno='lead-detail-follow-up-modal']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "7",
+      "sourceRefs": ["REQ-LEAD-DETAIL-FOLLOW-001"],
+      "order": 25
+    },
+    {
+      "id": "8",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "主动放弃线索弹窗",
+      "target": {
+        "selector": "[data-anno='lead-detail-abandon-modal']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "8",
+      "sourceRefs": ["REQ-LEAD-DETAIL-ABANDON-001"],
+      "order": 26
+    },
+    {
+      "id": "9",
+      "type": "interaction",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "转客户确认与ERP建档",
+      "target": {
+        "selector": "[data-anno='lead-detail-convert-modal']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "9",
+      "sourceRefs": ["REQ-LEAD-DETAIL-CONVERT-001"],
+      "order": 27
+    },
+    {
+      "id": "10",
+      "type": "rule",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "moduleName": "草稿作废动作",
+      "target": {
+        "selector": "[data-anno='lead-detail-draft-void-modal']",
+        "fallbackSelectors": []
+      },
+      "markdownFile": "pages/lead-detail.md",
+      "blockId": "10",
+      "sourceRefs": ["REQ-LEAD-DETAIL-DRAFT-VOID-001"],
+      "order": 28
     }
   ]
 }

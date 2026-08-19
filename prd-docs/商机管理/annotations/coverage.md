@@ -1,0 +1,33 @@
+# 页面标注需求覆盖矩阵
+
+| 模块 | 来源需求 | 来源位置 | 页面 | 标注Key | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| opportunities | `REQ-OPP-LIST-PAGE-001` | ../商机_Demo_列表页.md#1-页面概述、../商机主PRD.md#2-功能范围、../商机主PRD.md#3-对象定位 | /opportunities | `opportunities:opportunities:1` | 已挂载 |
+| opportunities | `REQ-OPP-VIEWS-001` | ../商机_Demo_列表页.md#4-工具条、../商机_Demo_列表页.md#5-看板视图、../商机_Demo_列表页.md#6-列表视图 | /opportunities | `opportunities:opportunities:2` | 已挂载 |
+| opportunities | `REQ-OPP-CREATE-001` | ../商机_Demo_列表页.md#4-工具条、../商机_Demo_新增编辑页.md#1-页面概述、../商机主PRD.md#8.2-操作权限矩阵 | /opportunities | `opportunities:opportunities:3` | 已挂载 |
+| opportunities | `REQ-OPP-FILTER-001` | ../商机_Demo_列表页.md#3-查询区、../商机字段清单.md#一、基础信息字段、../商机字段清单.md#二、系统字段 | /opportunities | `opportunities:opportunities:4` | 已挂载 |
+| opportunities | `REQ-OPP-KANBAN-001` | ../商机_Demo_列表页.md#5-看板视图、../商机主PRD.md#5-状态机、../商机主PRD.md#6.2-阶段推进规则 | /opportunities | `opportunities:opportunities:5` | 已挂载 |
+| opportunities | `REQ-OPP-TABS-001` | ../商机_Demo_列表页.md#2-状态Tab与后台计数、../商机_Demo_列表页.md#6-列表视图 | /opportunities | `opportunities:opportunities:6` | 已挂载 |
+| opportunities | `REQ-OPP-LIST-001` | ../商机_Demo_列表页.md#6-列表视图、../商机字段清单.md#一、基础信息字段、../商机字段清单.md#二、系统字段、../商机字段清单.md#五、展示规则 | /opportunities | `opportunities:opportunities:7` | 已挂载 |
+| opportunities | `REQ-OPP-ROW-001` | ../商机_Demo_列表页.md#6.3-行内操作动态矩阵、../商机主PRD.md#5.4-动作能力矩阵、../商机主PRD.md#8.2-操作权限矩阵 | /opportunities | `opportunities:opportunities:8` | 已挂载 |
+| opportunities | `REQ-OPP-LOST-001` | ../商机_Demo_列表页.md#7.3-输单关闭、../商机字段清单.md#一、基础信息字段、../商机主PRD.md#6.3-关闭与下推规则 | /opportunities | `opportunities:opportunities:9` | 已挂载 |
+| opportunities | `REQ-OPP-CONTRACT-001` | ../商机_Demo_列表页.md#7.2-发起合同、../商机主PRD.md#5.3-状态流转表、../商机主PRD.md#6.2-阶段推进规则 | /opportunities | `opportunities:opportunities:10` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-PAGE-001` | ../商机_Demo_新增编辑页.md#1-页面概述、../商机_Demo_新增编辑页.md#2-路由与初始化、../商机_Demo_新增编辑页.md#7-新增与编辑模式差异 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:1` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-VALIDATION-001` | ../商机_Demo_新增编辑页.md#9-保存交互规范、../商机_Demo_新增编辑页.md#10-加载、空态与异常、../商机主PRD.md#6-核心业务规则 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:2` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-TITLE-001` | ../商机_Demo_新增编辑页.md#4.1-商机名称、../商机字段清单.md#一、基础信息字段 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:3` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-CUSTOMER-001` | ../商机_Demo_新增编辑页.md#4.2-关联客户、../商机字段清单.md#一、基础信息字段、../商机主PRD.md#6.1-创建与引用规则 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:4` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-FORECAST-001` | ../商机_Demo_新增编辑页.md#4.3-预计金额、../商机_Demo_新增编辑页.md#4.4-预计成交日期、../商机字段清单.md#一、基础信息字段 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:5` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-PRODUCT-001` | ../商机_Demo_新增编辑页.md#5-商品明细工具区、../商机_Demo_新增编辑页.md#6-字段联动规则、../商机字段清单.md#三、商品明细对象 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:6` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-REQUIREMENT-001` | ../商机_Demo_新增编辑页.md#4.5-需求描述、../商机_Demo_新增编辑页.md#6-字段联动规则、../商机字段清单.md#一、基础信息字段 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:7` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-FOOTER-001` | ../商机_Demo_新增编辑页.md#8-底部操作栏、../商机_Demo_新增编辑页.md#9.3-保存成功、../商机_Demo_新增编辑页.md#9.4-保存失败 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:8` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-SAVE-001` | ../商机_Demo_新增编辑页.md#9-保存交互规范、../商机主PRD.md#6.1-创建与引用规则、../商机主PRD.md#7-AI串联规则 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:9` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-PAGE-001` | ../商机_Demo_详情页.md#1-页面概述、../商机_Demo_详情页.md#2-加载与权限、../商机主PRD.md#8-权限设计 | /opportunities/:id | `opportunities:opportunities-id:1` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-STATUS-001` | ../商机_Demo_详情页.md#3-页头状态区、../商机字段清单.md#一、基础信息字段、../商机主PRD.md#7-AI串联规则 | /opportunities/:id | `opportunities:opportunities-id:2` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-TIMELINE-001` | ../商机_Demo_详情页.md#4-6个业务节点+输单终态时间线、../商机主PRD.md#5-状态机 | /opportunities/:id | `opportunities:opportunities-id:3` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-BASIC-001` | ../商机_Demo_详情页.md#5-商机信息卡片、../商机字段清单.md#一、基础信息字段、../商机字段清单.md#二、系统字段 | /opportunities/:id | `opportunities:opportunities-id:4` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-PRODUCT-001` | ../商机_Demo_详情页.md#6-商品明细表格、../商机字段清单.md#三、商品明细对象、../商机主PRD.md#6.1-创建与引用规则 | /opportunities/:id | `opportunities:opportunities-id:5` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-FOLLOW-001` | ../商机_Demo_详情页.md#7-跟进记录组件、../商机_Demo_详情页.md#7.4-添加跟进抽屉、../商机主PRD.md#5.4-动作能力矩阵 | /opportunities/:id | `opportunities:opportunities-id:6` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-ACTIONS-001` | ../商机_Demo_详情页.md#9-底部操作矩阵、../商机_Demo_详情页.md#10-动作交互与弹窗、../商机主PRD.md#5.4-动作能力矩阵 | /opportunities/:id | `opportunities:opportunities-id:7` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-FOLLOW-MODAL-001` | ../商机_Demo_详情页.md#7.4-添加跟进抽屉、../商机_Demo_详情页.md#7.5-空态与异常 | /opportunities/:id | `opportunities:opportunities-id:8` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-LOST-001` | ../商机_Demo_详情页.md#10.3-输单、../商机字段清单.md#一、基础信息字段、../商机主PRD.md#6.3-关闭与下推规则 | /opportunities/:id | `opportunities:opportunities-id:9` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-CONTRACT-001` | ../商机_Demo_详情页.md#8-关联合同与ERP结果、../商机_Demo_详情页.md#10.1-推进、../商机_Demo_详情页.md#10.2-发起合同、../商机主PRD.md#6.2-阶段推进规则、../商机主PRD.md#6.3-关闭与下推规则 | /opportunities/:id | `opportunities:opportunities-id:10` | 已挂载 |

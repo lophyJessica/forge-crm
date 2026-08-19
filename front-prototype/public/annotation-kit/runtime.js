@@ -778,12 +778,18 @@ function currentPageMatches(annotation) {
   if (annotation.routeMatcher) {
     try {
       const matcher = new RegExp(annotation.routeMatcher);
-      return routes.some((route) => matcher.test(route));
+      if (routes.some((route) => matcher.test(route))) return true;
     } catch (error) {
       console.warn(`[vitamin-prototype-annotation] Invalid routeMatcher for ${annotation.id}`);
     }
   }
-  if (annotation.page.startsWith('#')) return location.hash === annotation.page;
+  if (annotation.page.startsWith('#')) {
+    const rawHash = location.hash || '#/';
+    const currentHash = rawHash.split('?')[0].replace(/\/$/, '') || '#/';
+    const targetHash = annotation.page.split('?')[0].replace(/\/$/, '') || '#/';
+    if (currentHash === targetHash) return true;
+    if (rawHash === annotation.page) return true;
+  }
   return routes.some((route) => route === annotation.page);
 }
 
@@ -1070,6 +1076,7 @@ function closeAnnotationPanel() {
   VPA_STATE.panelOpen = false;
   const panel = document.querySelector('.vpa-panel');
   if (panel) panel.remove();
+  syncAnnotationControls();
 }
 
 function closeAnnotationPopups() {
@@ -1200,6 +1207,7 @@ function renderAnnotationPanel() {
 function openAnnotationPanel() {
   VPA_STATE.panelOpen = true;
   renderAnnotationPanel();
+  syncAnnotationControls();
 }
 
 async function reloadBundle() {
@@ -1216,14 +1224,19 @@ function syncAnnotationControls() {
   const entry = document.querySelector('.vpa-entry');
   const panelToggle = document.querySelector('.vpa-panel-toggle');
   const isAnnotate = VPA_STATE.mode === 'annotate';
+  const isPanelOpen = VPA_STATE.panelOpen;
+  document.body.classList.toggle('vpa-mode-annotate', isAnnotate);
   if (entry) {
     entry.classList.toggle('is-active', isAnnotate);
     entry.setAttribute('aria-label', isAnnotate ? '关闭原型标注' : '打开原型标注');
     entry.setAttribute('aria-pressed', isAnnotate ? 'true' : 'false');
   }
   if (panelToggle) {
+    panelToggle.classList.toggle('is-active', isPanelOpen);
     panelToggle.classList.add('is-visible');
+    panelToggle.setAttribute('aria-label', isPanelOpen ? '关闭标注清单' : '打开标注清单');
     panelToggle.setAttribute('aria-hidden', 'false');
+    panelToggle.setAttribute('aria-pressed', isPanelOpen ? 'true' : 'false');
   }
 }
 

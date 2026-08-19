@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CURRENT_USER, canCancelCheckedInVisit, shanghaiNow } from '@/domain/businessRules';
+import { cancelVisit, checkInVisit } from '@/domain/visitActions';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -40,7 +43,10 @@ export default function VisitDetail() {
 
   // 1. 本地表单状态
   const [content, setContent] = useState('');
+  const [visitResult, setVisitResult] = useState<'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'CUSTOMER_NO_SHOW'>('POSITIVE');
   const [errorMsg, setErrorMsg] = useState('');
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
@@ -69,23 +75,8 @@ export default function VisitDetail() {
 
   // 4. 签到打卡
   const handleCheckIn = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    
-    const mockAddresses = [
-      '江苏省南京市江宁区 Forge 智能科技园B座1楼大堂',
-      '上海市浦东新区张江高科智芯大厦12层前台',
-      '北京市西城区金融街鼎泰大厦大堂东门',
-      '湖北省武汉市东西湖区瑞丰冷链A库门卫室'
-    ];
-    const mockAddr = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
-
-    await db.visits.update(visit.id, {
-      status: 'CHECKED_IN',
-      checkedInAt: nowStr,
-      checkedInAddress: mockAddr,
-      updatedAt: nowStr + ':00'
-    });
-    showToast(`签到成功！系统已自动回写签到位置 [${mockAddr}]`);
+    const result = await checkInVisit(visit.id);
+    showToast(result.message, result.ok ? 'success' : 'error');
   };
 
   // 5. 提交拜访纪要完成
@@ -100,67 +91,81 @@ export default function VisitDetail() {
       return;
     }
 
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    const nowFullStr = nowStr.replace('T', ' ') + ':00';
+    const nowFullStr = shanghaiNow();
 
     await db.transaction('rw', db.visits, db.follow_up_records, db.opportunity_follow_ups, db.leads, db.opportunities, async () => {
-      await db.visits.update(visit.id, {
-        status: 'COMPLETED',
-        content: content,
-        updatedAt: nowFullStr
-      });
+      const current = await db.visits.get(visit.id);
+      if (!current || current.status !== 'CHECKED_IN') throw new Error('拜访状态已变化，请刷新后重试');
+      const locationText = current.visitMethod === '上门' ? `；位置：${current.checkedInAddress || '未记录'}` : '';
+      const formattedContent = `【${current.visitMethod}拜访】${current.title} - ${content.trim()}${locationText}`;
+      let followUpStatus: 'NOT_REQUIRED' | 'SUCCESS' | 'PENDING' = 'NOT_REQUIRED';
+      let followUpRecordId: string | undefined;
 
-      const formattedContent = `【线下拜访】${visit.title} - ${content} (签到位置: ${visit.checkedInAddress || '在线会议/电话'})`;
-
-      if (visit.associationType === 'LEAD') {
-        await db.follow_up_records.add({
-          leadId: visit.associationId,
+      if (current.associationType === 'LEAD') {
+        const existingRecord = await db.follow_up_records.where('sourceVisitId').equals(current.id).first();
+        const recordId = existingRecord?.id || await db.follow_up_records.add({
+          leadId: current.associationId,
           time: nowFullStr,
-          operator: visit.createdBy || '系统',
+          operator: current.assigneeName || current.createdBy || '系统',
           type: '拜访',
-          content: formattedContent
+          content: formattedContent,
+          sourceVisitId: current.id,
         });
         
-        await db.leads.update(visit.associationId, {
-          followedAt: nowFullStr
+        await db.leads.update(current.associationId, {
+          followedAt: nowFullStr,
         });
+        followUpStatus = 'SUCCESS';
+        followUpRecordId = String(recordId);
 
-      } else if (visit.associationType === 'OPPORTUNITY') {
-        await db.opportunity_follow_ups.add({
-          oppId: visit.associationId,
+      } else if (current.associationType === 'OPPORTUNITY') {
+        const existingRecord = await db.opportunity_follow_ups.where('sourceVisitId').equals(current.id).first();
+        const recordId = existingRecord?.id || await db.opportunity_follow_ups.add({
+          oppId: current.associationId,
           time: nowFullStr,
-          operator: visit.createdBy || '系统',
+          operator: current.assigneeName || current.createdBy || '系统',
           type: '拜访',
-          content: formattedContent
+          content: formattedContent,
+          sourceVisitId: current.id,
         });
 
-        await db.opportunities.update(visit.associationId, {
-          updatedAt: nowFullStr
+        await db.opportunities.update(current.associationId, {
+          updatedAt: nowFullStr,
         });
+        followUpStatus = 'SUCCESS';
+        followUpRecordId = String(recordId);
 
-      } else if (visit.associationType === 'CUSTOMER') {
-        const matchingOpps = await db.opportunities.where('customerId').equals(visit.associationId).toArray();
+      } else if (current.associationType === 'CUSTOMER') {
+        const matchingOpps = await db.opportunities.where('customerId').equals(current.associationId).toArray();
         if (matchingOpps.length > 0) {
-          await db.opportunity_follow_ups.add({
-            oppId: matchingOpps[0].id,
+          const targetOpp = matchingOpps.sort((a, b) => b.updatedAt?.localeCompare(a.updatedAt || '') || 0)[0];
+          const existingRecord = await db.opportunity_follow_ups.where('sourceVisitId').equals(current.id).first();
+          const recordId = existingRecord?.id || await db.opportunity_follow_ups.add({
+            oppId: targetOpp.id,
             time: nowFullStr,
-            operator: visit.createdBy || '系统',
+            operator: current.assigneeName || current.createdBy || '系统',
             type: '拜访',
-            content: formattedContent
+            content: formattedContent,
+            sourceVisitId: current.id,
           });
-        } else {
-          const matchingLeads = await db.leads.filter(l => l.company === visit.associationName).toArray();
-          if (matchingLeads.length > 0) {
-            await db.follow_up_records.add({
-              leadId: matchingLeads[0].id,
-              time: nowFullStr,
-              operator: visit.createdBy || '系统',
-              type: '拜访',
-              content: formattedContent
-            });
-          }
+          followUpStatus = 'SUCCESS';
+          followUpRecordId = String(recordId);
         }
       }
+
+      await db.visits.update(current.id, {
+        status: 'COMPLETED',
+        executionResult: visitResult === 'CUSTOMER_NO_SHOW' ? 'MISSED' : 'COMPLETED',
+        executionException: visitResult === 'CUSTOMER_NO_SHOW' ? 'CUSTOMER_NO_SHOW' : 'NONE',
+        completedAt: nowFullStr,
+        visitResult,
+        feedbackContent: content.trim(),
+        followUpStatus,
+        followUpRecordId,
+        content: content.trim(),
+        version: (current.version || 0) + 1,
+        updatedAt: nowFullStr,
+      });
     });
 
     showToast('拜访任务完成！本次拜访总结已自动回写至关联对象的 360° 跟进历史中。');
@@ -168,12 +173,12 @@ export default function VisitDetail() {
 
   // 6. 取消计划
   const handleCancel = async () => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    await db.visits.update(visit.id, {
-      status: 'CANCELLED',
-      updatedAt: nowStr
-    });
-    showToast('拜访计划已取消。');
+    const result = await cancelVisit(visit.id, CURRENT_USER.role, cancelReason);
+    showToast(result.message, result.ok ? 'success' : 'error');
+    if (result.ok) {
+      setCancelModalOpen(false);
+      setCancelReason('');
+    }
   };
 
   return (
@@ -188,16 +193,16 @@ export default function VisitDetail() {
 
       {/* 警示 Banner */}
       {visit.status === 'CANCELLED' && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-anno="visit-detail-cancelled-banner">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs font-medium">
-            本次拜访计划已被销售取消归档。
+            本次拜访计划已取消。原因：{visit.cancelReason || '未记录'}。既有签到事实不会被清除。
           </AlertDescription>
         </Alert>
       )}
 
       {/* 导航标题 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="visit-detail-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -217,7 +222,7 @@ export default function VisitDetail() {
         {/* 左侧拜访信息明细卡片 */}
         <div className="md:col-span-2 space-y-4">
           
-          <Card>
+          <Card data-anno="visit-detail-schedule">
             <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
               <div className="flex items-center gap-1.5 text-slate-900">
                 <Calendar size={15} className="text-blue-600" />
@@ -249,7 +254,7 @@ export default function VisitDetail() {
           </Card>
 
           {/* 关联快照卡片 */}
-          <Card>
+          <Card data-anno="visit-detail-association">
             <CardHeader className="border-b border-slate-100 pb-2.5 flex flex-row items-center gap-1.5 text-slate-900">
               <Users size={14} className="text-blue-600" />
               <CardTitle className="text-xs font-semibold">{getAssociationLabel(visit.associationType)} 快照资料</CardTitle>
@@ -279,12 +284,22 @@ export default function VisitDetail() {
 
           {/* CHECKED_IN 状态下录入纪要 */}
           {visit.status === 'CHECKED_IN' && (
-            <Card className="border-amber-200">
+            <Card className="border-amber-200" data-anno="visit-detail-feedback-entry">
               <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center gap-1.5">
                 <Clipboard size={15} className="text-amber-500" />
                 <CardTitle className="text-sm font-semibold">录入拜访总结纪要</CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-3">
+                <select
+                  value={visitResult}
+                  onChange={(event) => setVisitResult(event.target.value as typeof visitResult)}
+                  className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md"
+                >
+                  <option value="POSITIVE">积极结果</option>
+                  <option value="NEUTRAL">中性结果</option>
+                  <option value="NEGATIVE">消极结果</option>
+                  <option value="CUSTOMER_NO_SHOW">客户未到访</option>
+                </select>
                 <Textarea
                   rows={4}
                   placeholder="请在此录入本次拜访的会谈核心内容、业务诉求及后续跟进方案 (必填)..."
@@ -311,15 +326,16 @@ export default function VisitDetail() {
 
           {/* COMPLETED 状态下显示只读纪要 */}
           {visit.status === 'COMPLETED' && (
-            <Card>
+            <Card data-anno="visit-detail-feedback-summary">
               <CardHeader className="border-b border-slate-100 pb-2.5 flex flex-row items-center gap-1.5 text-slate-900">
                 <Clipboard size={14} className="text-emerald-600" />
                 <CardTitle className="text-xs font-semibold">拜访纪要总结</CardTitle>
               </CardHeader>
               <CardContent className="pt-3">
                 <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 border border-slate-100 rounded-md p-3 break-all">
-                  {visit.content || '未录入总结内容'}
+                  {visit.feedbackContent || visit.content || '未录入总结内容'}
                 </p>
+                <p className="mt-2 text-[11px] text-slate-500">完成时间：{visit.completedAt || '—'} · 执行结果：{visit.visitResult || visit.executionResult || '—'} · 跟进回写：{visit.followUpStatus || '—'}</p>
               </CardContent>
             </Card>
           )}
@@ -327,9 +343,9 @@ export default function VisitDetail() {
         </div>
 
         {/* 右侧外勤打卡定位模拟卡片 */}
-        <Card>
+        <Card data-anno="visit-detail-check-in-snapshot">
           <CardHeader className="border-b border-slate-100 pb-3">
-            <CardTitle className="text-sm font-semibold">位置签到/打卡快照</CardTitle>
+            <CardTitle className="text-sm font-semibold">{visit.visitMethod === '上门' ? '位置签到/打卡快照' : `${visit.visitMethod}沟通签到`}</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="border border-slate-200 rounded-md p-4 bg-slate-50 flex flex-col justify-between items-center text-center h-64 relative overflow-hidden">
@@ -337,15 +353,16 @@ export default function VisitDetail() {
                 <div className="flex flex-col items-center justify-center gap-4 h-full">
                   <MapPin size={40} className="text-slate-300 animate-bounce" />
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-800">尚未进行现场打卡</p>
-                    <p className="text-[11px] text-slate-400">请到达目标地址后，点击下方“位置签到”</p>
+                    <p className="text-xs font-semibold text-slate-800">尚未签到</p>
+                    <p className="text-[11px] text-slate-400">{visit.visitMethod === '上门' ? 'Demo 使用明确标识的 Mock 位置，不宣称 GPS 已校验' : '电话/视频签到不会请求定位权限'}</p>
                   </div>
                   <Button
                     size="sm"
+                    data-anno="visit-detail-check-in-action"
                     onClick={handleCheckIn}
                   >
                     <MapPin size={13} className="mr-1" />
-                    <span>立即打卡签到</span>
+                    <span>{visit.visitMethod === '上门' ? 'Mock 位置签到' : `${visit.visitMethod}签到`}</span>
                   </Button>
                 </div>
               ) : (
@@ -364,7 +381,13 @@ export default function VisitDetail() {
 
                   <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                     <CheckCircle size={14} />
-                    <span>位置打卡通过 (GPS已校验)</span>
+                    <span>
+                      {visit.locationSource === 'BROWSER' && visit.locationReliability === 'VERIFIED'
+                        ? '浏览器定位已校验'
+                        : visit.locationSource === 'MOCK' || !visit.locationSource
+                          ? 'Mock 位置（未做 GPS 校验）'
+                          : '远程签到（未请求定位）'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -375,7 +398,7 @@ export default function VisitDetail() {
       </div>
 
       {/* 底部操作固定栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-3.5 px-6 shadow-sm flex justify-end gap-2 lg:pl-[220px]" data-anno="visit-detail-action-bar">
         <Button
           variant="outline"
           size="sm"
@@ -396,23 +419,42 @@ export default function VisitDetail() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleCancel}
+              onClick={() => setCancelModalOpen(true)}
             >
               取消拜访
             </Button>
           </>
         )}
 
-        {visit.status === 'CHECKED_IN' && (
+        {visit.status === 'CHECKED_IN' && canCancelCheckedInVisit(CURRENT_USER.role) && (
           <Button
             variant="destructive"
             size="sm"
-            onClick={handleCancel}
+            onClick={() => setCancelModalOpen(true)}
           >
             取消拜访
           </Button>
         )}
       </div>
+
+      <Dialog open={cancelModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setCancelModalOpen(false);
+          setCancelReason('');
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">确认取消拜访</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-slate-500">请输入至少10个字的取消原因。已签到拜访仅主管/管理员可取消，且签到事实会保留。</p>
+          <Textarea rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="请输入取消原因" />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setCancelModalOpen(false)}>返回</Button>
+            <Button variant="destructive" size="sm" disabled={cancelReason.trim().length < 10} onClick={handleCancel}>确认取消</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

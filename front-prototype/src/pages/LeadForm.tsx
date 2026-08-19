@@ -7,50 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-
-const CURRENT_USER = '张三';
-
-// 计算 AI 评分函数
-const calculateAiScore = (lead: Partial<Lead>): number => {
-  let score = 0;
-
-  // 1. 来源评分 (15%)
-  if (lead.source === 'ONLINE' || lead.source === 'REFERRAL') score += 15;
-  else if (lead.source === 'ACTIVITY' || lead.source === 'EXHIBITION') score += 10;
-  else score += 5;
-
-  // 2. 行业匹配 (20%)
-  if (lead.industry === 'IT' || lead.industry === 'FINANCE') score += 20;
-  else if (lead.industry === 'MANUFACTURING') score += 15;
-  else if (lead.industry === 'RETAIL') score += 10;
-  else score += 5;
-
-  // 3. 职位评分
-  const pos = (lead.position || '').toLowerCase();
-  if (pos.includes('总') || pos.includes('ceo') || pos.includes('director') || pos.includes('主管')) {
-    score += 20;
-  } else if (pos.trim() !== '') {
-    score += 12;
-  } else {
-    score += 5;
-  }
-
-  // 4. 地区匹配
-  const reg = lead.region || '';
-  if (reg.includes('北京') || reg.includes('上海') || reg.includes('浙江') || reg.includes('广东')) {
-    score += 20;
-  } else if (reg.trim() !== '') {
-    score += 12;
-  } else {
-    score += 5;
-  }
-
-  // 5. 响应速度与活跃度随机合成因子
-  const responseFactor = Math.floor(Math.random() * 11) + 15;
-  score += responseFactor;
-
-  return Math.min(100, score);
-};
+import {
+  CURRENT_USER,
+  calculateLeadScore,
+  getLeadRouting,
+  isValidEmail,
+  isValidPhone,
+  normalizeEmail,
+  normalizePhone,
+  shanghaiNow,
+  shanghaiToday,
+} from '@/domain/businessRules';
 
 export default function LeadForm() {
   const navigate = useNavigate();
@@ -110,64 +77,79 @@ export default function LeadForm() {
 
   // 唯一性校验
   const checkUniqueness = async (currentId?: string): Promise<{ phoneConflict: string | null; emailConflict: string | null }> => {
-    let phoneConflict: string | null = null;
-    let emailConflict: string | null = null;
+    const leads = await db.leads.toArray();
+    const normalizedPhone = normalizePhone(phone);
+    const normalizedEmail = normalizeEmail(email);
+    const existPhone = normalizedPhone
+      ? leads.find(item => item.id !== currentId && normalizePhone(item.phone || '') === normalizedPhone)
+      : undefined;
+    const existEmail = normalizedEmail
+      ? leads.find(item => item.id !== currentId && normalizeEmail(item.email || '') === normalizedEmail)
+      : undefined;
 
-    if (phone.trim()) {
-      const existPhone = await db.leads
-        .filter(l => l.phone === phone && l.id !== currentId)
-        .first();
-      if (existPhone) {
-        phoneConflict = `该手机号已存在线索 ${existPhone.id} (${existPhone.company})`;
-      }
-    }
-
-    if (email.trim()) {
-      const existEmail = await db.leads
-        .filter(l => l.email === email && l.id !== currentId)
-        .first();
-      if (existEmail) {
-        emailConflict = `该邮箱已存在线索 ${existEmail.id} (${existEmail.company})`;
-      }
-    }
-
-    return { phoneConflict, emailConflict };
+    return {
+      phoneConflict: existPhone ? `该手机号已存在线索 ${existPhone.id} (${existPhone.company})` : null,
+      emailConflict: existEmail ? `该邮箱已存在线索 ${existEmail.id} (${existEmail.company})` : null,
+    };
   };
 
   const generateLeadId = async () => {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await db.leads.count();
-    const indexStr = String(count + 1).padStart(4, '0');
+    const todayStr = shanghaiToday().replace(/-/g, '');
+    const prefix = `LEAD${todayStr}-`;
+    const ids = await db.leads.filter(item => item.id.startsWith(prefix)).primaryKeys();
+    const nextIndex = ids.reduce((max, key) => {
+      const suffix = Number(String(key).slice(prefix.length));
+      return Number.isFinite(suffix) ? Math.max(max, suffix) : max;
+    }, 0) + 1;
+    const indexStr = String(nextIndex).padStart(4, '0');
     return `LEAD${todayStr}-${indexStr}`;
+  };
+
+  const validateContacts = () => {
+    const nextErrors: Record<string, string> = {};
+    if (phone.trim() && !isValidPhone(phone)) nextErrors.phone = '请输入11位中国大陆手机号';
+    if (email.trim() && !isValidEmail(email)) nextErrors.email = '请输入有效邮箱地址';
+    return nextErrors;
   };
 
   // 保存草稿
   const handleSaveDraft = async () => {
+    if (isReadOnly) return;
+    const contactErrors = validateContacts();
+    if (Object.keys(contactErrors).length > 0) {
+      setErrors(contactErrors);
+      showToast('联系人格式不正确，请检查后再保存', 'error');
+      return;
+    }
     setLoading(true);
     try {
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-      const region = regionProvince && regionCity ? `${regionProvince}-${regionCity}` : '';
-      
-      let targetId = id;
-      if (!isEdit) {
-        targetId = await generateLeadId();
+      const { phoneConflict, emailConflict } = await checkUniqueness(id);
+      if (phoneConflict || emailConflict) {
+        showToast(phoneConflict || emailConflict || '联系人信息重复', 'error');
+        return;
       }
 
+      const nowStr = shanghaiNow();
+      const region = regionProvince && regionCity ? `${regionProvince}-${regionCity}` : '';
+      const existing = id ? await db.leads.get(id) : undefined;
+      const targetId = id || await generateLeadId();
+
       const leadData: Lead = {
-        id: targetId!,
+        id: targetId,
         source,
         company,
         contact: contact.trim() || undefined,
-        phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
+        phone: phone.trim() ? normalizePhone(phone) : undefined,
+        email: email.trim() ? normalizeEmail(email) : undefined,
         position: position.trim() || undefined,
         industry,
         region: region || undefined,
         remark: remark.trim() || undefined,
         score: 0,
         status: 'DRAFT',
-        createdAt: nowStr,
-        createdBy: CURRENT_USER
+        createdAt: existing?.createdAt || nowStr,
+        createdBy: existing?.createdBy || CURRENT_USER.name,
+        version: (existing?.version || 0) + 1,
       };
 
       await db.leads.put(leadData);
@@ -194,6 +176,7 @@ export default function LeadForm() {
       newErrors.phone = '手机号和邮箱至少填写一个';
       newErrors.email = '手机号和邮箱至少填写一个';
     }
+    Object.assign(newErrors, validateContacts());
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -214,59 +197,54 @@ export default function LeadForm() {
         return;
       }
 
-      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const nowStr = shanghaiNow();
       const region = regionProvince && regionCity ? `${regionProvince}-${regionCity}` : '';
-
-      let targetId = id;
-      if (!isEdit) {
-        targetId = await generateLeadId();
-      }
-
-      const leadPayload: Partial<Lead> = {
-        source,
-        company,
-        position,
-        industry,
-        region
-      };
-      const score = calculateAiScore(leadPayload);
-
-      const status = score >= 80 ? 'ASSIGNED' : 'PENDING_ASSIGN';
-      const owner = score >= 80 ? CURRENT_USER : undefined;
-      const assignedAt = score >= 80 ? nowStr : undefined;
+      const existing = id ? await db.leads.get(id) : undefined;
+      const targetId = id || await generateLeadId();
+      const createdAt = existing?.createdAt || nowStr;
+      const score = calculateLeadScore(
+        { source, industry, createdAt, followedAt: existing?.followedAt },
+        { responseHours: 0.5, historicalConversionRate: 0.5, lastActivityAt: nowStr },
+      );
+      const routing = getLeadRouting(score);
 
       const leadData: Lead = {
-        id: targetId!,
+        id: targetId,
         source,
         company,
         contact: contact.trim() || undefined,
-        phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
+        phone: phone.trim() ? normalizePhone(phone) : undefined,
+        email: email.trim() ? normalizeEmail(email) : undefined,
         position: position.trim() || undefined,
         industry,
         region: region || undefined,
         remark: remark.trim() || undefined,
         score,
-        status,
-        owner,
-        assignedAt,
-        createdAt: nowStr,
-        createdBy: CURRENT_USER
+        status: routing.status,
+        owner: routing.owner,
+        assignedAt: routing.status === 'ASSIGNED' ? nowStr : undefined,
+        poolType: routing.poolType,
+        createdAt,
+        createdBy: existing?.createdBy || CURRENT_USER.name,
+        version: (existing?.version || 0) + 1,
       };
 
       await db.leads.put(leadData);
       
-      if (status === 'ASSIGNED') {
+      if (routing.status === 'ASSIGNED') {
         await db.follow_up_records.add({
           leadId: targetId!,
           time: nowStr,
           operator: 'AI 自动引擎',
           type: '邮件',
-          content: `AI 评分完成：${score}分（≥80分触发自动派单）。已自动将该线索分配给最优销售 ${CURRENT_USER}。`
+          content: `AI 评分完成：${score}分（≥80分触发自动派单）。已自动将该线索分配给最优销售 ${CURRENT_USER.name}。`
         });
       }
 
-      showToast(`线索已成功提交，AI 评分：${score}分，状态：${status === 'ASSIGNED' ? '已自动分单' : '待分配'}`);
+      const routingLabel = routing.status === 'ASSIGNED'
+        ? '已自动分单'
+        : routing.poolType === 'NURTURE_POOL' ? '已进入培育池' : '已进入待分配池';
+      showToast(`线索已成功提交，AI 评分：${score}分，${routingLabel}`);
       setTimeout(() => navigate(`/leads/${targetId}`), 2000);
     } catch (err) {
       console.error(err);
@@ -287,7 +265,7 @@ export default function LeadForm() {
       )}
 
       {/* 头部导航 */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-anno="lead-form-page-header">
         <Button 
           variant="outline"
           size="icon"
@@ -312,9 +290,9 @@ export default function LeadForm() {
           <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-5" data-anno="lead-form-validation">
             {/* 字段 1：线索来源 */}
-            <div>
+            <div data-anno="lead-form-source-field">
               <Label htmlFor="source" className="block mb-2">
                 线索来源 <span className="text-red-500">*</span>
               </Label>
@@ -338,7 +316,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 2：公司名称 */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2" data-anno="lead-form-company-field">
               <Label htmlFor="company" className="block mb-2">
                 公司名称 <span className="text-red-500">*</span>
               </Label>
@@ -373,7 +351,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 4：手机号 */}
-            <div>
+            <div data-anno="lead-form-contact-fields">
               <Label htmlFor="phone" className="block mb-2">
                 手机号 <span className="text-slate-400 font-normal">(手机/邮箱选填其一)</span>
               </Label>
@@ -414,7 +392,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 6：职位 */}
-            <div>
+            <div data-anno="lead-form-profile-fields">
               <Label htmlFor="position" className="block mb-2">职位</Label>
               <Input
                 id="position"
@@ -487,7 +465,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 9：线索备注 */}
-            <div className="md:col-span-4">
+            <div className="md:col-span-4" data-anno="lead-form-remark-field">
               <Label htmlFor="remark" className="block mb-2">备注信息</Label>
               <Textarea
                 id="remark"
@@ -520,6 +498,7 @@ export default function LeadForm() {
               size="sm"
               disabled={loading}
               onClick={handleSaveDraft}
+              data-anno="lead-form-save-draft"
             >
               保存草稿
             </Button>
@@ -527,6 +506,7 @@ export default function LeadForm() {
               size="sm"
               disabled={loading}
               onClick={handleSubmit}
+              data-anno="lead-form-submit"
             >
               提交
             </Button>

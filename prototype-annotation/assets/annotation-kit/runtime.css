@@ -307,3 +307,10 @@
 .vpa-toast.show {
   opacity: 1;
 }
+
+.vpa-panel-toggle.is-active {
+  border-color: #63b894;
+  background: #f2fbf6;
+  color: #13724d;
+  box-shadow: 0 10px 26px rgb(15 118 82 / 16%);
+}
