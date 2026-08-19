@@ -35,6 +35,14 @@ Annotations are displayed in a **panel UI** (like Axure's annotation sidebar), n
 
 - **Entry buttons are floating & draggable**: the annotation entries ("标注清单" and "原型标注") must NOT occupy layout space or cover page controls — they are floating (fixed position), draggable by mouse (user can move them to a non-blocking spot). Implementation: fixed-position container with drag-to-reposition (pointer events), remember position in sessionStorage, no impact on page layout/flow
 
+## Annotation ID Numbering Standard (Mandatory — hard-won lesson 2026-08-19)
+
+- **Each page's annotation blocks must be numbered independently starting from 1** — do NOT continue the previous page's numbering globally.
+- The badge number shown on the page = `annotation.id` (runtime.js reads `badge.textContent = annotation.id`). If IDs are numbered globally across pages (e.g. list page = 1..9, then create page = 10..18, then detail = 19..28), then entering each new page shows badges starting from 10/19 instead of 1, and a large module accumulates to 100+.
+- **Correct pattern**: in `annotation.config.json` (and the annotation `.md` source blocks), each `page` restarts its block IDs from `1` and counts up consecutively within that page (list=1..9, create=1..9, detail=1..10). Same ID number may reappear on a different page — that is fine, because badges are rendered per-page (`routeMatcher` scopes to the current page).
+- Verify after compile: every page's blocks have IDs `1..N` with no gaps/duplications within the page.
+- **Golden rule**: badge number = per-page order, never a global running counter.
+
 ## Drag & Click Coexistence Standard (Mandatory — hard-won lesson)
 
 Floating draggable toolbars must support BOTH drag AND button clicks. Known pitfalls:
