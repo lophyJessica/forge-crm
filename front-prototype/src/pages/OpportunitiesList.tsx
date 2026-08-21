@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Opportunity } from '../db';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { CURRENT_USER, calculateOpportunityScore, shanghaiNow } from '@/domain/businessRules';
 import { createContractFromOpportunity } from '@/domain/opportunityActions';
+import { ListPagination } from '@/components/list-pagination';
 
 const CURRENT_USER_NAME = CURRENT_USER.name;
 
@@ -78,7 +79,13 @@ export default function OpportunitiesList() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [filterStage, setFilterStage] = useState('');
   const [filterOwner, setFilterOwner] = useState('');
+  const [filterMinScore, setFilterMinScore] = useState('');
+  const [filterMaxScore, setFilterMaxScore] = useState('');
+  const [dealDateFrom, setDealDateFrom] = useState('');
+  const [dealDateTo, setDealDateTo] = useState('');
   const [listActiveTab, setListActiveTab] = useState<'ALL' | 'ONGOING' | 'WON' | 'LOST'>('ALL');
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // 弹窗控制
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -94,6 +101,10 @@ export default function OpportunitiesList() {
   // 2. 从数据库实时订阅商机与合同
   const allOpps = useLiveQuery(() => db.opportunities.toArray()) || [];
   const allContracts = useLiveQuery(() => db.contracts.toArray()) || [];
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewMode, listActiveTab, searchKeyword, filterStage, filterOwner, filterMinScore, filterMaxScore, dealDateFrom, dealDateTo]);
 
   // 3. 校验函数
   const checkTransitionPreconditions = (opp: Opportunity, targetStage: string): { allowed: boolean; reason?: string } => {
@@ -250,9 +261,16 @@ export default function OpportunitiesList() {
 
     if (filterStage && opp.status !== filterStage) return false;
     if (filterOwner && opp.createdBy !== filterOwner) return false;
+    if (filterMinScore && opp.score < Number(filterMinScore)) return false;
+    if (filterMaxScore && opp.score > Number(filterMaxScore)) return false;
+    if (dealDateFrom && (!opp.dealDate || opp.dealDate < dealDateFrom)) return false;
+    if (dealDateTo && (!opp.dealDate || opp.dealDate > dealDateTo)) return false;
 
     return true;
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const listTotal = filteredOpps.length;
+  const pagedOpps = filteredOpps.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const getGroupedOpps = (stageId: string) => {
     return filteredOpps.filter(o => o.status === stageId);
@@ -385,11 +403,26 @@ export default function OpportunitiesList() {
                 setSearchKeyword('');
                 setFilterStage('');
                 setFilterOwner('');
+                setFilterMinScore('');
+                setFilterMaxScore('');
+                setDealDateFrom('');
+                setDealDateTo('');
               }}
               className="shrink-0 text-xs"
             >
               重置
             </Button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input type="number" min="0" max="100" placeholder="最低概率" value={filterMinScore} onChange={(event) => setFilterMinScore(event.target.value)} className="text-xs h-9" aria-label="最低成交概率" />
+            <span className="text-slate-400 text-xs">-</span>
+            <Input type="number" min="0" max="100" placeholder="最高概率" value={filterMaxScore} onChange={(event) => setFilterMaxScore(event.target.value)} className="text-xs h-9" aria-label="最高成交概率" />
+          </div>
+          <div className="flex items-center gap-1.5 md:col-span-2">
+            <label className="text-xs text-slate-500 shrink-0">预计成交</label>
+            <Input type="date" value={dealDateFrom} onChange={(event) => setDealDateFrom(event.target.value)} className="text-xs h-9" aria-label="预计成交开始日期" />
+            <span className="text-slate-400 text-xs">至</span>
+            <Input type="date" value={dealDateTo} onChange={(event) => setDealDateTo(event.target.value)} className="text-xs h-9" aria-label="预计成交结束日期" />
           </div>
         </CardContent>
       </Card>
@@ -500,14 +533,14 @@ export default function OpportunitiesList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOpps.length === 0 ? (
+                {listTotal === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-10 text-slate-400">
                       暂无符合条件的商机数据
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredOpps.map(opp => (
+                  pagedOpps.map(opp => (
                     <TableRow key={opp.id}>
                       <TableCell>
                         <span 
@@ -560,6 +593,19 @@ export default function OpportunitiesList() {
                 )}
               </TableBody>
             </Table>
+            <ListPagination
+              total={listTotal}
+              page={currentPage}
+              pageSize={pageSize}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
           </Card>
         </div>
       )}

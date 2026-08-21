@@ -54,6 +54,11 @@ export default function VisitList() {
   // 1. 过滤与分页状态
   const [activeTab, setActiveTab] = useState<'ALL' | 'PLANNED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'>('ALL');
   const [keyword, setKeyword] = useState('');
+  const [visitMethod, setVisitMethod] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [exception, setException] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -71,11 +76,16 @@ export default function VisitList() {
   // 3. 联动重置页码
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, keyword]);
+  }, [activeTab, keyword, visitMethod, assignee, dateFrom, dateTo, exception]);
 
   // 4. 内存过滤与排序
   const filteredVisits = visits.filter(v => {
     if (activeTab !== 'ALL' && v.status !== activeTab) return false;
+    if (visitMethod && v.visitMethod !== visitMethod) return false;
+    if (assignee && (v.assigneeName || v.createdBy) !== assignee) return false;
+    if (dateFrom && v.planTime.slice(0, 10) < dateFrom) return false;
+    if (dateTo && v.planTime.slice(0, 10) > dateTo) return false;
+    if (exception && (v.executionException || 'NONE') !== exception) return false;
 
     if (keyword.trim()) {
       const kw = keyword.toLowerCase();
@@ -175,7 +185,7 @@ export default function VisitList() {
 
       {/* 筛选过滤 */}
       <Card data-anno="visit-list-filter-bar">
-        <CardContent className="p-4 flex gap-3 items-center">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
           <div className="relative flex-1">
             <Input 
               placeholder="搜索拜访标题、单号、关联客户或商机名..." 
@@ -185,10 +195,40 @@ export default function VisitList() {
             />
             <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
           </div>
+          <select value={visitMethod} onChange={(event) => setVisitMethod(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="拜访方式">
+            <option value="">拜访方式(全部)</option>
+            <option value="上门">上门</option>
+            <option value="电话">电话</option>
+            <option value="视频">视频</option>
+          </select>
+          <select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="负责人">
+            <option value="">负责人(全部)</option>
+            <option value="张三">张三</option>
+            <option value="李四">李四</option>
+            <option value="王五">王五</option>
+          </select>
+          <select value={exception} onChange={(event) => setException(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="执行异常">
+            <option value="">执行异常(全部)</option>
+            <option value="CHECK_IN_FAILED">签到失败</option>
+            <option value="CUSTOMER_NO_SHOW">客户未到访</option>
+            <option value="FOLLOW_UP_PENDING">跟进待处理</option>
+          </select>
+          <div className="flex items-center gap-1.5 md:col-span-2">
+            <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="text-xs h-9" aria-label="拜访开始日期" />
+            <span className="text-slate-400 text-xs">至</span>
+            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="text-xs h-9" aria-label="拜访结束日期" />
+          </div>
           <Button 
             variant="outline"
             size="sm"
-            onClick={() => setKeyword('')}
+            onClick={() => {
+              setKeyword('');
+              setVisitMethod('');
+              setAssignee('');
+              setDateFrom('');
+              setDateTo('');
+              setException('');
+            }}
             className="text-xs"
           >
             重置
@@ -207,6 +247,7 @@ export default function VisitList() {
               <TableHead className="w-[100px]">拜访方式</TableHead>
               <TableHead className="w-[150px]">计划拜访时间</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
+              <TableHead className="w-[120px]">执行结果</TableHead>
               <TableHead className="w-[150px]">签到时间</TableHead>
               <TableHead className="text-right w-[150px]">操作</TableHead>
             </TableRow>
@@ -214,7 +255,7 @@ export default function VisitList() {
           <TableBody>
             {totalCount === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-slate-400">
+                <TableCell colSpan={9} className="text-center py-10 text-slate-400">
                   没有找到符合条件的拜访计划
                 </TableCell>
               </TableRow>
@@ -239,6 +280,7 @@ export default function VisitList() {
                   <TableCell className="text-slate-700">{v.visitMethod}</TableCell>
                   <TableCell className="font-mono text-slate-600">{v.planTime}</TableCell>
                   <TableCell>{getStatusBadge(v.status)}</TableCell>
+                  <TableCell className="text-[11px] text-slate-500">{v.executionException && v.executionException !== 'NONE' ? v.executionException : (v.executionResult || '未开始')}</TableCell>
                   <TableCell className="font-mono text-slate-500">{v.checkedInAt || '—'}</TableCell>
                   <TableCell className="text-right space-x-1.5" data-anno="visit-list-row-operations">
                     <Button 
@@ -252,6 +294,7 @@ export default function VisitList() {
 
                     {v.status === 'PLANNED' && (
                       <>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/visits/${v.id}/edit`)} className="h-7 px-2 text-xs text-blue-600">编辑</Button>
                         <Button 
                           variant="ghost" 
                           size="sm"

@@ -74,6 +74,8 @@ export default function CustomersList() {
   const [industry, setIndustry] = useState('');
   const [level, setLevel] = useState('');
   const [riskLevel, setRiskLevel] = useState('');
+  const [lifecycleStatus, setLifecycleStatus] = useState('');
+  const [syncStatus, setSyncStatus] = useState('');
 
   // 分页状态
   const [pageSize, setPageSize] = useState(20);
@@ -81,7 +83,7 @@ export default function CustomersList() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [keyword, industry, level, riskLevel]);
+  }, [keyword, industry, level, riskLevel, lifecycleStatus, syncStatus]);
   
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -144,6 +146,8 @@ export default function CustomersList() {
     if (industry && cust.industry !== industry) return false;
     if (level && cust.level !== level) return false;
     if (riskLevel && cust.riskLevel !== riskLevel) return false;
+    if (lifecycleStatus && (cust.lifecycleStatus || 'ACTIVE') !== lifecycleStatus) return false;
+    if (syncStatus && (cust.syncStatus || 'AVAILABLE') !== syncStatus) return false;
 
     return true;
   }).sort((a, b) => (b.latestFollowTime || '').localeCompare(a.latestFollowTime || ''));
@@ -187,7 +191,7 @@ export default function CustomersList() {
 
       {/* 筛选过滤区 */}
       <Card data-anno="customers-list-filter-bar">
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="relative md:col-span-2">
             <Input 
               placeholder="搜索客户名称、联系人、手机号、编码..." 
@@ -244,11 +248,30 @@ export default function CustomersList() {
                 setIndustry('');
                 setLevel('');
                 setRiskLevel('');
+                setLifecycleStatus('');
+                setSyncStatus('');
               }}
               className="shrink-0 text-xs"
             >
               重置
             </Button>
+          </div>
+          <div>
+            <select value={lifecycleStatus} onChange={(event) => setLifecycleStatus(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="客户生命周期">
+              <option value="">生命周期(全部)</option>
+              <option value="ACTIVE">可用</option>
+              <option value="DISABLED">已停用</option>
+              <option value="MERGED">已合并</option>
+            </select>
+          </div>
+          <div>
+            <select value={syncStatus} onChange={(event) => setSyncStatus(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="客户同步状态">
+              <option value="">同步状态(全部)</option>
+              <option value="AVAILABLE">可用</option>
+              <option value="PENDING_RECEIVE">待接收</option>
+              <option value="VALIDATING">校验中</option>
+              <option value="SYNC_FAILED">同步失败</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -263,6 +286,8 @@ export default function CustomersList() {
               <TableHead className="w-[100px]">首要联系人</TableHead>
               <TableHead className="w-[120px]">所属行业</TableHead>
               <TableHead className="w-[100px]">客户等级</TableHead>
+              <TableHead className="w-[100px]">生命周期</TableHead>
+              <TableHead className="w-[100px]">同步状态</TableHead>
               <TableHead className="w-[100px]">关联商机数</TableHead>
               <TableHead className="w-[120px]">最近商机阶段</TableHead>
               <TableHead className="w-[100px]" data-anno="customers-list-risk-display">AI流失风险</TableHead>
@@ -273,7 +298,7 @@ export default function CustomersList() {
           <TableBody>
             {totalCount === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-10 text-slate-400">
+                <TableCell colSpan={12} className="text-center py-10 text-slate-400">
                   未检索到符合条件的客户档案
                 </TableCell>
               </TableRow>
@@ -300,6 +325,16 @@ export default function CustomersList() {
                     <TableCell className="text-slate-700">{cust.contact || '—'}</TableCell>
                     <TableCell className="text-slate-600">{INDUSTRY_MAP[cust.industry] || cust.industry || '—'}</TableCell>
                     <TableCell>{getLevelBadge(cust.level)}</TableCell>
+                    <TableCell>
+                      <Badge variant={(cust.lifecycleStatus || 'ACTIVE') === 'ACTIVE' ? 'success' : 'secondary'}>
+                        {(cust.lifecycleStatus || 'ACTIVE') === 'ACTIVE' ? '可用' : (cust.lifecycleStatus === 'DISABLED' ? '已停用' : '已合并')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={(cust.syncStatus || 'AVAILABLE') === 'AVAILABLE' ? 'success' : ((cust.syncStatus || '') === 'SYNC_FAILED' ? 'destructive' : 'warning')}>
+                        {(cust.syncStatus || 'AVAILABLE') === 'AVAILABLE' ? '可用' : (cust.syncStatus === 'SYNC_FAILED' ? '同步失败' : (cust.syncStatus === 'VALIDATING' ? '校验中' : '待接收'))}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-mono font-medium text-slate-800">{cust.oppCount} 个</TableCell>
                     <TableCell className="text-slate-700">{cust.latestOppStage}</TableCell>
                     <TableCell>{getRiskBadge(cust.riskLevel)}</TableCell>

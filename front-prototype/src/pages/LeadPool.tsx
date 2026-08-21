@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CURRENT_USER, getPublicPoolEligibility, shanghaiNow } from '@/domain/businessRules';
+import { ListPagination } from '@/components/list-pagination';
 
 const CURRENT_USER_NAME = CURRENT_USER.name;
 const EMPTY_LEADS: Lead[] = [];
@@ -59,6 +60,10 @@ export default function LeadPool() {
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
   const [poolType, setPoolType] = useState('');
+  const [entryDateFrom, setEntryDateFrom] = useState('');
+  const [entryDateTo, setEntryDateTo] = useState('');
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Toast 状态
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -113,11 +118,16 @@ export default function LeadPool() {
     checkTimeoutLeads();
   }, [leads]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword, source, industry, minScore, maxScore, poolType, entryDateFrom, entryDateTo]);
+
   // 2. 筛选在公海里的线索
   const poolLeads = leads.filter(lead => {
     const eligibility = getPublicPoolEligibility(lead, CURRENT_USER_NAME);
     const isNew = lead.status === 'PENDING_ASSIGN';
     const isReleased = lead.status === 'ABANDONED';
+    const poolTime = isNew ? lead.createdAt : (lead.abandonedAt || lead.followedAt || lead.createdAt);
     
     if (!eligibility.visible) return false;
 
@@ -140,6 +150,10 @@ export default function LeadPool() {
       if (poolType === 'RELEASED' && !isReleased) return false;
     }
 
+    const poolDate = poolTime.slice(0, 10);
+    if (entryDateFrom && poolDate < entryDateFrom) return false;
+    if (entryDateTo && poolDate > entryDateTo) return false;
+
     return true;
   }).map(lead => {
     const isNew = lead.status === 'PENDING_ASSIGN';
@@ -150,6 +164,9 @@ export default function LeadPool() {
       eligibility: getPublicPoolEligibility(lead, CURRENT_USER_NAME),
     };
   }).sort((a, b) => b.score - a.score);
+
+  const totalCount = poolLeads.length;
+  const pagedPoolLeads = poolLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 3. 认领交互
   const handleClaim = async (leadId: string) => {
@@ -288,11 +305,19 @@ export default function LeadPool() {
                 setPoolType('');
                 setMinScore('');
                 setMaxScore('');
+                setEntryDateFrom('');
+                setEntryDateTo('');
               }}
               className="shrink-0 text-xs"
             >
               重置
             </Button>
+          </div>
+          <div className="flex items-center gap-2 md:col-span-2">
+            <label className="text-xs text-slate-500 shrink-0">入池日期</label>
+            <Input type="date" value={entryDateFrom} onChange={(event) => setEntryDateFrom(event.target.value)} className="text-xs h-9" aria-label="入池开始日期" />
+            <span className="text-slate-400 text-xs">至</span>
+            <Input type="date" value={entryDateTo} onChange={(event) => setEntryDateTo(event.target.value)} className="text-xs h-9" aria-label="入池结束日期" />
           </div>
         </CardContent>
       </Card>
@@ -321,7 +346,7 @@ export default function LeadPool() {
                 </TableCell>
               </TableRow>
             ) : (
-              poolLeads.map(lead => (
+              pagedPoolLeads.map(lead => (
                 <TableRow key={lead.id}>
                   <TableCell>
                     <span 
@@ -363,6 +388,19 @@ export default function LeadPool() {
             )}
           </TableBody>
         </Table>
+        <ListPagination
+          total={totalCount}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
       </Card>
     </div>
   );

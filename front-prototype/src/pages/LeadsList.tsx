@@ -77,6 +77,8 @@ export default function LeadsList() {
   const [filterMinScore, setFilterMinScore] = useState('');
   const [filterMaxScore, setFilterMaxScore] = useState('');
   const [filterOwner, setFilterOwner] = useState('');
+  const [createdDateFrom, setCreatedDateFrom] = useState('');
+  const [createdDateTo, setCreatedDateTo] = useState('');
 
   // 分页状态
   const [pageSize, setPageSize] = useState(20);
@@ -85,7 +87,7 @@ export default function LeadsList() {
   // 筛选项改变时自动重设当前页为 1
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchKeyword, filterSource, filterIndustry, filterMinScore, filterMaxScore, filterOwner]);
+  }, [activeTab, searchKeyword, filterSource, filterIndustry, filterMinScore, filterMaxScore, filterOwner, createdDateFrom, createdDateTo]);
   
   // 勾选与弹窗状态
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
@@ -188,6 +190,9 @@ export default function LeadsList() {
 
     if (filterMinScore && lead.score < parseInt(filterMinScore)) return false;
     if (filterMaxScore && lead.score > parseInt(filterMaxScore)) return false;
+    const createdDate = lead.createdAt.slice(0, 10);
+    if (createdDateFrom && createdDate < createdDateFrom) return false;
+    if (createdDateTo && createdDate > createdDateTo) return false;
 
     return true;
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -478,12 +483,20 @@ export default function LeadsList() {
                 setFilterMinScore('');
                 setFilterMaxScore('');
                 setFilterOwner('');
+                setCreatedDateFrom('');
+                setCreatedDateTo('');
                 setSelectedLeadIds([]);
               }}
               className="shrink-0 text-xs"
             >
               重置
             </Button>
+          </div>
+          <div className="flex items-center gap-2 md:col-span-2">
+            <label className="text-xs text-slate-500 shrink-0">创建日期</label>
+            <Input type="date" value={createdDateFrom} onChange={(event) => setCreatedDateFrom(event.target.value)} className="text-xs h-9" aria-label="线索创建开始日期" />
+            <span className="text-slate-400 text-xs">至</span>
+            <Input type="date" value={createdDateTo} onChange={(event) => setCreatedDateTo(event.target.value)} className="text-xs h-9" aria-label="线索创建结束日期" />
           </div>
         </CardContent>
       </Card>

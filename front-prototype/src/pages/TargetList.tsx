@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Target } from '../db';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { shanghaiMonth } from '@/domain/businessRules';
+import { ListPagination } from '@/components/list-pagination';
 
 const salesIdMap: Record<string, string> = {
   '张三': 'S001',
@@ -57,6 +58,11 @@ const getStatusBadge = (status: string) => {
 export default function TargetList() {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(shanghaiMonth());
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SETTLING' | 'ERROR' | 'FINAL'>('ALL');
+  const [salesFilter, setSalesFilter] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // 1. 实时读取数据库中所有的销售、线索和商机
   const targets = useLiveQuery(() => db.targets.toArray()) ?? EMPTY_TARGETS;
@@ -68,6 +74,10 @@ export default function TargetList() {
     const latestMonth = [...new Set(targets.map(target => target.month))].sort().at(-1);
     if (latestMonth) setSelectedMonth(latestMonth);
   }, [targets, selectedMonth]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMonth, statusFilter, salesFilter, keyword]);
 
   // 2. 核心实时计算函数
   const getTargetProgress = (tgt: Target) => {
@@ -126,7 +136,19 @@ export default function TargetList() {
 
   // 3. 计算当月全团队汇总数据
   const currentMonthTargets = targets.filter(t => t.month === selectedMonth);
-  const displayedTargets = [...currentMonthTargets].sort((a, b) => a.salesName.localeCompare(b.salesName, 'zh-CN'));
+  const filteredTargets = currentMonthTargets.filter(target => {
+    if (salesFilter && (target.salesId || salesIdMap[target.salesName]) !== salesFilter) return false;
+    if (keyword.trim() && !`${target.id} ${target.salesName} ${target.salesId || ''}`.toLowerCase().includes(keyword.trim().toLowerCase())) return false;
+    if (statusFilter === 'ACTIVE' && target.status !== 'ACTIVE') return false;
+    if (statusFilter === 'SETTLING' && !['PROCESSING', 'RETRYING'].includes(target.settlementStatus || '')) return false;
+    if (statusFilter === 'ERROR' && target.settlementStatus !== 'FAILED') return false;
+    if (statusFilter === 'FINAL' && !['ACHIEVED', 'UNACHIEVED'].includes(target.status)) return false;
+    return true;
+  });
+  const totalCount = filteredTargets.length;
+  const displayedTargets = [...filteredTargets]
+    .sort((a, b) => a.salesName.localeCompare(b.salesName, 'zh-CN'))
+    .slice((currentPage - 1) * pageSize, currentPage * pageSize);
   let totalLeadTarget = 0;
   let totalLeadActual = 0;
   let totalOppTarget = 0;
@@ -148,6 +170,28 @@ export default function TargetList() {
   const totalOppPct = currentMonthTargets.length > 0 && totalOppTarget === 0 ? 100 : totalOppTarget > 0 ? Math.min(100, Math.round((totalOppActual / totalOppTarget) * 100)) : 0;
   const totalAmountPct = currentMonthTargets.length > 0 && totalAmountTarget === 0 ? 100 : totalAmountTarget > 0 ? Math.min(100, Math.round((totalAmountActual / totalAmountTarget) * 100)) : 0;
 
+  const statusTabs = [
+    { key: 'ALL' as const, label: '全部', count: currentMonthTargets.length },
+    { key: 'ACTIVE' as const, label: '进行中', count: currentMonthTargets.filter(target => target.status === 'ACTIVE').length },
+    { key: 'SETTLING' as const, label: '结算中', count: currentMonthTargets.filter(target => ['PROCESSING', 'RETRYING'].includes(target.settlementStatus || '')).length },
+    { key: 'ERROR' as const, label: '结算异常', count: currentMonthTargets.filter(target => target.settlementStatus === 'FAILED').length },
+    { key: 'FINAL' as const, label: '已结算', count: currentMonthTargets.filter(target => ['ACHIEVED', 'UNACHIEVED'].includes(target.status)).length },
+  ];
+
+  const handleExport = () => {
+    const rows = filteredTargets.map(target => {
+      const progress = getTargetProgress(target);
+      return [target.id, target.salesId || salesIdMap[target.salesName] || '', target.salesName, target.month, target.status, progress.actualLead, progress.actualOpp, progress.actualAmount].join(',');
+    });
+    const csv = ['目标编号,销售ID,销售代表,目标月份,状态,已转化线索,新增商机,CRM WON金额', ...rows].join('\n');
+    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `forge-crm-业绩目标-${selectedMonth}.csv`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   return (
     <div className="space-y-4">
       {/* 头部标题区 */}
@@ -158,6 +202,10 @@ export default function TargetList() {
         </div>
         <div className="flex items-center gap-2">
           <Input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="h-9 w-36" aria-label="查看月份" />
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-9 text-xs">
+            <Download size={14} className="mr-1" />
+            导出
+          </Button>
           <Button
             data-anno="target-list-create-tool"
             size="sm"
@@ -168,6 +216,39 @@ export default function TargetList() {
           </Button>
         </div>
       </div>
+
+      <div className="border-b border-slate-200" data-anno="target-list-status-tabs">
+        <div className="flex gap-6">
+          {statusTabs.map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusFilter(tab.key)}
+              className={`pb-2.5 text-xs font-semibold transition-all relative cursor-pointer flex items-center gap-1.5 ${statusFilter === tab.key ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <span>{tab.label}</span>
+              <Badge variant={statusFilter === tab.key ? 'default' : 'secondary'} className="h-4 px-1.5 text-[10px] font-mono">{tab.count}</Badge>
+              {statusFilter === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Card data-anno="target-list-filter-bar">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="relative md:col-span-2">
+            <Input placeholder="搜索目标编号、销售姓名或销售ID..." value={keyword} onChange={(event) => setKeyword(event.target.value)} className="pl-8 text-xs h-9" />
+            <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+          </div>
+          <select value={salesFilter} onChange={(event) => setSalesFilter(event.target.value)} className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-md text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" aria-label="销售代表">
+            <option value="">销售代表(全部)</option>
+            <option value="S001">张三 (S001)</option>
+            <option value="S002">李四 (S002)</option>
+            <option value="S003">王五 (S003)</option>
+          </select>
+          <Button variant="outline" size="sm" onClick={() => { setKeyword(''); setSalesFilter(''); }} className="h-9 text-xs">重置</Button>
+        </CardContent>
+      </Card>
 
       {/* 当月目标总览卡片 */}
       <Card data-anno="target-list-overview">
@@ -338,6 +419,19 @@ export default function TargetList() {
             )}
           </TableBody>
         </Table>
+        <ListPagination
+          total={totalCount}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
       </Card>
 
     </div>

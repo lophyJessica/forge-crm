@@ -7,6 +7,7 @@ import {
   AlertTriangle, 
   TrendingUp, 
   ShoppingCart,
+  Calendar,
   Plus,
   CheckCircle,
   XCircle
@@ -80,6 +81,7 @@ export default function CustomerDetail() {
   const leads = useLiveQuery(() => db.leads.toArray()) || [];
   const leadFollows = useLiveQuery(() => db.follow_up_records.toArray()) || [];
   const oppFollows = useLiveQuery(() => db.opportunity_follow_ups.toArray()) || [];
+  const visits = useLiveQuery(() => db.visits.filter(visit => visit.associationType === 'CUSTOMER' && visit.associationId === (id || '')).toArray(), [id]) || [];
 
   if (!customer) {
     return (
@@ -290,6 +292,37 @@ export default function CustomerDetail() {
             </CardHeader>
             <CardContent className="py-8 text-center text-xs text-slate-500">
               ERP 销售订单同步契约尚未接入，当前不展示 CRM 本地 Mock 订单，也不提供伪造的外部跳转。
+            </CardContent>
+          </Card>
+
+          <Card data-anno="customer-detail-visits">
+            <CardHeader className="border-b border-slate-100 pb-3 flex flex-row items-center gap-1.5">
+              <Calendar size={15} className="text-blue-600" />
+              <CardTitle className="text-sm font-semibold">关联拜访 ({visits.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>拜访主题</TableHead>
+                    <TableHead>方式</TableHead>
+                    <TableHead>计划时间</TableHead>
+                    <TableHead>状态</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visits.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-400 italic">暂无直接关联拜访记录</TableCell></TableRow>
+                  ) : visits.slice(0, 6).map(visit => (
+                    <TableRow key={visit.id} className="cursor-pointer" onClick={() => navigate(`/visits/${visit.id}`)}>
+                      <TableCell className="font-medium text-slate-800">{visit.title}</TableCell>
+                      <TableCell className="text-slate-600">{visit.visitMethod}</TableCell>
+                      <TableCell className="font-mono text-[11px] text-slate-500">{visit.planTime}</TableCell>
+                      <TableCell><Badge variant={visit.status === 'COMPLETED' ? 'success' : visit.status === 'CANCELLED' ? 'destructive' : 'info'}>{visit.status === 'COMPLETED' ? '已完成' : visit.status === 'CANCELLED' ? '已取消' : visit.status === 'CHECKED_IN' ? '已签到' : '已计划'}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>

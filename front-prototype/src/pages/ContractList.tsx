@@ -51,8 +51,10 @@ export default function ContractList() {
   const navigate = useNavigate();
 
   // 1. 查询条件与过滤状态
-  const [activeTab, setActiveTab] = useState<'ALL' | 'DRAFT' | 'PENDING' | 'SIGNED'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'DRAFT' | 'PENDING' | 'SIGNED' | 'VOIDED'>('ALL');
   const [keyword, setKeyword] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -74,13 +76,14 @@ export default function ContractList() {
   // 3. 联动重置页码
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, keyword]);
+  }, [activeTab, keyword, dateFrom, dateTo]);
 
   // 4. 内存过滤与排序
   const filteredContracts = contracts.filter(ct => {
     if (activeTab === 'DRAFT' && ct.status !== 'DRAFT') return false;
     if (activeTab === 'PENDING' && ct.status !== 'PENDING_SIGN') return false;
     if (activeTab === 'SIGNED' && ct.status !== 'SIGNED' && ct.status !== 'ARCHIVED') return false;
+    if (activeTab === 'VOIDED' && ct.status !== 'VOIDED') return false;
 
     if (keyword.trim()) {
       const kw = keyword.toLowerCase();
@@ -90,6 +93,10 @@ export default function ContractList() {
       const matchOpp = ct.oppTitle?.toLowerCase().includes(kw);
       if (!matchId && !matchTitle && !matchCustomer && !matchOpp) return false;
     }
+
+    const effectiveDate = (ct.signedDate || ct.createdAt).slice(0, 10);
+    if (dateFrom && effectiveDate < dateFrom) return false;
+    if (dateTo && effectiveDate > dateTo) return false;
 
     return true;
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -164,7 +171,8 @@ export default function ContractList() {
             { key: 'ALL', label: '全部合同', count: contracts.length },
             { key: 'DRAFT', label: '草稿', count: contracts.filter(c => c.status === 'DRAFT').length },
             { key: 'PENDING', label: '待签署', count: contracts.filter(c => c.status === 'PENDING_SIGN').length },
-            { key: 'SIGNED', label: '已签署/归档', count: contracts.filter(c => ['SIGNED', 'ARCHIVED'].includes(c.status)).length }
+            { key: 'SIGNED', label: '已签署/归档', count: contracts.filter(c => ['SIGNED', 'ARCHIVED'].includes(c.status)).length },
+            { key: 'VOIDED', label: '已作废', count: contracts.filter(c => c.status === 'VOIDED').length }
           ].map(tab => {
             const active = activeTab === tab.key;
             return (
@@ -191,7 +199,7 @@ export default function ContractList() {
 
       {/* 筛选过滤区 */}
       <Card data-anno="contract-list-filter-bar">
-        <CardContent className="p-4 flex gap-3 items-center">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
           <div className="relative flex-1">
             <Input 
               placeholder="搜索合同名称、编号、关联客户、关联商机..." 
@@ -201,10 +209,19 @@ export default function ContractList() {
             />
             <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
           </div>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="text-xs h-9" aria-label="合同开始日期" />
+            <span className="text-slate-400 text-xs">至</span>
+            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="text-xs h-9" aria-label="合同结束日期" />
+          </div>
           <Button 
             variant="outline"
             size="sm"
-            onClick={() => setKeyword('')}
+            onClick={() => {
+              setKeyword('');
+              setDateFrom('');
+              setDateTo('');
+            }}
             className="text-xs"
           >
             重置
@@ -222,6 +239,7 @@ export default function ContractList() {
               <TableHead className="w-[160px]">关联客户</TableHead>
               <TableHead className="w-[120px]">合同金额</TableHead>
               <TableHead className="w-[100px]">合同状态</TableHead>
+              <TableHead className="w-[150px]">联动状态</TableHead>
               <TableHead className="w-[140px]">签署日期</TableHead>
               <TableHead className="text-right w-[200px]">操作</TableHead>
             </TableRow>
@@ -229,7 +247,7 @@ export default function ContractList() {
           <TableBody>
             {totalCount === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                <TableCell colSpan={8} className="text-center py-10 text-slate-400">
                   未检索到符合条件的合同记录
                 </TableCell>
               </TableRow>
@@ -248,6 +266,9 @@ export default function ContractList() {
                   <TableCell className="text-slate-700">{ct.customerName}</TableCell>
                   <TableCell className="font-mono font-medium text-slate-800">{formatCurrency(ct.amount)}</TableCell>
                   <TableCell>{getStatusBadge(ct.status)}</TableCell>
+                  <TableCell className="text-[11px] text-slate-500">
+                    商机：{ct.opportunitySyncStatus === 'SUCCESS' ? '已完成' : '未触发'} · ERP：{ct.erpOrderSyncStatus === 'SUCCESS' ? '已完成' : '未触发'}
+                  </TableCell>
                   <TableCell className="font-mono text-slate-500">{ct.signedDate || '—'}</TableCell>
                   <TableCell className="text-right space-x-1.5" data-anno="contract-list-row-operations">
                     <Button 
