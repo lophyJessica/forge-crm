@@ -59,10 +59,21 @@ Forge CRM 客户关系管理系统，覆盖线索管理、商机管理、客户�
 
 ## 产物自动流转管道（完成后必做）
 
-每轮 build + 产出 zip 后，**必须**：
-1. 上传 zip 到 VPS：`rsync -avz -e "ssh -p 2222 -i ~/.ssh/id_ed25519_vps" "/Users/liulongfei/个人文件/forge-crm/dist" root@192.220.14.245:/var/www/pmlophy.com/forge-crm-incoming/`
-   VPS cron 每分钟自动部署到 /var/www/pmlophy.com/project/forge-crm → 刷新即生效。
-2. 生成自检报告（# AI 自检报告 / 项目任务 / 改动文件清单 / 改动点说明 / 自检结果 / 遗留风险）→ 上传：`curl -X POST "https://pmlophy.com/p/jarvis/file/upload" -H "X-Jarvis-User: ai-reports" -F "file=@报告.md"`
+每轮代码修改完成后，必须按以下交付链路执行：
+
+1. 在 Mac 项目目录先执行 `git pull --ff-only`，再完成构建。
+2. 执行 `npm run build`，确认 `dist/` 生成成功。
+3. 从 `dist/` 目录内部打包，确保 ZIP 解压后第一层直接包含 `index.html`，不要把 `front-prototype/dist/` 作为外层目录打进去。
+4. ZIP 使用带任务名和时间戳的唯一文件名，例如 `forge-crm-annotation-fix-20260821-153000.zip`。
+5. 将 ZIP 上传到 VPS 对应 incoming 目录：
+   `rsync -avz -e "ssh -p 2222 -i ~/.ssh/id_ed25519_vps" "/Users/liulongfei/个人文件/forge-crm/<唯一ZIP>" root@192.220.14.245:/var/www/pmlophy.com/forge-crm-incoming/`
+6. 上传后回报远端文件名、字节数和时间戳；VPS 的 cron 只负责检测新 ZIP，不会自动部署。
+7. 生成自检报告，统一保存到项目 `check-reports/` 目录，并上传到 ai-reports 管道。
+8. 只有用户确认部署后，才由父会话执行 `bash /root/deploy-all.sh --deploy forge-crm`。
+
+自检报告至少包含：项目/任务、改动文件、改动点、自检结果（build/测试）、遗留风险、ZIP 文件名、远端文件大小和时间戳。
+
+**状态区分：**上传到 incoming ≠ 已部署；自检报告上传 ≠ 已部署；HTTP 200 也不能单独证明本轮新包已上线。父会话必须独立核对线上 `index.html` 时间戳、bundle 名称/时间、部署日志和 HTTP 状态。
 
 红线不变：不 commit / 不 push。
 
