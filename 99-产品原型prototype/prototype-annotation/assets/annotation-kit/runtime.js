@@ -194,7 +194,10 @@ function parseAnnotationTabs(markdown) {
 }
 
 function countMarkdownItems(markdown) {
-  return (String(markdown || '').match(/^\s*(?:[-+*]|\d+\.)\s+/gm) || []).length;
+  const source = String(markdown || '');
+  const listItems = (source.match(/^\s*(?:[-+*]|\d+\.)\s+/gm) || []).length;
+  const tableRows = (source.match(/^\s*\|(?!(?:\s*:?-{3,}:?\s*\|)+\s*$).+/gm) || []).length;
+  return listItems + tableRows;
 }
 
 function detailTabMarkdown(sections, key) {
