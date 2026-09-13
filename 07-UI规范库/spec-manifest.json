@@ -1,0 +1,71 @@
+{
+  "project_name": "Forge-CRM",
+  "design_principles": [
+    "B端紧凑后台",
+    "高信息密度",
+    "蓝色主强调，slate灰阶中性层",
+    "小圆角(0.5rem)",
+    "桌面端完整后台，窄屏侧栏转抽屉"
+  ],
+  "confirmed_dimensions": {
+    "primary_button_height": "h-9 (36px)",
+    "secondary_button_height": "h-8 (32px)",
+    "input_default_height": "h-9",
+    "card_radius": "0.5rem",
+    "body_font_size": "14px",
+    "table_row_height": "38-46px"
+  },
+  "page_templates": {
+    "dashboard": ["01-系统级约束与Token基线.md", "02-页面模板与实例映射.md", "03-组件与交互规则.md", "04-状态权限与异常规则.md"],
+    "list": ["01-系统级约束与Token基线.md", "02-页面模板与实例映射.md", "03-组件与交互规则.md", "04-状态权限与异常规则.md"],
+    "list_tab_subview": ["01-系统级约束与Token基线.md", "02-页面模板与实例映射.md", "03-组件与交互规则.md", "04-状态权限与异常规则.md"],
+    "form": ["01-系统级约束与Token基线.md", "02-页面模板与实例映射.md", "03-组件与交互规则.md", "04-状态权限与异常规则.md", "07-单据页面复刻约定.md"],
+    "detail": ["01-系统级约束与Token基线.md", "02-页面模板与实例映射.md", "03-组件与交互规则.md", "04-状态权限与异常规则.md", "07-单据页面复刻约定.md"]
+  },
+  "component_rules": {
+    "button": "03-组件与交互规则.md",
+    "input": "03-组件与交互规则.md",
+    "select": "03-组件与交互规则.md",
+    "tabs": "03-组件与交互规则.md",
+    "table": "03-组件与交互规则.md",
+    "dialog": "03-组件与交互规则.md",
+    "badge": "03-组件与交互规则.md",
+    "dropdown_menu": "03-组件与交互规则.md",
+    "textarea": "03-组件与交互规则.md",
+    "skeleton": "03-组件与交互规则.md"
+  },
+  "state_rules": {
+    "success": "04-状态权限与异常规则.md",
+    "error": "04-状态权限与异常规则.md",
+    "loading": "04-状态权限与异常规则.md",
+    "empty": "04-状态权限与异常规则.md",
+    "no_result": "04-状态权限与异常规则.md",
+    "permission": "04-状态权限与异常规则.md",
+    "danger_action": "04-状态权限与异常规则.md"
+  },
+  "page_to_spec_map": {
+    "主工作台 Dashboard": { "template": "dashboard" },
+    "线索列表 LeadsList": { "template": "list" },
+    "线索-公海 LeadPool": { "template": "list_tab_subview" },
+    "线索表单 LeadForm": { "template": "form" },
+    "线索详情 LeadDetail": { "template": "detail" },
+    "商机列表 OpportunitiesList": { "template": "list" },
+    "商机表单 OppForm": { "template": "form" },
+    "商机详情 OppDetail": { "template": "detail" },
+    "客户列表 CustomersList": { "template": "list" },
+    "客户详情 CustomerDetail": { "template": "detail" },
+    "合同列表 ContractList": { "template": "list" },
+    "合同表单 ContractForm": { "template": "form" },
+    "合同详情 ContractDetail": { "template": "detail" },
+    "拜访列表 VisitList": { "template": "list" },
+    "拜访表单 VisitForm": { "template": "form" },
+    "拜访详情 VisitDetail": { "template": "detail" },
+    "业绩目标 TargetList": { "template": "list" },
+    "业绩表单 TargetForm": { "template": "form" }
+  },
+  "ai_task_templates": [
+    { "name": "先出页面方案", "doc": "05-AI协作输入输出模板.md" },
+    { "name": "直接出页面骨架", "doc": "05-AI协作输入输出模板.md" },
+    { "name": "补齐异常态和权限态", "doc": "04-状态权限与异常规则.md" }
+  ]
+}
