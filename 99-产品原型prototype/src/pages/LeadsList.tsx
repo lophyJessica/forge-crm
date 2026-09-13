@@ -463,7 +463,7 @@ export default function LeadsList() {
               className="text-xs h-9"
             />
           </div>
-          <div className="flex justify-between items-center gap-2" data-anno="leads-permissions">
+          <div className="flex justify-between items-center gap-2">
             <select 
               value={filterOwner} 
               onChange={(e) => setFilterOwner(e.target.value)}
@@ -550,7 +550,7 @@ export default function LeadsList() {
               <TableHead>负责人</TableHead>
               <TableHead>最近跟进</TableHead>
               <TableHead>创建时间</TableHead>
-              <TableHead className="text-right" data-anno="leads-row-operations">操作</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -561,7 +561,7 @@ export default function LeadsList() {
                 </TableCell>
               </TableRow>
             ) : (
-              pagedLeads.map((lead) => (
+              pagedLeads.map((lead, idx) => (
                 <TableRow key={lead.id} className={selectedLeadIds.includes(lead.id) ? 'bg-blue-50/40' : ''}>
                   <TableCell className="text-center">
                     <input 
@@ -597,7 +597,7 @@ export default function LeadsList() {
                   <TableCell>{lead.owner || <span className="text-slate-400">—</span>}</TableCell>
                   <TableCell className="text-slate-500 font-mono">{lead.followedAt?.substring(2, 16) || '—'}</TableCell>
                   <TableCell className="text-slate-500 font-mono">{lead.createdAt.substring(2, 16)}</TableCell>
-                  <TableCell className="text-right space-x-1.5">
+                  <TableCell className="text-right space-x-1.5" {...(idx === 0 ? { 'data-anno': 'leads-row-operations' } : {})}>
                     {lead.status === 'DRAFT' && (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => navigate(`/leads/${lead.id}`)} className="h-7 px-2 text-xs">查看</Button>

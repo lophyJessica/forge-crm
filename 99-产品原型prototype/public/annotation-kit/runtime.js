@@ -850,12 +850,36 @@ function measureBadges() {
     return;
   }
 
+  const placedPositions = [];
+
   for (const annotation of sortedAnnotations()) {
     if (!currentPageMatches(annotation)) continue;
-    const target = findTarget(annotation);
-    if (!target) continue;
-    const rect = target.getBoundingClientRect();
-    if (!isVisibleTarget(target, rect)) continue;
+    const isPageGlobal = annotation.type === 'page-global' || (!annotation.target?.selector && !annotation.target?.fallbackSelectors?.length);
+    let target = null;
+    let rect = null;
+
+    if (isPageGlobal) {
+      // 页面级块：徽章定位到页面顶部，不挂筛选区
+      const headerTarget = document.querySelector('[data-anno="leads-page-header"]') ||
+                           document.querySelector('header') ||
+                           document.querySelector('main') ||
+                           document.body;
+      const hRect = headerTarget ? headerTarget.getBoundingClientRect() : { top: 16, left: 16, right: 300, width: 24, height: 24 };
+      rect = {
+        top: Math.max(16, hRect.top),
+        right: Math.max(64, hRect.left + 24),
+        left: hRect.left,
+        bottom: hRect.top + 24,
+        width: 24,
+        height: 24,
+      };
+    } else {
+      target = findTarget(annotation);
+      if (!target) continue;
+      rect = target.getBoundingClientRect();
+      if (!isVisibleTarget(target, rect)) continue;
+    }
+
     const key = annotationKey(annotation);
     visibleIds.add(key);
     let badge = VPA_STATE.badges.get(key);
@@ -873,8 +897,19 @@ function measureBadges() {
     }
     badge._annotation = annotation;
     badge.textContent = annotation.id;
-    badge.style.left = `${Math.min(window.innerWidth - 28, Math.max(4, rect.right + 4))}px`;
-    badge.style.top = `${Math.min(window.innerHeight - 20, Math.max(4, rect.top - 8))}px`;
+
+    let left = Math.min(window.innerWidth - 28, Math.max(4, rect.right + 4));
+    let top = Math.min(window.innerHeight - 20, Math.max(4, rect.top - 8));
+
+    for (const pos of placedPositions) {
+      if (Math.abs(pos.left - left) < 22 && Math.abs(pos.top - top) < 22) {
+        left = Math.max(4, left - 26);
+      }
+    }
+    placedPositions.push({ left, top });
+
+    badge.style.left = `${left}px`;
+    badge.style.top = `${top}px`;
   }
 
   VPA_STATE.badges.forEach((badge, id) => {
@@ -1095,6 +1130,10 @@ function highlightTarget(target) {
 }
 
 function locateAnnotation(annotation) {
+  if (annotation.type === 'page-global' || (!annotation.target?.selector && !annotation.target?.fallbackSelectors?.length)) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   const target = findTarget(annotation);
   if (!target) {
     showToast('当前页面未找到对应区域');
