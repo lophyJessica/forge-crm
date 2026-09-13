@@ -234,13 +234,13 @@ export default function VisitForm() {
       </div>
 
       {/* 表单卡片 */}
-      <Card data-anno="visit-form-card">
+      <Card data-anno="visit-form-basic">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">拜访计划详情</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 关联类型 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-anno="visit-form-association-fields">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <Label className="block mb-2">
                 关联对象类型 <span className="text-red-500">*</span>
@@ -282,7 +282,7 @@ export default function VisitForm() {
           </div>
 
           {/* 拜访标题 */}
-          <div data-anno="visit-form-title-field">
+          <div>
             <Label htmlFor="title" className="block mb-2">
               拜访计划主题 <span className="text-red-500">*</span>
             </Label>
@@ -297,7 +297,7 @@ export default function VisitForm() {
           </div>
 
           {/* 拜访方式 & 时间 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-anno="visit-form-method-time-fields">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="block mb-2">
                 拜访沟通方式 <span className="text-red-500">*</span>
@@ -348,7 +348,7 @@ export default function VisitForm() {
           </div>
 
           {/* 拜访地址 */}
-          <div data-anno="visit-form-address-field">
+          <div>
             <Label htmlFor="address" className="block mb-2">
               拜访地址 {visitMethod === '上门' && <span className="text-red-500">*</span>}
             </Label>

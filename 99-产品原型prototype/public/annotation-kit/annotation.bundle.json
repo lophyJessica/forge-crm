@@ -963,93 +963,25 @@
       "type": "field",
       "page": "#/opportunities/new",
       "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
-      "moduleName": "商机名称字段",
+      "moduleName": "商机基本信息区域",
       "target": {
-        "selector": "[data-anno='opportunity-form-title-field']",
+        "selector": "[data-anno='opportunity-form-basic']",
         "fallbackSelectors": []
       },
       "sourceRefs": [
-        "REQ-OPP-FORM-TITLE-001"
+        "REQ-OPP-FORM-TITLE-001",
+        "REQ-OPP-FORM-CUSTOMER-001",
+        "REQ-OPP-FORM-FORECAST-001",
+        "REQ-OPP-FORM-PRODUCT-001",
+        "REQ-OPP-FORM-REQUIREMENT-001"
       ],
       "order": 13,
       "key": "opportunities:opportunities-new:3",
       "scope": "opportunities",
-      "markdown": "## 需求描述：【商机名称字段】\n\n> 来源：`商机_Demo_新增编辑页.md#4.1-商机名称`、`商机字段清单.md#一、基础信息字段`\n\n### 页面内容\n#### 字段定位\n- 商机名称是用户填写的标题，用于列表、看板和详情识别商机。\n- 控件为文本输入，当前原型显示必填标识。\n\n### 交互说明\n#### 输入与保存\n- 用户可编辑名称；只读模式或保存加载中禁用输入。\n- 为空时在字段下方提示错误，输入修正后清除错误。\n\n### 业务规则\n#### 格式\n- 商机名称必填，长度上限 100 个字符。\n- 名称不承担跨系统关联键职责，系统以商机编号作为唯一标识。\n\n### 字段说明\n#### 字段属性\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 字段名称 | - | 商机名称。 | - |\n| 数据类型 | - | 文本。 | - |\n| 必填性 | - | 必填。 | - |\n\n\n### 待确认\n- PRD未定义同名商机是否允许保存，当前原型也未做同名提示，待确认。"
+      "markdown": "## 需求描述：【基本信息】\n\n> 来源：`商机_Demo_新增编辑页.md#4.1-商机名称`、`商机_Demo_新增编辑页.md#4.2-关联客户`、`商机_Demo_新增编辑页.md#4.3-预计金额`、`商机_Demo_新增编辑页.md#4.4-预计成交日期`、`商机_Demo_新增编辑页.md#4.5-需求描述`、`商机_Demo_新增编辑页.md#5-商品明细工具区`、`商机_Demo_新增编辑页.md#6-字段联动规则`、`商机字段清单.md#一、基础信息字段`、`商机字段清单.md#三、商品明细对象`、`商机主PRD.md#6.1-创建与引用规则`\n\n### 页面内容\n#### 字段分组\n- 基本信息卡片集中承载商机名称、关联客户、预测字段、关联商品和需求描述。\n- 客户使用可见的 CRM 客户快照；商品来自 ERP 查询，CRM 只保存商品和价格快照及销售填写的数量。\n\n### 交互说明\n#### 输入与联动\n- 新增展示空白表单，编辑回填已有商机；进入方案报价或更高阶段后只读，保存加载中禁止重复修改。\n- 关联客户为必选项；编辑时回填客户快照，不能在商机表单内新建或修改客户主数据。\n- 预计金额使用数字输入，预计成交日期使用日期输入；两者在允许阶段可为空。\n- 用户可选择或取消 ERP 商品；选择商品后填写数量，商品单价和价格版本由 ERP 带出且不可直接修改。\n- 需求描述使用多行文本输入，保存时保留原文。\n\n### 业务规则\n#### 字段与阶段条件\n- 商机名称、关联客户为必填；商机名称最长 100 个字符。\n- 预计金额上限为 99999999.99，保留 2 位小数；预计成交日期为可选预测字段，预计金额不是 ERP 订单金额。\n- 推进到需求确认前，需求描述必须非空；需求描述最长 1000 个字符。\n- 进入需求确认后的阶段前，至少关联一条有效 ERP 商品；商品数量必须大于 0，行小计由数量乘以价格快照计算。\n- 客户快照保存 `crmCustomerId`、`erpCustomerId`、`customerSnapshotVersion` 和 `customerSnapshotSyncTime`；快照失效时阻断后续下推。\n\n### 字段说明\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 商机名称 | Input | 商机标题。 | 必填；文本，最多 100 字符。 |\n| 关联客户 | SelectWithSearch | 选择可见的 CRM 客户快照。 | 必填；保存客户快照标识和版本，不以客户名称作为关联键。 |\n| `crmCustomerId` | 系统带出 | CRM 客户快照标识。 | 系统自动；用户不可编辑。 |\n| `erpCustomerId` | 系统带出 | ERP 客户档案标识。 | 系统自动；正式客户档案 SSOT 为 ERP。 |\n| `customerSnapshotVersion` | 系统带出 | 商机保存时引用的客户快照版本。 | 系统自动；下推前校验仍有效。 |\n| `customerSnapshotSyncTime` | 系统生成 | 客户快照最近一次从 ERP 同步的时间。 | `YYYY-MM-DD HH:mm:ss`；快照过期时阻断下推。 |\n| 关联商品 | 商品明细工具区 | 关联 ERP 商品及数量、价格快照。 | 条件必填；推进到需求确认后的阶段前至少 1 行有效商品。 |\n| `erpProductId` | ERP 查询带出 | ERP 商品标识。 | 只读；价格和主数据 SSOT 为 ERP。 |\n| `productCode` | ERP 查询带出 | 商品编码快照。 | 只读；不以商品名称作为跨系统关联键。 |\n| `productNameSnapshot` | ERP 查询带出 | 商品名称文本快照。 | 只读；用于历史展示。 |\n| `quantity` | NumberInput | 销售填写的商品数量。 | 必填；大于 0，支持 2 位小数。 |\n| `unitPriceSnapshot` | ERP 查询带出 | ERP 返回的只读单价。 | 只读；保留 2 位小数，CRM 不允许直接改价。 |\n| `lineAmount` | 系统计算 | 商品行小计。 | `quantity × unitPriceSnapshot`，按金额规则保留 2 位小数。 |\n| `priceVersion` | ERP 查询带出 | ERP 价格版本标识。 | 只读；下推时随商品快照传递。 |\n| `availabilityStatus` | ERP 查询带出 | ERP 当前可用性。 | `AVAILABLE/UNAVAILABLE`；新引用商品失效时阻断。 |\n| 预计金额 | NumberInput | 预估成交金额，单位元。 | 选填；上限 99999999.99，保留 2 位小数。 |\n| 预计成交日期 | DatePicker | 预计签单日期。 | 选填。 |\n| 需求描述 | Textarea | 客户需求简述。 | 推进到需求确认时条件必填；最多 1000 字符。 |\n\n### 待确认\n- 当前原型使用本地客户和商品 Mock 数据，未展示完整客户快照版本、商品失效阻断和商品推荐区，待确认。"
     },
     {
       "id": "4",
-      "type": "field",
-      "page": "#/opportunities/new",
-      "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
-      "moduleName": "关联客户字段",
-      "target": {
-        "selector": "[data-anno='opportunity-form-customer-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-OPP-FORM-CUSTOMER-001"
-      ],
-      "order": 14,
-      "key": "opportunities:opportunities-new:4",
-      "scope": "opportunities",
-      "markdown": "## 需求描述：【关联客户字段】\n\n> 来源：`商机_Demo_新增编辑页.md#4.2-关联客户`、`商机字段清单.md#一、基础信息字段`、`商机主PRD.md#6.1-创建与引用规则`\n\n### 页面内容\n#### 字段定位\n- 关联客户从可见的 CRM 客户快照中选择，当前原型以选择控件呈现。\n- 关联客户用于商机归属、权限校验和详情展示。\n\n### 交互说明\n#### 选择行为\n- 新增时选择一个客户；编辑时回填已有客户快照。\n- 只读模式不可修改客户关联。\n\n### 业务规则\n#### 客户 SSOT\n- CRM 不在商机表单内新建或修改客户主数据。\n- 保存时应保留 `crmCustomerId`、`erpCustomerId`、客户快照版本和同步时间。\n- 客户快照失效时应阻断后续下推并提示重新同步。\n\n### 字段说明\n#### 字段属性\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 关联客户 | - | 用户选择，必填。 | - |\n| 客户标识和快照版本 | - | 系统带出或系统生成，用户不可编辑。 | - |\n\n\n### 待确认\n- 当前原型选项直接使用本地客户数据，未展示客户快照版本、ERP 标识和失效提示，待确认。"
-    },
-    {
-      "id": "5",
-      "type": "field",
-      "page": "#/opportunities/new",
-      "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
-      "moduleName": "预计金额与成交日期",
-      "target": {
-        "selector": "[data-anno='opportunity-form-forecast-fields']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-OPP-FORM-FORECAST-001"
-      ],
-      "order": 15,
-      "key": "opportunities:opportunities-new:5",
-      "scope": "opportunities",
-      "markdown": "## 需求描述：【预计金额与成交日期】\n\n> 来源：`商机_Demo_新增编辑页.md#4.3-预计金额`、`商机_Demo_新增编辑页.md#4.4-预计成交日期`、`商机字段清单.md#一、基础信息字段`\n\n### 页面内容\n#### 预测字段\n- 表单提供预计金额和预计成交日期，用于销售预测和详情展示。\n- 预计金额当前提示推进到商务谈判时必填。\n\n### 交互说明\n#### 输入行为\n- 预计金额使用数字输入，预计成交日期使用日期输入。\n- 只读模式、加载中不允许编辑；空值在允许阶段可保存。\n\n### 业务规则\n#### 数值口径\n- 预计金额上限为 99999999.99，保留 2 位小数。\n- 预计成交日期是可选预测字段；开始推进到要求金额的阶段时必须有效。\n- 预计金额不是 ERP 订单金额，成交下推时以 ERP 计算和校验为准。\n\n### 字段说明\n#### 字段属性\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 预计金额 | - | 数字，选填，单位元。 | - |\n| 预计成交日期 | - | 日期，选填。 | - |\n\n\n### 待确认\n- 当前原型未显示金额精度/上限错误提示，也未对预计成交日期做日期边界校验，待确认。"
-    },
-    {
-      "id": "6",
-      "type": "field",
-      "page": "#/opportunities/new",
-      "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
-      "moduleName": "关联商品明细",
-      "target": {
-        "selector": "[data-anno='opportunity-form-product-fields']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-OPP-FORM-PRODUCT-001"
-      ],
-      "order": 16,
-      "key": "opportunities:opportunities-new:6",
-      "scope": "opportunities",
-      "markdown": "## 需求描述：【关联商品明细】\n\n> 来源：`商机_Demo_新增编辑页.md#5-商品明细工具区`、`商机_Demo_新增编辑页.md#6-字段联动规则`、`商机字段清单.md#三、商品明细对象`\n\n### 页面内容\n#### 商品选择\n- 表单提供关联 ERP 商品的选择区，当前原型使用商品复选项展示可选商品。\n- 商品主数据、价格和商品标识来自 ERP 查询，CRM 只保存只读快照和销售填写的数量。\n\n### 交互说明\n#### 选择与联动\n- 用户可选择或取消商品；选择结果保存到商机商品明细。\n- AI 推荐只能作为建议，销售确认后才加入明细。\n\n### 业务规则\n#### 明细约束\n- 进入需求确认后的阶段前至少关联一条有效 ERP 商品。\n- 商品数量必须大于 0；单价不可由 CRM 直接修改。\n- 明细行小计由数量乘以价格快照计算，不能由用户直接输入。\n\n### 字段说明\n#### 商品字段\n- `erpProductId`、商品编码、商品名称快照、价格快照和价格版本：系统带出。\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 数量 | - | 用户填写，必填且为正数。 | - |\n\n- 行小计、可用性状态：系统计算或 ERP 查询结果。\n\n### 待确认\n- 当前原型仅选择商品，没有数量、价格快照、失效商品阻断、商品抽屉和 AI 推荐区，待确认。"
-    },
-    {
-      "id": "7",
-      "type": "field",
-      "page": "#/opportunities/new",
-      "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
-      "moduleName": "需求描述字段",
-      "target": {
-        "selector": "[data-anno='opportunity-form-requirement-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-OPP-FORM-REQUIREMENT-001"
-      ],
-      "order": 17,
-      "key": "opportunities:opportunities-new:7",
-      "scope": "opportunities",
-      "markdown": "## 需求描述：【需求描述字段】\n\n> 来源：`商机_Demo_新增编辑页.md#4.5-需求描述`、`商机_Demo_新增编辑页.md#6-字段联动规则`、`商机字段清单.md#一、基础信息字段`\n\n### 页面内容\n#### 需求输入\n- 文本域用于填写客户系统诉求、集成细节和需求背景。\n- 当前原型在字段标签上提示推进到需求确认时必填。\n\n### 交互说明\n#### 填写行为\n- 用户可输入多行内容，最大长度 1000 字符。\n- 只读模式不可编辑；保存时保留需求描述原文。\n\n### 业务规则\n#### 阶段前置条件\n- 从初步接触推进到需求确认前，需求描述必须非空。\n- 需求描述是推进校验输入，不直接改变阶段。\n\n### 字段说明\n#### 字段属性\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 字段名称 | - | 需求描述。 | - |\n| 数据类型 | - | Textarea。 | - |\n| 必填性 | - | 推进到需求确认时条件必填，长度上限 1000 字符。 | - |\n\n\n### 待确认\n- 当前原型仅在详情/列表推进时检查需求描述，表单保存阶段是否直接显示必填错误，待确认。"
-    },
-    {
-      "id": "8",
       "type": "interaction",
       "page": "#/opportunities/new",
       "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
@@ -1061,13 +993,13 @@
       "sourceRefs": [
         "REQ-OPP-FORM-FOOTER-001"
       ],
-      "order": 18,
-      "key": "opportunities:opportunities-new:8",
+      "order": 14,
+      "key": "opportunities:opportunities-new:4",
       "scope": "opportunities",
       "markdown": "## 需求描述：【底部保存操作栏】\n\n> 来源：`商机_Demo_新增编辑页.md#8-底部操作栏`、`商机_Demo_新增编辑页.md#9.3-保存成功`、`商机_Demo_新增编辑页.md#9.4-保存失败`\n\n### 页面内容\n#### 操作区\n- 固定底部操作栏提供“返回列表”和“保存商机”。\n- 只读模式隐藏保存动作，仅保留返回。\n\n### 交互说明\n#### 按钮行为\n- 返回列表不保存当前修改；保存动作提交表单数据。\n- 保存成功提示“商机保存成功”并返回列表；失败保留表单内容并提示原因。\n\n### 业务规则\n#### 操作边界\n- 保存不允许直接改写商机阶段。\n- 编辑只适用于早期可编辑阶段；进入方案报价或更高阶段后为只读。\n- 重复点击保存应按幂等规则只创建或更新一次。\n\n### 字段说明\n#### 操作字段\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 保存状态 | - | 加载中、成功或失败反馈。 | - |\n| 商机编号 | - | 新增时由系统生成，编辑时保持不变。 | - |\n\n\n### 待确认\n- 当前原型底栏保存按钮直接调用保存函数，未实现未保存离开确认、保存失败重试和幂等请求键，待确认。"
     },
     {
-      "id": "9",
+      "id": "5",
       "type": "interaction",
       "page": "#/opportunities/new",
       "routeMatcher": "^.*#/opportunities/(?:new|[^/]+/edit)$",
@@ -1079,8 +1011,8 @@
       "sourceRefs": [
         "REQ-OPP-FORM-SAVE-001"
       ],
-      "order": 19,
-      "key": "opportunities:opportunities-new:9",
+      "order": 15,
+      "key": "opportunities:opportunities-new:5",
       "scope": "opportunities",
       "markdown": "## 需求描述：【保存商机动作】\n\n> 来源：`商机_Demo_新增编辑页.md#9-保存交互规范`、`商机主PRD.md#6.1-创建与引用规则`、`商机主PRD.md#7-AI串联规则`\n\n### 页面内容\n#### 保存结果\n- 保存商机会创建或更新商机记录，并依据已有字段计算或保存 AI 成交概率。\n- 创建成功后商机进入初步接触阶段；编辑保留原有阶段。\n\n### 交互说明\n#### 提交反馈\n- 点击保存后显示加载状态，提交完成后显示成功或失败 Toast。\n- 保存成功后刷新列表；失败时不清空用户输入。\n\n### 业务规则\n#### 后置处理\n- AI 预测失败不阻断商机保存，应保留上次成功结果或显示不可用。\n- 创建和更新均需通过客户、商品和字段有效性校验。\n- 商机创建后不自动改变阶段；阶段变化必须由合法动作触发。\n\n### 字段说明\n#### 系统结果\n- 商机编号、创建人、创建时间、阶段变更时间和 AI 预测版本由系统生成。\n- AI 成交概率为 0-100% 的系统计算值。\n\n### 待确认\n- 当前原型保存后仅在本地 Mock 数据中计算评分，未展示预测版本、更新时间和失败原因，待确认。"
     },
@@ -1647,93 +1579,25 @@
       "type": "field",
       "page": "#/contracts/new",
       "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
-      "moduleName": "合同基本信息表单",
+      "moduleName": "合同基本信息区域",
       "target": {
-        "selector": "[data-anno='contract-form-card']",
+        "selector": "[data-anno='contract-form-basic']",
         "fallbackSelectors": []
       },
       "sourceRefs": [
-        "REQ-CONTRACT-FORM-BASE-001"
+        "REQ-CONTRACT-FORM-BASE-001",
+        "REQ-CONTRACT-FORM-OPPORTUNITY-001",
+        "REQ-CONTRACT-FORM-CUSTOMER-001",
+        "REQ-CONTRACT-FORM-TITLE-001",
+        "REQ-CONTRACT-FORM-AMOUNT-001"
       ],
       "order": 2,
       "key": "contracts:contracts-new:2",
       "scope": "contracts",
-      "markdown": "## 需求描述：【合同基本信息表单】\n\n> 来源：`合同_Demo_新增编辑页.md#3-页面布局`、`合同_Demo_新增编辑页.md#4-字段控件规格`、`合同字段清单.md#一、基础字段`\n\n### 页面内容\n#### 表单结构\n- 当前表单卡片包含关联商机、关联客户、合同名称和合同金额。\n- 关联客户由商机继承且为只读。\n\n### 交互说明\n#### 填写规则\n- 输入错误在字段下方展示；合同名称和金额可被用户确认后保存。\n- 从商机进入时可带出名称和金额建议，但不应静默覆盖手工修改。\n\n### 业务规则\n#### 必填与唯一\n- 关联商机、合同名称和合同金额按字段清单校验；同一商机不得重复绑定有效合同。\n- 客户与商机主体必须一致，保存前再次校验。\n\n### 字段说明\n#### 表单字段\n- 关联商机、关联客户、合同名称、合同金额。\n- 合同编号、合同状态、签署日期属于系统字段，不作为新增可编辑字段。\n\n### 待确认\n- 当前原型未实现字符计数、金额币种/含税控件和系统字段 Description 区，待确认。"
+      "markdown": "## 需求描述：【基本信息】\n\n> 来源：`合同_Demo_新增编辑页.md#3-页面布局`、`合同_Demo_新增编辑页.md#4-字段控件规格`、`合同_Demo_新增编辑页.md#4.1-合同名称`、`合同_Demo_新增编辑页.md#4.2-关联商机`、`合同_Demo_新增编辑页.md#4.3-关联客户`、`合同_Demo_新增编辑页.md#4.4-合同金额`、`合同_Demo_新增编辑页.md#4.8-币种、含税标识与税率`、`合同字段清单.md#一、基础字段`、`合同字段清单.md#三、金额与来源字段`、`合同主PRD.md#6.1-创建与引用规则`\n\n### 页面内容\n#### 字段分组\n- 基本信息卡片承载关联商机、关联客户、合同名称、合同金额、币种、含税标识和税率。\n- 合同编号、合同状态、签署日期由系统或外部签署结果产生，不作为新增时的直接输入。\n\n### 交互说明\n#### 输入与联动\n- 新增时选择处于允许签约阶段且未绑定有效合同的商机；编辑时展示已绑定商机并锁定。\n- 选择商机后继承客户，并生成合同名称和金额建议；建议值可被用户修改，不静默覆盖手工输入。\n- 关联客户由商机继承且只读；不能单独清空或更换客户。\n- 合同名称和金额错误在字段下方展示；金额禁止负数和科学计数法。\n- 币种一期固定展示 `CNY`；含税标识和税率在基本信息区填写。\n\n### 业务规则\n#### 绑定与金额\n- 关联商机、合同名称和合同金额必填；同一商机不得重复绑定有效合同。\n- 只返回用户可见且满足合同签约条件的商机；关联商机是业务主绑定，不能仅用名称提交。\n- 客户正式档案来自 ERP，合同引用商机关联的 CRM 客户快照；保存前校验客户与商机主体一致。\n- 合同名称最多 100 个字符；合同金额保留 2 位小数，并必须同时记录币种、含税标识和税率。\n- 一期仅支持人民币结算；非 `CNY` 在创建或提交签署时阻断并提示“一期仅支持人民币结算”。\n\n### 字段说明\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 合同编号 | 系统生成 | 合同唯一标识。 | `CT{YYYYMMDD}-{4位序号}`；新增页不展示，编辑只读。 |\n| 合同名称 | Input | 合同官方文件全称。 | 必填；文本，最多 100 字符。 |\n| 关联客户 | 商机继承/只读 | 商机关联的客户快照。 | 必填；CRM 客户正式档案 SSOT 为 ERP，用户不可单独编辑。 |\n| 关联商机 | Select | 合同业务主绑定。 | 必填；保存商机编号，已绑定有效合同的商机不可再次选择。 |\n| 合同金额 | Input | 最终签约金额。 | 必填；金额数值保留 2 位小数。 |\n| 合同金额币种 | 只读展示 | 合同结算币种。 | 必填；一期固定 `CNY`（人民币），不做汇率换算。 |\n| 合同含税标识 | Checkbox | 合同金额是否含税。 | 必填；`TAX_INCLUDED`=含税，`TAX_EXCLUDED`=不含税。 |\n| 合同税率 | NumberInput | 合同适用税率。 | 条件必填；百分比数值，输入与 ERP 返回分别留痕。 |\n| 合同状态 | 系统生成 | 合同业务状态。 | `DRAFT/PENDING_SIGN/SIGNED/ARCHIVED/VOIDED`；表单不直接修改。 |\n| 签署日期 | 外部结果带回 | 外部平台真实签署日期。 | 系统自动；使用 `signedAt`，不等同 CRM 接收时间。 |\n\n### 待确认\n- 当前原型未实现远程搜索、防抖、候选禁用、客户快照失效提示、字符计数和金额不一致弱提示，待确认。"
     },
     {
       "id": "3",
-      "type": "field",
-      "page": "#/contracts/new",
-      "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
-      "moduleName": "关联商机字段",
-      "target": {
-        "selector": "[data-anno='contract-form-opportunity-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-CONTRACT-FORM-OPPORTUNITY-001"
-      ],
-      "order": 3,
-      "key": "contracts:contracts-new:3",
-      "scope": "contracts",
-      "markdown": "## 需求描述：【关联商机字段】\n\n> 来源：`合同_Demo_新增编辑页.md#4.2-关联商机`、`合同主PRD.md#6.1-创建与引用规则`\n\n### 页面内容\n#### 商机选择\n- 新增模式选择处于允许签约阶段且未绑定有效合同的商机。\n- 编辑模式展示已绑定商机并锁定。\n\n### 交互说明\n#### 选择联动\n- 选择商机后继承客户，并生成合同名称和金额建议。\n- 更换商机前应二次确认，并重新拉取最新版本。\n\n### 业务规则\n#### 候选规则\n- 只返回用户可见且满足合同签约条件的商机。\n- 已绑定有效合同的商机不得再次选择。\n\n### 字段说明\n#### 关联字段\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 商机名称和商机编号 | - | 稳定 CRM 商机标识。 | - |\n\n- 关联商机为合同业务主绑定，不能仅用名称提交。\n\n### 待确认\n- 当前原型使用普通 Select，未实现远程搜索、防抖、候选禁用和更换确认，待确认。"
-    },
-    {
-      "id": "4",
-      "type": "field",
-      "page": "#/contracts/new",
-      "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
-      "moduleName": "关联客户继承字段",
-      "target": {
-        "selector": "[data-anno='contract-form-customer-inheritance']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-CONTRACT-FORM-CUSTOMER-001"
-      ],
-      "order": 4,
-      "key": "contracts:contracts-new:4",
-      "scope": "contracts",
-      "markdown": "## 需求描述：【关联客户继承字段】\n\n> 来源：`合同_Demo_新增编辑页.md#4.3-关联客户`、`合同字段清单.md#三、关联字段`\n\n### 页面内容\n#### 客户快照\n- 选择商机后显示客户编号和公司名称的只读继承结果。\n\n### 交互说明\n#### 只读联动\n- 商机变化时更新客户继承值，不能单独清空或更换客户。\n- 点击客户链接可查看客户详情。\n\n### 业务规则\n#### SSOT\n- 客户正式档案来自 ERP；合同只引用商机关联的 CRM 客户快照。\n- 保存前校验客户与商机一致，不能以公司名称代替客户标识。\n\n### 字段说明\n#### 继承字段\n- 客户编号、客户公司名称、客户快照状态。\n- 客户字段不在合同表单中编辑。\n\n### 待确认\n- 当前原型的客户只读值为文本输入，未实现客户详情链接和快照失效提示，待确认。"
-    },
-    {
-      "id": "5",
-      "type": "field",
-      "page": "#/contracts/new",
-      "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
-      "moduleName": "合同名称字段",
-      "target": {
-        "selector": "[data-anno='contract-form-title-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-CONTRACT-FORM-TITLE-001"
-      ],
-      "order": 5,
-      "key": "contracts:contracts-new:5",
-      "scope": "contracts",
-      "markdown": "## 需求描述：【合同名称字段】\n\n> 来源：`合同_Demo_新增编辑页.md#4.1-合同名称`、`合同字段清单.md#一、基础字段`\n\n### 页面内容\n#### 名称输入\n- 合同名称为必填文本，支持从商机进入时生成建议值。\n\n### 交互说明\n#### 输入处理\n- 失焦去除首尾空格，空格值视为空。\n- 达到字段清单上限后禁止继续输入，粘贴超限需提示。\n\n### 业务规则\n#### 建议值\n- 建议名称可被用户修改，不改变合同状态。\n- 保存时使用清洗后的名称并进行必填校验。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 合同名称 | - | 合同官方文件全称，长度和字符规则以字段清单为准。 | - |\n\n\n### 待确认\n- 当前原型未展示字符计数和超限提示，待确认。"
-    },
-    {
-      "id": "6",
-      "type": "field",
-      "page": "#/contracts/new",
-      "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
-      "moduleName": "合同金额字段",
-      "target": {
-        "selector": "[data-anno='contract-form-amount-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-CONTRACT-FORM-AMOUNT-001"
-      ],
-      "order": 6,
-      "key": "contracts:contracts-new:6",
-      "scope": "contracts",
-      "markdown": "## 需求描述：【合同金额字段】\n\n> 来源：`合同_Demo_新增编辑页.md#4.4-合同金额`、`合同_Demo_新增编辑页.md#4.8-币种、含税标识与税率`、`合同字段清单.md#一、基础字段`\n\n### 页面内容\n#### 金额输入\n- 合同金额为必填金额字段，当前原型按人民币格式展示。\n\n### 交互说明\n#### 金额处理\n- 禁止负数和科学计数法；聚焦显示原始值，失焦格式化。\n- 与商机预计金额不一致时应弱提示但不自动覆盖用户输入。\n\n### 业务规则\n#### 币种\n- 一期仅支持人民币结算；非人民币应阻断保存或签署并记录差异审计。\n\n### 字段说明\n#### 字段口径\n- 合同金额、币种、含税标识和税率的精度与范围以合同字段清单为准。\n\n### 待确认\n- 当前原型未实现币种、含税标识、税率控件和不一致弱提示，待确认。"
-    },
-    {
-      "id": "7",
       "type": "interaction",
       "page": "#/contracts/new",
       "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
@@ -1745,13 +1609,13 @@
       "sourceRefs": [
         "REQ-CONTRACT-FORM-FOOTER-001"
       ],
-      "order": 7,
-      "key": "contracts:contracts-new:7",
+      "order": 3,
+      "key": "contracts:contracts-new:3",
       "scope": "contracts",
       "markdown": "## 需求描述：【合同表单底部操作栏】\n\n> 来源：`合同_Demo_新增编辑页.md#8-底部操作栏`、`合同_Demo_新增编辑页.md#10-未保存离开`\n\n### 页面内容\n#### 操作按钮\n- 固定底栏提供返回列表、保存为草稿和提交并发起签署。\n\n### 交互说明\n#### 离开与提交\n- 返回列表离开表单；有未保存修改时规范要求二次确认。\n- 保存或提交期间按钮禁用，完成后按结果提示并跳转。\n\n### 业务规则\n#### 状态变化\n- 保存草稿生成或更新草稿，不进入待签署。\n- 提交签署后合同信息锁定并进入待签署。\n\n### 字段说明\n#### 操作字段\n- 返回列表、保存为草稿、提交并发起签署。\n- loading、错误提示和 Toast 属于交互反馈字段。\n\n### 待确认\n- 当前原型未实现未保存离开确认和提交确认弹窗，待确认。"
     },
     {
-      "id": "8",
+      "id": "4",
       "type": "interaction",
       "page": "#/contracts/new",
       "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
@@ -1763,13 +1627,13 @@
       "sourceRefs": [
         "REQ-CONTRACT-FORM-DRAFT-001"
       ],
-      "order": 8,
-      "key": "contracts:contracts-new:8",
+      "order": 4,
+      "key": "contracts:contracts-new:4",
       "scope": "contracts",
       "markdown": "## 需求描述：【保存合同草稿】\n\n> 来源：`合同_Demo_新增编辑页.md#5-保存交互规范`、`合同主PRD.md#5.3-状态流转表`\n\n### 页面内容\n#### 保存动作\n- 点击“保存为草稿”写入合同草稿并保持业务状态为草稿。\n\n### 交互说明\n#### 成功与失败\n- 保存成功提示合同已保存；保存失败保留输入并允许重试。\n- 保存期间防止重复提交。\n\n### 业务规则\n#### 校验\n- 保存前校验必填字段、关联商机有效性、客户一致性和并发版本。\n- 保存草稿不触发签署、商机赢单或 ERP 下推。\n\n### 字段说明\n#### 写入字段\n- 合同名称、合同金额、关联商机、继承客户、更新时间和版本。\n\n### 待确认\n- 当前原型保存失败仅使用通用 Toast，未实现版本冲突和字段级服务端错误展示，待确认。"
     },
     {
-      "id": "9",
+      "id": "5",
       "type": "interaction",
       "page": "#/contracts/new",
       "routeMatcher": "^.*#/contracts/(?:new|[^/]+/edit)$",
@@ -1781,8 +1645,8 @@
       "sourceRefs": [
         "REQ-CONTRACT-FORM-SUBMIT-001"
       ],
-      "order": 9,
-      "key": "contracts:contracts-new:9",
+      "order": 5,
+      "key": "contracts:contracts-new:5",
       "scope": "contracts",
       "markdown": "## 需求描述：【提交并发起签署】\n\n> 来源：`合同_Demo_新增编辑页.md#5-提交`、`合同主PRD.md#6.2-阶段推进规则`\n\n### 页面内容\n#### 提交动作\n- 点击“提交并发起签署”提交合同信息并通知签约方。\n\n### 交互说明\n#### 提交流程\n- 提交前校验所有字段和商机最新状态；成功后进入待签署。\n- 失败停留当前页，保留输入并提示具体原因。\n\n### 业务规则\n#### 联动\n- 提交签署后合同字段锁定，后续签署完成才推进商机赢单并下推 ERP 订单草稿。\n- 不能通过表单直接把合同状态改成已签署。\n\n### 字段说明\n#### 提交反馈\n- 按钮状态、校验错误、提交结果 Toast 和合同状态摘要。\n\n### 待确认\n- 当前原型未实现提交签署二次确认、商机版本校验和签署通知失败补偿，待确认。"
     },
@@ -2115,93 +1979,25 @@
       "type": "field",
       "page": "#/visits/new",
       "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
-      "moduleName": "拜访计划表单",
+      "moduleName": "拜访计划基本信息区域",
       "target": {
-        "selector": "[data-anno='visit-form-card']",
+        "selector": "[data-anno='visit-form-basic']",
         "fallbackSelectors": []
       },
       "sourceRefs": [
-        "REQ-VISIT-FORM-BASE-001"
+        "REQ-VISIT-FORM-BASE-001",
+        "REQ-VISIT-FORM-ASSOCIATION-001",
+        "REQ-VISIT-FORM-TITLE-001",
+        "REQ-VISIT-FORM-TIME-001",
+        "REQ-VISIT-FORM-ADDRESS-001"
       ],
       "order": 2,
       "key": "visits:visits-new:2",
       "scope": "visits",
-      "markdown": "## 需求描述：【拜访计划表单】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划字段清单.md#2.计划字段`、`拜访计划字段清单.md#5.关联字段`\n\n### 页面内容\n#### 表单字段\n- 当前提供关联类型、关联对象、拜访标题、拜访方式、计划时间和地址。\n- 表单区展示必填标识和字段错误。\n\n### 交互说明\n#### 填写\n- 选择关联对象后可生成标题建议；拜访方式变化时调整地址提示。\n- 计划时间和地址错误在字段下方提示。\n\n### 业务规则\n#### 保存前校验\n- 关联类型与对象 ID 必须成对且使用稳定 ID；结束时间必须晚于开始时间。\n- 状态、签到时间和完成时间均为系统或动作写入，不是可编辑字段。\n\n### 字段说明\n#### 业务字段\n- `title`、`visitMethod`、`plannedStartAt`、`plannedEndAt`、`address`。\n- `relatedObjectType`、`relatedObjectId`、`assigneeId`。\n\n### 待确认\n- 当前原型没有计划结束时间、负责人和状态/执行结果只读区，待确认。"
+      "markdown": "## 需求描述：【拜访计划表单】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划字段清单.md#2.计划字段`、`拜访计划字段清单.md#5.关联字段`、`拜访计划主PRD.md#4.4-时间和空值规则`、`拜访计划主PRD.md#6-关联对象规则`\n\n### 页面内容\n#### 字段分组\n- 基本信息卡片承载关联对象、拜访标题、拜访方式、计划时间、负责人和地址。\n- 表单区展示必填标识和字段错误。\n\n### 交互说明\n- 选择关联类型后加载对应的线索、商机或正式客户候选；切换类型时清空旧对象。\n- 选择关联对象后可生成标题建议，手工输入不被覆盖；拜访方式变化时调整地址提示。\n- 计划时间、结束时间和地址错误在字段下方提示；编辑已锁定计划时关联对象不可更换。\n\n### 业务规则\n#### 关联与时间\n- 关联类型与对象 ID 必须成对且使用稳定 ID；只返回用户可见对象，名称和状态只作快照。\n- 已转客户线索、终态商机和停用客户不作为新计划候选；关联商机可继承客户快照。\n- 结束时间必须晚于开始时间；新建计划时间不得早于当前业务时间。\n- 上门拜访地址条件必填，电话和视频方式的地址可填写链接或号码。\n- 状态、签到时间和完成时间均为系统或动作写入，不是可编辑字段。\n\n### 字段说明\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 关联对象类型 | Select | 计划关联的业务对象类型。 | 必填；`LEAD`=线索、`OPPORTUNITY`=商机、`CUSTOMER`=正式客户。 |\n| 关联对象ID | Select | 计划关联对象的稳定编码。 | 必填；保存唯一 ID，不以名称作为关联键。 |\n| 拜访标题 | Input | 拜访计划主题。 | 必填；文本，最多 100 字符。 |\n| 拜访方式 | Select | 沟通方式。 | 必填；上门、电话、视频。 |\n| 计划拜访时间 | DateTimeInput | 计划开始时间。 | 必填；`YYYY-MM-DD HH:mm`，新建不得早于当前业务时间。 |\n| 计划结束时间 | DateTimeInput | 计划结束时间。 | 必填；必须晚于开始时间。 |\n| 负责人 | 只读文本 | 当前计划负责人。 | 系统带出当前销售，不提供用户直接修改。 |\n| 拜访地址 | Input | 上门现场地址、视频链接或电话号码。 | 上门时条件必填；长度与清洗规则以字段清单为准。 |\n\n### 待确认\n- 当前原型使用本地 Select，未实现远程搜索、防抖、候选权限和对象更换确认；状态/执行结果只读区也未在本页展示，待确认。"
     },
     {
       "id": "3",
-      "type": "field",
-      "page": "#/visits/new",
-      "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
-      "moduleName": "拜访关联对象字段",
-      "target": {
-        "selector": "[data-anno='visit-form-association-fields']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-VISIT-FORM-ASSOCIATION-001"
-      ],
-      "order": 3,
-      "key": "visits:visits-new:3",
-      "scope": "visits",
-      "markdown": "## 需求描述：【拜访关联对象字段】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划主PRD.md#6-关联对象规则`\n\n### 页面内容\n#### 关联选择\n- 关联类型支持线索、商机和正式客户；选择具体对象后保存稳定 ID。\n\n### 交互说明\n#### 联动\n- 类型变化清空旧对象并重新查询候选；没有类型时对象选择器不可用。\n- 快捷创建时关联类型和对象默认锁定，可通过独立动作重新选择。\n\n### 业务规则\n#### 候选限制\n- 只返回用户可见对象；已转客户线索、终态商机和 ERP 停用客户不作为新计划候选。\n- 名称和状态只作为快照，不能作为关联键。\n\n### 字段说明\n#### 关联字段\n- `relatedObjectType`、`relatedObjectId`、对象名称快照、对象状态快照。\n- 关联商机时可继承客户 ID 和名称快照。\n\n### 待确认\n- 当前原型使用本地 Select，未实现远程搜索、防抖、候选权限和更换确认，待确认。"
-    },
-    {
-      "id": "4",
-      "type": "field",
-      "page": "#/visits/new",
-      "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
-      "moduleName": "拜访标题字段",
-      "target": {
-        "selector": "[data-anno='visit-form-title-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-VISIT-FORM-TITLE-001"
-      ],
-      "order": 4,
-      "key": "visits:visits-new:4",
-      "scope": "visits",
-      "markdown": "## 需求描述：【拜访标题字段】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划字段清单.md#2.计划字段`\n\n### 页面内容\n#### 标题输入\n- 拜访标题为必填文本，当前表单占据整行。\n\n### 交互说明\n#### 输入\n- 选择对象后在标题为空时可生成建议；手工输入不被覆盖。\n- 保存时去除首尾空格并在控件下方展示错误。\n\n### 业务规则\n#### 校验\n- 空标题或仅空格时阻断保存；长度遵循字段清单限制。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| `title` | - | 拜访标题，字段清单约束不超过 100 字符。 | - |\n\n\n### 待确认\n- 当前原型未展示字符计数和超限粘贴提示，待确认。"
-    },
-    {
-      "id": "5",
-      "type": "field",
-      "page": "#/visits/new",
-      "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
-      "moduleName": "拜访方式与计划时间",
-      "target": {
-        "selector": "[data-anno='visit-form-method-time-fields']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-VISIT-FORM-TIME-001"
-      ],
-      "order": 5,
-      "key": "visits:visits-new:5",
-      "scope": "visits",
-      "markdown": "## 需求描述：【拜访方式与计划时间】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划主PRD.md#4.4-时间和空值规则`\n\n### 页面内容\n#### 计划字段\n- 当前支持上门、电话和视频三种拜访方式，以及计划拜访时间输入。\n\n### 交互说明\n#### 时间与方式\n- 拜访方式变化时调整地址提示；计划时间非法或有错误时就地提示。\n- 新建计划时间不得早于当前业务时间，业务时区按规范处理。\n\n### 业务规则\n#### 时间边界\n- `plannedEndAt` 必须晚于 `plannedStartAt`；超时不自动改变主状态。\n- 编辑过期计划允许保留原值，修改时应选择有效时间。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| `visitMethod` | - | 上门、电话、视频。 | - |\n\n- `plannedStartAt`、`plannedEndAt`：带时区计划时间。\n\n### 待确认\n- 当前原型只有单一计划时间，没有计划结束时间和时区提示，待确认。"
-    },
-    {
-      "id": "6",
-      "type": "field",
-      "page": "#/visits/new",
-      "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
-      "moduleName": "拜访地址字段",
-      "target": {
-        "selector": "[data-anno='visit-form-address-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-VISIT-FORM-ADDRESS-001"
-      ],
-      "order": 6,
-      "key": "visits:visits-new:6",
-      "scope": "visits",
-      "markdown": "## 需求描述：【拜访地址字段】\n\n> 来源：`拜访计划Demo_新增编辑页.md#2-表单字段`、`拜访计划字段清单.md#2.计划字段`\n\n### 页面内容\n#### 地址\n- 表单提供拜访地址输入；上门方式提示输入现场地址，电话/视频方式可填写链接或号码。\n\n### 交互说明\n#### 条件必填\n- 上门拜访地址校验为必填；电话和视频地址为选填。\n- 地址错误在输入框下方提示。\n\n### 业务规则\n#### 内容约束\n- 地址长度和清洗规则以字段清单为准；不提供地图路线能力。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| `address` | - | 上门现场地址、视频链接或电话号码。 | - |\n\n\n### 待确认\n- 当前原型未实现地址长度提示、地图能力边界展示和对象状态校验反馈，待确认。"
-    },
-    {
-      "id": "7",
       "type": "interaction",
       "page": "#/visits/new",
       "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
@@ -2213,13 +2009,13 @@
       "sourceRefs": [
         "REQ-VISIT-FORM-FOOTER-001"
       ],
-      "order": 7,
-      "key": "visits:visits-new:7",
+      "order": 3,
+      "key": "visits:visits-new:3",
       "scope": "visits",
       "markdown": "## 需求描述：【拜访计划底部操作栏】\n\n> 来源：`拜访计划Demo_新增编辑页.md#1-页面布局`、`拜访计划Demo_新增编辑页.md#3-新增流程`\n\n### 页面内容\n#### 操作按钮\n- 固定底栏提供返回列表和保存计划。\n\n### 交互说明\n#### 保存与离开\n- 保存期间按钮禁用；失败保留输入并可重试。\n- 有未保存变更时离开应提示确认。\n\n### 业务规则\n#### 状态生成\n- 新建成功固定生成 `PLANNED + NOT_STARTED`；保存计划不签到。\n- 编辑保存不改变状态。\n\n### 字段说明\n#### 操作字段\n- 返回列表、保存计划、loading、错误提示和 Toast。\n\n### 待确认\n- 当前原型未实现保存草稿/创建计划区分和未保存离开确认，待确认。"
     },
     {
-      "id": "8",
+      "id": "4",
       "type": "interaction",
       "page": "#/visits/new",
       "routeMatcher": "^.*#/visits/(?:new|[^/]+/edit)$",
@@ -2231,8 +2027,8 @@
       "sourceRefs": [
         "REQ-VISIT-FORM-SAVE-001"
       ],
-      "order": 8,
-      "key": "visits:visits-new:8",
+      "order": 4,
+      "key": "visits:visits-new:4",
       "scope": "visits",
       "markdown": "## 需求描述：【保存拜访计划】\n\n> 来源：`拜访计划Demo_新增编辑页.md#3-新增流程`、`拜访计划Demo_新增编辑页.md#5-校验与错误状态`、`拜访计划主PRD.md#9-状态动作权限与失败处理矩阵`\n\n### 页面内容\n#### 提交\n- 点击保存计划提交表单，成功后提示保存成功并回到拜访列表。\n\n### 交互说明\n#### 校验与反馈\n- 必填字段、对象稳定 ID、时间和客户状态校验失败时阻断保存。\n- 网络或 Mock 失败时保留输入和幂等键，支持安全重试。\n\n### 业务规则\n#### 客户状态\n- ACTIVE 且同步可用允许创建；同步中或失败需提交前重新校验；客户停用阻断新建。\n- 不生成半条计划，状态写入需完整。\n\n### 字段说明\n#### 写入字段\n- 关联 ID 和名称/状态快照、计划字段、负责人、幂等标识和审计信息。\n\n### 待确认\n- 当前原型使用本地数据库直接保存，未实现服务端权限、幂等、版本和 ERP 状态校验，待确认。"
     },
@@ -2403,111 +2199,26 @@
       "type": "field",
       "page": "#/targets/new",
       "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "目标设定表单",
+      "moduleName": "业绩目标基本信息区域",
       "target": {
-        "selector": "[data-anno='target-form-card']",
+        "selector": "[data-anno='target-form-basic']",
         "fallbackSelectors": []
       },
       "sourceRefs": [
-        "REQ-TARGET-FORM-BASE-001"
+        "REQ-TARGET-FORM-BASE-001",
+        "REQ-TARGET-FORM-SALES-001",
+        "REQ-TARGET-FORM-MONTH-001",
+        "REQ-TARGET-FORM-LEAD-001",
+        "REQ-TARGET-FORM-OPP-001",
+        "REQ-TARGET-FORM-AMOUNT-001"
       ],
       "order": 2,
       "key": "targets:targets-new:2",
       "scope": "targets",
-      "markdown": "## 需求描述：【目标设定表单】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#3-页面布局`、`业绩目标_Demo_新增编辑页.md#4-字段控件规格`、`业绩目标字段清单.md#一、基础字段`\n\n### 页面内容\n#### 表单结构\n- 当前表单提供销售、目标月份、线索目标数、商机目标数和赢单金额目标。\n- 必填字段通过星号和错误文案提示。\n\n### 交互说明\n#### 填写\n- 输入框受控更新，保存前集中校验并在字段下方展示错误。\n- 销售和月份变化时应刷新目标编号预览和唯一性预检。\n\n### 业务规则\n#### 目标粒度\n- 目标唯一业务粒度是销售 ID 加目标月份；目标状态和当前进度由系统生成。\n- 数量为非负整数，金额为人民币非负金额，具体范围以字段清单为准。\n\n### 字段说明\n#### 目标字段\n- 销售、目标月份、线索目标数、商机目标数、赢单目标金额。\n- 目标编号、主状态、当前进度为系统字段或只读聚合字段。\n\n### 待确认\n- 当前原型未实现 SelectWithSearch、金额精度/范围提示和当前进度只读区，待确认。"
+      "markdown": "## 需求描述：【基本信息】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#3-页面布局`、`业绩目标_Demo_新增编辑页.md#4-字段控件规格`、`业绩目标_Demo_新增编辑页.md#4.1-销售`、`业绩目标_Demo_新增编辑页.md#4.2-目标月份`、`业绩目标_Demo_新增编辑页.md#4.3-线索目标数`、`业绩目标_Demo_新增编辑页.md#4.4-商机目标数`、`业绩目标_Demo_新增编辑页.md#4.5-赢单目标金额`、`业绩目标字段清单.md#一、基础字段`、`业绩目标字段清单.md#二、销售归属字段`、`业绩目标字段清单.md#三、实时进度字段`、`业绩目标主PRD.md#6.1-创建与唯一性规则`\n\n### 页面内容\n#### 字段分组\n- 基本信息卡片承载销售、目标月份、线索目标数、商机目标数和赢单金额目标。\n- 目标编号、目标状态、当前进度和归属快照由系统生成或聚合，不由表单直接编辑。\n\n### 交互说明\n#### 输入与联动\n- 输入框受控更新，保存前集中校验并在对应字段下方展示错误。\n- 销售和目标月份变化时刷新目标编号预览和唯一性预检；编辑模式下销售和月份不可更换。\n- 目标值变化只影响目标预览和达成率展示，不修改 CRM/ERP 事件事实。\n\n### 业务规则\n#### 唯一性与数值\n- 目标唯一业务粒度是销售 ID 加目标月份，同一销售同一月份最多一条目标。\n- 销售使用销售 ID 保存，姓名为展示快照；主管只能选择团队成员，未映射销售不进入候选。\n- 线索目标数和商机目标数为 0 至 999999 的非负整数，禁止小数、负数和科学计数法；0 表示本月不要求该指标。\n- 赢单目标金额为 0.00 至 999999999.99 CNY，最多 2 位小数，禁止科学计数法；0 表示本月不要求金额。\n- 当前进度和 CRM WON/ERP 确认订单金额是系统聚合值；结算主判定使用 ERP 确认订单金额，不由表单手工输入。\n\n### 字段说明\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 销售 | Select | 目标归属销售。 | 必填；保存销售 ID，姓名仅作展示快照。 |\n| 销售ID | 系统带出 | 销售主数据映射标识。 | 必填；同名销售通过 ID 区分。 |\n| 销售姓名快照 | 系统生成 | 创建或调整时的销售姓名。 | 系统自动；历史目标保留快照。 |\n| 团队快照 | 系统生成 | 创建或结算时的团队归属。 | 系统自动；用于权限范围，不是统计维度。 |\n| 区域快照 | 系统生成 | 创建或结算时的区域归属。 | 系统自动。 |\n| 当前销售姓名 | 实时读取 | 当前销售主数据姓名。 | 系统自动；销售改名不改变销售 ID。 |\n| 目标月份 | MonthInput | 目标考核月份。 | 必填；`YYYY-MM`，与销售 ID 共同保证唯一。 |\n| 目标编号 | 系统生成 | 目标唯一编号。 | `TGT{YYYYMM}-{销售ID}`，最终以保存结果为准。 |\n| 线索目标数 | NumberInput | 销售月度转化线索 KPI。 | 必填；0-999999，非负整数，0 表示本月不要求。 |\n| 商机目标数 | NumberInput | 销售月度新增商机 KPI。 | 必填；0-999999，非负整数，0 表示本月不要求。 |\n| 赢单目标金额 | DecimalInput | 最终赢单金额目标。 | 必填；0.00-999999999.99 CNY，最多 2 位小数。 |\n| 目标状态 | 系统生成 | 目标主状态。 | `ACTIVE/ACHIEVED/UNACHIEVED`；表单不提供状态编辑。 |\n| 当前线索转化数 | 系统聚合 | CRM 线索转客户事件聚合值。 | 只读；实时进度，不由表单输入。 |\n| 当前商机数 | 系统聚合 | CRM 商机创建事件聚合值。 | 只读；实时进度，不由表单输入。 |\n| 当前 CRM WON 金额 | 系统聚合 | CRM 商机赢单事件金额。 | 只读；用于经营分析。 |\n| 当前 ERP 确认订单金额 | ERP 聚合 | ERP 已确认订单金额。 | 只读；结算主判定口径。 |\n| 金额差异 | 系统计算 | CRM WON 金额与 ERP 确认订单金额的差值。 | 只读；用于差异审计。 |\n\n### 待确认\n- 当前原型使用普通 Select，未实现远程搜索、团队权限过滤、目标编号预览、金额精度提示和当前进度只读区，待确认。"
     },
     {
       "id": "3",
-      "type": "field",
-      "page": "#/targets/new",
-      "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "销售代表字段",
-      "target": {
-        "selector": "[data-anno='target-form-sales-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-TARGET-FORM-SALES-001"
-      ],
-      "order": 3,
-      "key": "targets:targets-new:3",
-      "scope": "targets",
-      "markdown": "## 需求描述：【销售代表字段】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#4.1-销售`、`业绩目标字段清单.md#二、销售归属字段`\n\n### 页面内容\n#### 销售选择\n- 当前通过下拉选择销售代表，并展示姓名和销售 ID。\n\n### 交互说明\n#### 选择\n- 选择销售后刷新目标编号和销售加月份唯一性检查。\n- 编辑模式销售应只读，不能更换归属。\n\n### 业务规则\n#### 归属\n- 保存使用销售 ID，姓名仅为展示快照；同名销售通过 ID 区分。\n- 主管只能选择团队成员，未映射销售不应进入候选。\n\n### 字段说明\n#### 归属字段\n- 销售 ID、销售姓名快照、团队快照和当前销售姓名。\n\n### 待确认\n- 当前原型未实现远程搜索、团队权限和未映射销售过滤，待确认。"
-    },
-    {
-      "id": "4",
-      "type": "field",
-      "page": "#/targets/new",
-      "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "目标月份字段",
-      "target": {
-        "selector": "[data-anno='target-form-month-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-TARGET-FORM-MONTH-001"
-      ],
-      "order": 4,
-      "key": "targets:targets-new:4",
-      "scope": "targets",
-      "markdown": "## 需求描述：【目标月份字段】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#4.2-目标月份`、`业绩目标主PRD.md#6.1-创建与唯一性规则`\n\n### 页面内容\n#### 月份选择\n- 当前通过月份输入选择目标考核月份。\n\n### 交互说明\n#### 月份联动\n- 月份变化刷新目标编号预览和唯一性检查；编辑模式不可更换月份。\n- 月份按业务时区处理，不能提交空值。\n\n### 业务规则\n#### 唯一性\n- 同一销售同一月份最多一条目标；历史月份新建是否允许由权限规则控制。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 目标月份 | - | `YYYY-MM`。 | - |\n| 目标编号 | - | 系统按 `TGT{YYYYMM}-{销售ID}` 生成，最终以保存结果为准。 | - |\n\n\n### 待确认\n- 当前原型未实现 MonthPicker、业务时区提示和历史月份新增权限判定，待确认。"
-    },
-    {
-      "id": "5",
-      "type": "field",
-      "page": "#/targets/new",
-      "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "线索目标数量",
-      "target": {
-        "selector": "[data-anno='target-form-lead-target-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-TARGET-FORM-LEAD-001"
-      ],
-      "order": 5,
-      "key": "targets:targets-new:5",
-      "scope": "targets",
-      "markdown": "## 需求描述：【线索目标数量】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#4.3-线索目标数`、`业绩目标主PRD.md#6.1-创建与唯一性规则`\n\n### 页面内容\n#### 目标输入\n- 当前输入“转化线索目标数量”，单位为个，为必填字段。\n\n### 交互说明\n#### 校验\n- 只接受合法整数；错误时输入框标红并显示提示。\n- 目标值变化时应预览线索达成率，不改变实时当前值。\n\n### 业务规则\n#### 范围\n- 线索目标为非负整数，范围和零值达标规则以字段清单/主 PRD 为准。\n- 当前值超过新目标时允许保存并显示真实超额达成。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 线索目标数 | - | 销售月度转化线索 KPI。 | - |\n\n\n### 待确认\n- 当前原型要求大于 0，和主 PRD“0 表示本月不要求”规则不一致，待确认。"
-    },
-    {
-      "id": "6",
-      "type": "field",
-      "page": "#/targets/new",
-      "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "商机目标数量",
-      "target": {
-        "selector": "[data-anno='target-form-opp-target-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-TARGET-FORM-OPP-001"
-      ],
-      "order": 6,
-      "key": "targets:targets-new:6",
-      "scope": "targets",
-      "markdown": "## 需求描述：【商机目标数量】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#4.4-商机目标数`、`业绩目标字段清单.md#一、基础字段`\n\n### 页面内容\n#### 目标输入\n- 当前输入“新增商机目标数量”，单位为个，为必填字段。\n\n### 交互说明\n#### 校验\n- 只接受合法整数；错误时输入框标红并显示提示。\n- 目标值用于计算新增商机达成率，不直接修改商机数据。\n\n### 业务规则\n#### 统计\n- 商机目标按 CRM 商机创建事件聚合，按事件销售 ID 和目标月份归属。\n- 结算后目标值和当前值锁定为快照。\n\n### 字段说明\n#### 字段口径\n| 字段 | 展示/输入类型 | 业务说明 | 约束与备注 |\n| --- | --- | --- | --- |\n| 商机目标数 | - | 销售月度新增商机 KPI。 | - |\n\n\n### 待确认\n- 当前原型未实现范围上限、零目标和事件归属说明，待确认。"
-    },
-    {
-      "id": "7",
-      "type": "field",
-      "page": "#/targets/new",
-      "routeMatcher": "^.*#/targets/new$",
-      "moduleName": "赢单金额目标",
-      "target": {
-        "selector": "[data-anno='target-form-amount-target-field']",
-        "fallbackSelectors": []
-      },
-      "sourceRefs": [
-        "REQ-TARGET-FORM-AMOUNT-001"
-      ],
-      "order": 7,
-      "key": "targets:targets-new:7",
-      "scope": "targets",
-      "markdown": "## 需求描述：【赢单金额目标】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#4.5-赢单目标金额`、`业绩目标字段清单.md#三、实时进度字段`\n\n### 页面内容\n#### 金额输入\n- 当前输入最终赢单金额目标，单位为人民币元，为必填字段。\n\n### 交互说明\n#### 金额校验\n- 输入需为合法数字，错误时标红；金额用于计算赢单金额达成率。\n- 金额输入不应直接修改 CRM WON 或 ERP 订单实际值。\n\n### 业务规则\n#### 统计口径\n- CRM WON 金额作为经营指标；结算主判定使用 ERP 已确认订单金额。\n- 金额差异由系统计算，不由表单手工输入。\n\n### 字段说明\n#### 字段口径\n- 赢单目标金额、CRM WON 金额、ERP 确认订单金额、金额差异。\n- 一期结算币种为人民币，金额精度遵循字段清单。\n\n### 待确认\n- 当前原型未实现币种、两位小数限制、CRM/ERP 并行值和金额差异展示，待确认。"
-    },
-    {
-      "id": "8",
       "type": "interaction",
       "page": "#/targets/new",
       "routeMatcher": "^.*#/targets/new$",
@@ -2519,8 +2230,8 @@
       "sourceRefs": [
         "REQ-TARGET-FORM-FOOTER-001"
       ],
-      "order": 8,
-      "key": "targets:targets-new:8",
+      "order": 3,
+      "key": "targets:targets-new:3",
       "scope": "targets",
       "markdown": "## 需求描述：【目标保存底栏】\n\n> 来源：`业绩目标_Demo_新增编辑页.md#10-底部操作`、`业绩目标_Demo_新增编辑页.md#11-保存`\n\n### 页面内容\n#### 操作按钮\n- 固定底栏提供返回列表和保存目标。\n\n### 交互说明\n#### 保存\n- 保存期间按钮禁用；成功提示并回到列表；失败保留表单输入。\n- 未保存离开应提示确认，避免丢失目标调整。\n\n### 业务规则\n#### 状态与审计\n- 新建成功进入 `ACTIVE + NOT_STARTED`；月内调整需要二次确认、原因和审计。\n- 结算锁生效后禁止保存修改，已结算目标只读。\n\n### 字段说明\n#### 保存反馈\n- 保存目标、返回列表、loading、字段错误、Toast、调整原因和版本。\n\n### 待确认\n- 当前原型未实现调整原因、调整次数、二次确认、版本并发和未保存离开提示，待确认。"
     }

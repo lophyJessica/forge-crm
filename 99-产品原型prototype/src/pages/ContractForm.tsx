@@ -200,13 +200,13 @@ export default function ContractForm() {
       </div>
 
       {/* 主表单卡片 */}
-      <Card data-anno="contract-form-card">
+      <Card data-anno="contract-form-basic">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">合同基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 关联商机 */}
-          <div data-anno="contract-form-opportunity-field">
+          <div>
             <Label className="block mb-2">
               关联商机 <span className="text-red-500">*</span>
             </Label>
@@ -234,7 +234,7 @@ export default function ContractForm() {
           </div>
 
           {/* 关联客户 */}
-          <div data-anno="contract-form-customer-inheritance">
+          <div>
             <Label className="block mb-2">关联客户</Label>
             <Input 
               value={customerName ? `[${customerId}] ${customerName}` : '（选择商机后自动继承带出）'}
@@ -245,7 +245,7 @@ export default function ContractForm() {
           </div>
 
           {/* 合同名称 */}
-          <div data-anno="contract-form-title-field">
+          <div>
             <Label htmlFor="title" className="block mb-2">
               合同名称 <span className="text-red-500">*</span>
             </Label>
@@ -260,7 +260,7 @@ export default function ContractForm() {
           </div>
 
           {/* 合同金额 */}
-          <div data-anno="contract-form-amount-field">
+          <div>
             <Label htmlFor="amount" className="block mb-2">
               合同最终签约金额 (元) <span className="text-red-500">*</span>
             </Label>

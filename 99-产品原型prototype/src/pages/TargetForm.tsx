@@ -159,14 +159,14 @@ export default function TargetForm() {
       </div>
 
       {/* 表单卡片 */}
-      <Card data-anno="target-form-card">
+      <Card data-anno="target-form-basic">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">业绩目标指标设定</CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* 销售代表 & 目标月份 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div data-anno="target-form-sales-field">
+            <div>
               <Label className="block mb-2">
                 销售代表 <span className="text-red-500">*</span>
               </Label>
@@ -182,7 +182,7 @@ export default function TargetForm() {
               </select>
             </div>
 
-            <div data-anno="target-form-month-field">
+            <div>
               <Label htmlFor="month" className="block mb-2">
                 目标考核月份 <span className="text-red-500">*</span>
               </Label>
@@ -199,7 +199,7 @@ export default function TargetForm() {
           </div>
 
           {/* 考核线索数 */}
-          <div data-anno="target-form-lead-target-field">
+          <div>
             <Label htmlFor="leadTarget" className="block mb-2">
               转化线索目标数量 (个) <span className="text-red-500">*</span>
             </Label>
@@ -217,7 +217,7 @@ export default function TargetForm() {
           </div>
 
           {/* 考核商机数 */}
-          <div data-anno="target-form-opp-target-field">
+          <div>
             <Label htmlFor="oppTarget" className="block mb-2">
               新增商机目标数量 (个) <span className="text-red-500">*</span>
             </Label>
@@ -235,7 +235,7 @@ export default function TargetForm() {
           </div>
 
           {/* 考核赢单金额 */}
-          <div data-anno="target-form-amount-target-field">
+          <div>
             <Label htmlFor="amountTarget" className="block mb-2">
               最终赢单金额目标 (元) <span className="text-red-500">*</span>
             </Label>

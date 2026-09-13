@@ -218,14 +218,14 @@ export default function OppForm() {
       </div>
 
       {/* 表单卡片 */}
-      <Card>
+      <Card data-anno="opportunity-form-basic">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-5" data-anno="opportunity-form-validation">
             {/* 字段 1：商机名称 */}
-            <div className="md:col-span-2" data-anno="opportunity-form-title-field">
+            <div className="md:col-span-2">
               <Label htmlFor="title" className="block mb-2">
                 商机名称 <span className="text-red-500">*</span>
               </Label>
@@ -246,7 +246,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 2：关联客户 */}
-            <div className="md:col-span-2" data-anno="opportunity-form-customer-field">
+            <div className="md:col-span-2">
               <Label htmlFor="customer" className="block mb-2">
                 关联客户 <span className="text-red-500">*</span>
               </Label>
@@ -271,7 +271,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 3：预计金额 */}
-            <div data-anno="opportunity-form-forecast-fields">
+            <div>
               <Label htmlFor="amount" className="block mb-2">
                 预计金额 (¥) <span className="text-slate-400 font-normal text-[11px]">(推进至谈判时必填)</span>
               </Label>
@@ -303,7 +303,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 5：关联商品 */}
-            <div className="md:col-span-2" data-anno="opportunity-form-product-fields">
+            <div className="md:col-span-2">
               <Label className="block mb-2">
                 关联商品 <span className="text-slate-400 font-normal text-[11px]">(推进至报价时必填)</span>
               </Label>
@@ -343,7 +343,7 @@ export default function OppForm() {
             </div>
 
             {/* 字段 6：需求描述 */}
-            <div className="md:col-span-4" data-anno="opportunity-form-requirement-field">
+            <div className="md:col-span-4">
               <Label htmlFor="desc" className="block mb-2">
                 需求描述 <span className="text-slate-400 font-normal text-[11px]">(推进至需求确认时必填)</span>
               </Label>
