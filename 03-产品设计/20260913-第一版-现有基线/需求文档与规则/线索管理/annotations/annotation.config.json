@@ -191,7 +191,9 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "1",
-      "sourceRefs": ["REQ-LEADS-TABLE-001"],
+      "sourceRefs": [
+        "REQ-LEADS-TABLE-001"
+      ],
       "order": 1
     },
     {
@@ -226,7 +228,10 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "3",
-      "sourceRefs": ["REQ-LEADS-FILTER-001", "REQ-LEADS-FIELDS-001"],
+      "sourceRefs": [
+        "REQ-LEADS-FILTER-001",
+        "REQ-LEADS-FIELDS-001"
+      ],
       "order": 3
     },
     {
@@ -240,7 +245,10 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "4",
-      "sourceRefs": ["REQ-LEADS-TABLE-001", "REQ-LEADS-MODAL-001"],
+      "sourceRefs": [
+        "REQ-LEADS-TABLE-001",
+        "REQ-LEADS-MODAL-001"
+      ],
       "order": 4
     },
     {
@@ -254,7 +262,11 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "5",
-      "sourceRefs": ["REQ-LEADS-TABLE-001", "REQ-LEADS-MODAL-001", "REQ-LEADS-PERMS-001"],
+      "sourceRefs": [
+        "REQ-LEADS-TABLE-001",
+        "REQ-LEADS-MODAL-001",
+        "REQ-LEADS-PERMS-001"
+      ],
       "order": 5
     },
     {
@@ -268,7 +280,10 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "6",
-      "sourceRefs": ["REQ-LEADS-FIELDS-001", "REQ-LEADS-TABLE-001"],
+      "sourceRefs": [
+        "REQ-LEADS-FIELDS-001",
+        "REQ-LEADS-TABLE-001"
+      ],
       "order": 6
     },
     {
@@ -282,7 +297,10 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "7",
-      "sourceRefs": ["REQ-LEADS-R09-001", "REQ-LEADS-FIELDS-001"],
+      "sourceRefs": [
+        "REQ-LEADS-R09-001",
+        "REQ-LEADS-FIELDS-001"
+      ],
       "order": 7
     },
     {
@@ -316,143 +334,12 @@
       },
       "markdownFile": "pages/leads-list.md",
       "blockId": "9",
-      "sourceRefs": ["REQ-LEADS-PERMS-001", "REQ-LEADS-EXCEPTIONS-001", "REQ-LEADS-R04-001"],
+      "sourceRefs": [
+        "REQ-LEADS-PERMS-001",
+        "REQ-LEADS-EXCEPTIONS-001",
+        "REQ-LEADS-R04-001"
+      ],
       "order": 9
-    },
-    {
-      "id": "1",
-      "type": "page",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "线索新增编辑页面",
-      "target": {
-        "selector": "[data-anno='lead-form-page-header']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "1",
-      "sourceRefs": ["REQ-LEAD-FORM-PAGE-001", "REQ-LEAD-FORM-MODE-001"],
-      "order": 10
-    },
-    {
-      "id": "2",
-      "type": "field",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "线索来源字段",
-      "target": {
-        "selector": "[data-anno='lead-form-source-field']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "2",
-      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
-      "order": 11
-    },
-    {
-      "id": "3",
-      "type": "field",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "公司名称字段",
-      "target": {
-        "selector": "[data-anno='lead-form-company-field']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "3",
-      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001", "REQ-LEAD-FORM-VALIDATION-001"],
-      "order": 12
-    },
-    {
-      "id": "4",
-      "type": "field",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "联系人与联系方式字段",
-      "target": {
-        "selector": "[data-anno='lead-form-contact-fields']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "4",
-      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001", "REQ-LEAD-FORM-DEDUP-001", "REQ-LEAD-FORM-VALIDATION-001"],
-      "order": 13
-    },
-    {
-      "id": "5",
-      "type": "field",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "职位行业与地区字段",
-      "target": {
-        "selector": "[data-anno='lead-form-profile-fields']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "5",
-      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
-      "order": 14
-    },
-    {
-      "id": "6",
-      "type": "field",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "线索备注字段",
-      "target": {
-        "selector": "[data-anno='lead-form-remark-field']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "6",
-      "sourceRefs": ["REQ-LEAD-FORM-FIELDS-001"],
-      "order": 15
-    },
-    {
-      "id": "7",
-      "type": "rule",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "表单完整性与去重拦截",
-      "target": {
-        "selector": "[data-anno='lead-form-validation']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "7",
-      "sourceRefs": ["REQ-LEAD-FORM-DEDUP-001", "REQ-LEAD-FORM-VALIDATION-001"],
-      "order": 16
-    },
-    {
-      "id": "8",
-      "type": "interaction",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "保存草稿流程",
-      "target": {
-        "selector": "[data-anno='lead-form-save-draft']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "8",
-      "sourceRefs": ["REQ-LEAD-FORM-DRAFT-001"],
-      "order": 17
-    },
-    {
-      "id": "9",
-      "type": "interaction",
-      "page": "#/leads/new",
-      "routeMatcher": "^.*#/leads/(?:new|[^/]+/edit)$",
-      "moduleName": "提交线索与AI分流",
-      "target": {
-        "selector": "[data-anno='lead-form-submit']",
-        "fallbackSelectors": []
-      },
-      "markdownFile": "pages/lead-form.md",
-      "blockId": "9",
-      "sourceRefs": ["REQ-LEAD-FORM-SUBMIT-001", "REQ-LEAD-FORM-AI-001", "REQ-LEAD-FORM-VALIDATION-001"],
-      "order": 18
     },
     {
       "id": "1",
@@ -466,7 +353,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "1",
-      "sourceRefs": ["REQ-LEAD-DETAIL-PAGE-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-PAGE-001"
+      ],
       "order": 19
     },
     {
@@ -481,7 +370,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "2",
-      "sourceRefs": ["REQ-LEAD-DETAIL-STATUS-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-STATUS-001"
+      ],
       "order": 20
     },
     {
@@ -496,7 +387,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "3",
-      "sourceRefs": ["REQ-LEAD-DETAIL-AI-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-AI-001"
+      ],
       "order": 21
     },
     {
@@ -511,7 +404,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "4",
-      "sourceRefs": ["REQ-LEAD-DETAIL-BASIC-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-BASIC-001"
+      ],
       "order": 22
     },
     {
@@ -526,7 +421,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "5",
-      "sourceRefs": ["REQ-LEAD-DETAIL-FOLLOW-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-FOLLOW-001"
+      ],
       "order": 23
     },
     {
@@ -541,7 +438,10 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "6",
-      "sourceRefs": ["REQ-LEAD-DETAIL-ACTIONS-001", "REQ-LEAD-DETAIL-CLAIM-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-ACTIONS-001",
+        "REQ-LEAD-DETAIL-CLAIM-001"
+      ],
       "order": 24
     },
     {
@@ -556,7 +456,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "7",
-      "sourceRefs": ["REQ-LEAD-DETAIL-FOLLOW-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-FOLLOW-001"
+      ],
       "order": 25
     },
     {
@@ -571,7 +473,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "8",
-      "sourceRefs": ["REQ-LEAD-DETAIL-ABANDON-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-ABANDON-001"
+      ],
       "order": 26
     },
     {
@@ -586,7 +490,9 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "9",
-      "sourceRefs": ["REQ-LEAD-DETAIL-CONVERT-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-CONVERT-001"
+      ],
       "order": 27
     },
     {
@@ -601,8 +507,78 @@
       },
       "markdownFile": "pages/lead-detail.md",
       "blockId": "10",
-      "sourceRefs": ["REQ-LEAD-DETAIL-DRAFT-VOID-001"],
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-DRAFT-VOID-001"
+      ],
       "order": 28
+    },
+    {
+      "id": "1",
+      "type": "page",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "[data-anno='lead-form-page-header']",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-PAGE-001",
+        "REQ-LEAD-FORM-MODE-001"
+      ]
+    },
+    {
+      "id": "2",
+      "type": "field",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "[data-anno='lead-form-basic']",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-FIELDS-001",
+        "REQ-LEAD-FORM-DEDUP-001"
+      ]
+    },
+    {
+      "id": "3",
+      "type": "rule",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "[data-anno='lead-form-validation']",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-VALIDATION-001"
+      ]
+    },
+    {
+      "id": "4",
+      "type": "interaction",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "[data-anno='lead-form-save-draft']",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-DRAFT-001"
+      ]
+    },
+    {
+      "id": "5",
+      "type": "interaction",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "[data-anno='lead-form-submit']",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-SUBMIT-001",
+        "REQ-LEAD-FORM-AI-001"
+      ]
     }
   ]
 }

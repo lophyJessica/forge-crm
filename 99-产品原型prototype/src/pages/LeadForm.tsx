@@ -285,14 +285,14 @@ export default function LeadForm() {
       </div>
 
       {/* 表单卡片 */}
-      <Card>
+      <Card data-anno="lead-form-basic">
         <CardHeader className="border-b border-slate-100 pb-3">
           <CardTitle className="text-sm font-semibold">基本信息</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-5" data-anno="lead-form-validation">
             {/* 字段 1：线索来源 */}
-            <div data-anno="lead-form-source-field">
+            <div>
               <Label htmlFor="source" className="block mb-2">
                 线索来源 <span className="text-red-500">*</span>
               </Label>
@@ -316,7 +316,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 2：公司名称 */}
-            <div className="md:col-span-2" data-anno="lead-form-company-field">
+            <div className="md:col-span-2">
               <Label htmlFor="company" className="block mb-2">
                 公司名称 <span className="text-red-500">*</span>
               </Label>
@@ -351,7 +351,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 4：手机号 */}
-            <div data-anno="lead-form-contact-fields">
+            <div>
               <Label htmlFor="phone" className="block mb-2">
                 手机号 <span className="text-slate-400 font-normal">(手机/邮箱选填其一)</span>
               </Label>
@@ -392,7 +392,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 6：职位 */}
-            <div data-anno="lead-form-profile-fields">
+            <div>
               <Label htmlFor="position" className="block mb-2">职位</Label>
               <Input
                 id="position"
@@ -465,7 +465,7 @@ export default function LeadForm() {
             </div>
 
             {/* 字段 9：线索备注 */}
-            <div className="md:col-span-4" data-anno="lead-form-remark-field">
+            <div className="md:col-span-4">
               <Label htmlFor="remark" className="block mb-2">备注信息</Label>
               <Textarea
                 id="remark"

@@ -18,13 +18,13 @@
 | leads | `REQ-LEADS-PERMS-001` | ../线索主PRD.md#8-权限设计 | /leads | `leads:leads:5`, `leads:leads:9` | 已挂载 |
 | leads | `REQ-LEADS-EXCEPTIONS-001` | ../线索主PRD.md#9-边界与异常处理 | /leads | `leads:leads:9` | 已挂载 |
 | leads | `REQ-LEAD-FORM-PAGE-001` | ../线索_Demo_新增编辑页.md#1-页面概述 | /leads/new|/leads/:id/edit | `leads:leads-new:1` | 已挂载 |
-| leads | `REQ-LEAD-FORM-FIELDS-001` | ../线索_Demo_新增编辑页.md#3-表单卡片；../线索字段清单.md#一、基础信息字段 | /leads/new|/leads/:id/edit | `leads:leads-new:2`, `leads:leads-new:3`, `leads:leads-new:4`, `leads:leads-new:5`, `leads:leads-new:6` | 已挂载 |
-| leads | `REQ-LEAD-FORM-DEDUP-001` | ../线索主PRD.md#r01-全局唯一去重规则；../线索主PRD.md#9.2-去重与幂等 | /leads/new|/leads/:id/edit | `leads:leads-new:4`, `leads:leads-new:7` | 已挂载 |
-| leads | `REQ-LEAD-FORM-VALIDATION-001` | ../线索主PRD.md#r02-字段完整性规则；../线索_Demo_新增编辑页.md#5.2-提交 | /leads/new|/leads/:id/edit | `leads:leads-new:3`, `leads:leads-new:4`, `leads:leads-new:7`, `leads:leads-new:9` | 已挂载 |
+| leads | `REQ-LEAD-FORM-FIELDS-001` | ../线索_Demo_新增编辑页.md#3-表单卡片；../线索字段清单.md#一、基础信息字段 | /leads/new|/leads/:id/edit | `leads:leads-new:2` | 已挂载 |
+| leads | `REQ-LEAD-FORM-DEDUP-001` | ../线索主PRD.md#r01-全局唯一去重规则；../线索主PRD.md#9.2-去重与幂等 | /leads/new|/leads/:id/edit | `leads:leads-new:2` | 已挂载 |
+| leads | `REQ-LEAD-FORM-VALIDATION-001` | ../线索主PRD.md#r02-字段完整性规则；../线索_Demo_新增编辑页.md#5.2-提交 | /leads/new|/leads/:id/edit | `leads:leads-new:3` | 已挂载 |
 | leads | `REQ-LEAD-FORM-MODE-001` | ../线索_Demo_新增编辑页.md#4-编辑模式差异 | /leads/new|/leads/:id/edit | `leads:leads-new:1` | 已挂载 |
-| leads | `REQ-LEAD-FORM-DRAFT-001` | ../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.1-保存草稿；../线索主PRD.md#5.3-状态流转表 | /leads/new|/leads/:id/edit | `leads:leads-new:8` | 已挂载 |
-| leads | `REQ-LEAD-FORM-SUBMIT-001` | ../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.2-提交 | /leads/new|/leads/:id/edit | `leads:leads-new:9` | 已挂载 |
-| leads | `REQ-LEAD-FORM-AI-001` | ../线索主PRD.md#r08-ai-评分静态加权计算模型；../线索主PRD.md#r09-ai-评分分级流向规则；../线索主PRD.md#7-ai-串联规则 | /leads/new|/leads/:id/edit | `leads:leads-new:9` | 已挂载 |
+| leads | `REQ-LEAD-FORM-DRAFT-001` | ../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.1-保存草稿；../线索主PRD.md#5.3-状态流转表 | /leads/new|/leads/:id/edit | `leads:leads-new:4` | 已挂载 |
+| leads | `REQ-LEAD-FORM-SUBMIT-001` | ../线索_Demo_新增编辑页.md#2-固定底部操作栏；../线索_Demo_新增编辑页.md#5.2-提交 | /leads/new|/leads/:id/edit | `leads:leads-new:5` | 已挂载 |
+| leads | `REQ-LEAD-FORM-AI-001` | ../线索主PRD.md#r08-ai-评分静态加权计算模型；../线索主PRD.md#r09-ai-评分分级流向规则；../线索主PRD.md#7-ai-串联规则 | /leads/new|/leads/:id/edit | `leads:leads-new:5` | 已挂载 |
 | leads | `REQ-LEAD-DETAIL-PAGE-001` | ../线索_Demo_详情页.md#1-页面概述 | /leads/:id | `leads:leads-id:1` | 已挂载 |
 | leads | `REQ-LEAD-DETAIL-STATUS-001` | ../线索_Demo_详情页.md#2-状态区；../线索主PRD.md#5.1-对象状态；../线索主PRD.md#5.3-状态流转表 | /leads/:id | `leads:leads-id:2` | 已挂载 |
 | leads | `REQ-LEAD-DETAIL-AI-001` | ../线索_Demo_详情页.md#3-ai-评分卡片；../线索主PRD.md#r08-ai-评分静态加权计算模型；../线索主PRD.md#r09-ai-评分分级流向规则 | /leads/:id | `leads:leads-id:3` | 已挂载 |
