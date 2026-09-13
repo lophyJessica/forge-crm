@@ -375,6 +375,17 @@ Read `references/integration-patterns.md` before modifying a new project type. R
 - `assets/annotation-kit/annotation.workspace.schema.json`: workspace manifest schema.
 - `scripts/compile_annotations.py`: validates source coverage and compiles a deployable read-only bundle.
 - `scripts/install_annotation_kit.py`: copies runtime assets into a target project and can inject script/link tags into HTML entries.
+- `scripts/check_annotation_assets.py`: validates a compiled annotation-kit dir (bundle completeness, per-page unique ids, compiled-in markdown, target selectors, coverage) — no network/third-party deps.
+
+## Tooling Verification (three-step, deliverable gate)
+
+Working toolchain (compile -> check -> bundle) is NOT the deliverable. "Page actually shows badges" is the core value. Every delivery must show real evidence for all three:
+
+1. **Scope judgement** — apply `references/annotation-scope.md`; output "N to annotate / M not, with reasons".
+2. **Compile check** — run `python3 scripts/check_annotation_assets.py <annotation-kit dir>` and paste the REAL run output (not "script added").
+3. **Browser run** — open the page, confirm badges render, click shows content, no JS errors.
+
+Annotation source stays PRD Markdown; field-fact constraints come from the TSV, business-level rules from the PRD. A scope/check that passes without a visible result does not conclude the task.
 
 ## Validation Checklist
 
