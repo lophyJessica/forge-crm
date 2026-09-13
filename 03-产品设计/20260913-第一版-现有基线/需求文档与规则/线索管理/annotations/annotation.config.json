@@ -177,6 +177,16 @@
       "id": "REQ-LEAD-DETAIL-DRAFT-VOID-001",
       "source": "../线索主PRD.md#5.3-状态流转表；../线索主PRD.md#r07-放弃/作废原因约束；../线索主PRD.md#r11-回收与作废动作分离规则；../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示）",
       "page": "/leads/:id"
+    },
+    {
+      "id": "REQ-LEAD-FORM-PAGE-GLOBAL-001",
+      "source": "../线索_Demo_新增编辑页.md#1-页面概述；../线索_Demo_新增编辑页.md#4-编辑模式差异；../线索_Demo_新增编辑页.md#5-交互规范；../线索主PRD.md#9.2-去重与幂等",
+      "page": "/leads/new|/leads/:id/edit"
+    },
+    {
+      "id": "REQ-LEAD-DETAIL-PAGE-GLOBAL-001",
+      "source": "../线索_Demo_详情页.md#1-页面概述；../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示）；../线索_Demo_详情页.md#7-交互规范；../线索主PRD.md#8-权限设计；../线索主PRD.md#9.1-并发控制",
+      "page": "/leads/:id"
     }
   ],
   "annotations": [
@@ -325,11 +335,11 @@
     },
     {
       "id": "9",
-      "type": "rule",
+      "type": "page-global",
       "page": "#/leads",
       "moduleName": "权限与异常边界",
       "target": {
-        "selector": "[data-anno='leads-permissions']",
+        "selector": "",
         "fallbackSelectors": []
       },
       "markdownFile": "pages/leads-list.md",
@@ -579,6 +589,34 @@
         "REQ-LEAD-FORM-SUBMIT-001",
         "REQ-LEAD-FORM-AI-001"
       ]
+    },
+    {
+      "id": "6",
+      "type": "page-global",
+      "page": "#/leads/new",
+      "markdownFile": "pages/lead-form.md",
+      "target": {
+        "selector": "",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-FORM-PAGE-GLOBAL-001"
+      ]
+    },
+    {
+      "id": "11",
+      "type": "page-global",
+      "page": "#/leads/:id",
+      "routeMatcher": "^.*#/leads/[^/]+$",
+      "markdownFile": "pages/lead-detail.md",
+      "target": {
+        "selector": "",
+        "fallbackSelectors": []
+      },
+      "sourceRefs": [
+        "REQ-LEAD-DETAIL-PAGE-GLOBAL-001"
+      ],
+      "order": 29
     }
   ]
 }

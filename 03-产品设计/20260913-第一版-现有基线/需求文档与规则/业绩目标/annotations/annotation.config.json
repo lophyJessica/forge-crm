@@ -24,7 +24,9 @@
     { "id": "REQ-TARGET-FORM-LEAD-001", "source": "../业绩目标_Demo_新增编辑页.md#4.3-线索目标数、../业绩目标主PRD.md#6.1-创建与唯一性规则", "page": "/targets/new" },
     { "id": "REQ-TARGET-FORM-OPP-001", "source": "../业绩目标_Demo_新增编辑页.md#4.4-商机目标数、../业绩目标字段清单.md#一、基础字段", "page": "/targets/new" },
     { "id": "REQ-TARGET-FORM-AMOUNT-001", "source": "../业绩目标_Demo_新增编辑页.md#4.5-赢单目标金额、../业绩目标字段清单.md#三、实时进度字段", "page": "/targets/new" },
-    { "id": "REQ-TARGET-FORM-FOOTER-001", "source": "../业绩目标_Demo_新增编辑页.md#10-底部操作、../业绩目标_Demo_新增编辑页.md#11-保存", "page": "/targets/new" }
+    { "id": "REQ-TARGET-FORM-FOOTER-001", "source": "../业绩目标_Demo_新增编辑页.md#10-底部操作、../业绩目标_Demo_新增编辑页.md#11-保存", "page": "/targets/new" },
+    { "id": "REQ-TARGET-LIST-PAGE-GLOBAL-001", "source": "../业绩目标_Demo_列表页.md#1-页面概述、../业绩目标_Demo_列表页.md#11-分页、加载与空态、../业绩目标主PRD.md#8-权限设计、../业绩目标主PRD.md#9.1-并发控制、../业绩目标主PRD.md#6.3-结算与防漂移规则", "page": "/targets" },
+    { "id": "REQ-TARGET-FORM-PAGE-GLOBAL-001", "source": "../业绩目标_Demo_新增编辑页.md#2-路由与初始化、../业绩目标_Demo_新增编辑页.md#7-唯一性预检、../业绩目标_Demo_新增编辑页.md#9-月内调整确认、../业绩目标_Demo_新增编辑页.md#10-底部操作栏、../业绩目标_Demo_新增编辑页.md#11-保存交互规范、../业绩目标_Demo_新增编辑页.md#12-未保存离开、../业绩目标_Demo_新增编辑页.md#13-加载、异常与空态", "page": "/targets/new" }
   ],
   "annotations": [
     { "id": "1", "type": "page", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "业绩目标列表", "target": { "selector": "[data-anno='target-list-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "1", "sourceRefs": ["REQ-TARGET-LIST-PAGE-001"], "order": 1 },
@@ -37,6 +39,8 @@
     { "id": "8", "type": "interaction", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "制定目标入口", "target": { "selector": "[data-anno='target-list-create-tool']", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "8", "sourceRefs": ["REQ-TARGET-LIST-CREATE-001"], "order": 8 },
     { "id": "1", "type": "page", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "业绩目标新增编辑页", "target": { "selector": "[data-anno='target-form-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "1", "sourceRefs": ["REQ-TARGET-FORM-PAGE-001"], "order": 1 },
     { "id": "2", "type": "field", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "业绩目标基本信息区域", "target": { "selector": "[data-anno='target-form-basic']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "2", "sourceRefs": ["REQ-TARGET-FORM-BASE-001", "REQ-TARGET-FORM-SALES-001", "REQ-TARGET-FORM-MONTH-001", "REQ-TARGET-FORM-LEAD-001", "REQ-TARGET-FORM-OPP-001", "REQ-TARGET-FORM-AMOUNT-001"], "order": 2 },
-    { "id": "3", "type": "interaction", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "目标保存底栏", "target": { "selector": "[data-anno='target-form-footer']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "3", "sourceRefs": ["REQ-TARGET-FORM-FOOTER-001"], "order": 3 }
+    { "id": "3", "type": "interaction", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "目标保存底栏", "target": { "selector": "[data-anno='target-form-footer']", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "3", "sourceRefs": ["REQ-TARGET-FORM-FOOTER-001"], "order": 3 },
+    { "id": "9", "type": "page-global", "page": "#/targets", "routeMatcher": "^.*#/targets$", "moduleName": "业绩目标列表本页规则", "target": { "selector": "", "fallbackSelectors": [] }, "markdownFile": "pages/target-list.md", "blockId": "9", "sourceRefs": ["REQ-TARGET-LIST-PAGE-GLOBAL-001"], "order": 9 },
+    { "id": "4", "type": "page-global", "page": "#/targets/new", "routeMatcher": "^.*#/targets/new$", "moduleName": "业绩目标新增编辑本页规则", "target": { "selector": "", "fallbackSelectors": [] }, "markdownFile": "pages/target-form.md", "blockId": "4", "sourceRefs": ["REQ-TARGET-FORM-PAGE-GLOBAL-001"], "order": 4 }
   ]
 }

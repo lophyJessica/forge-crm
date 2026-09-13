@@ -35,6 +35,8 @@
 | leads | `REQ-LEAD-DETAIL-ABANDON-001` | ../线索_Demo_详情页.md#7.3-放弃；../线索字段清单.md#二、分配与跟进字段；../线索主PRD.md#r07-放弃/作废原因约束；../线索主PRD.md#r10-公海认领与撤销放弃规则 | /leads/:id | `leads:leads-id:8` | 已挂载 |
 | leads | `REQ-LEAD-DETAIL-CONVERT-001` | ../线索_Demo_详情页.md#7.2-转客户；../线索主PRD.md#r05-转客户强一致性与-ssot-规则；../线索主PRD.md#r06-终态只读保护规则 | /leads/:id | `leads:leads-id:9` | 已挂载 |
 | leads | `REQ-LEAD-DETAIL-DRAFT-VOID-001` | ../线索主PRD.md#5.3-状态流转表；../线索主PRD.md#r07-放弃/作废原因约束；../线索主PRD.md#r11-回收与作废动作分离规则；../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示） | /leads/:id | `leads:leads-id:10` | 已挂载 |
+| leads | `REQ-LEAD-FORM-PAGE-GLOBAL-001` | ../线索_Demo_新增编辑页.md#1-页面概述；../线索_Demo_新增编辑页.md#4-编辑模式差异；../线索_Demo_新增编辑页.md#5-交互规范；../线索主PRD.md#9.2-去重与幂等 | /leads/new|/leads/:id/edit | `leads:leads-new:6` | 已挂载 |
+| leads | `REQ-LEAD-DETAIL-PAGE-GLOBAL-001` | ../线索_Demo_详情页.md#1-页面概述；../线索_Demo_详情页.md#6-底部操作栏（按状态动态展示）；../线索_Demo_详情页.md#7-交互规范；../线索主PRD.md#8-权限设计；../线索主PRD.md#9.1-并发控制 | /leads/:id | `leads:leads-id:11` | 已挂载 |
 | lead-pool | `REQ-POOL-PAGE-001` | ../公海_Demo_列表页.md#1-页面概述、../公海主PRD.md#4-业务场景 | /lead-pool | `lead-pool:lead-pool:1` | 已挂载 |
 | lead-pool | `REQ-POOL-FILTER-001` | ../公海_Demo_列表页.md#3-查询区、../公海字段清单.md#一、公海视图列表列 | /lead-pool | `lead-pool:lead-pool:2` | 已挂载 |
 | lead-pool | `REQ-POOL-TABLE-001` | ../公海_Demo_列表页.md#6-表格规格、../公海主PRD.md#6.1-入池与展示规则 | /lead-pool | `lead-pool:lead-pool:3` | 已挂载 |
@@ -71,6 +73,9 @@
 | opportunities | `REQ-OPP-DETAIL-FOLLOW-MODAL-001` | ../商机_Demo_详情页.md#7.4-添加跟进抽屉、../商机_Demo_详情页.md#7.5-空态与异常 | /opportunities/:id | `opportunities:opportunities-id:8` | 已挂载 |
 | opportunities | `REQ-OPP-DETAIL-LOST-001` | ../商机_Demo_详情页.md#10.3-输单、../商机字段清单.md#一、基础信息字段、../商机主PRD.md#6.3-关闭与下推规则 | /opportunities/:id | `opportunities:opportunities-id:9` | 已挂载 |
 | opportunities | `REQ-OPP-DETAIL-CONTRACT-001` | ../商机_Demo_详情页.md#8-关联合同与ERP结果、../商机_Demo_详情页.md#10.1-推进、../商机_Demo_详情页.md#10.2-发起合同、../商机主PRD.md#6.2-阶段推进规则、../商机主PRD.md#6.3-关闭与下推规则 | /opportunities/:id | `opportunities:opportunities-id:10` | 已挂载 |
+| opportunities | `REQ-OPP-LIST-PAGE-GLOBAL-001` | ../商机_Demo_列表页.md#1-页面概述、../商机_Demo_列表页.md#8-分页与刷新、../商机_Demo_列表页.md#11-验收清单、../商机主PRD.md#8-权限设计、../商机主PRD.md#9.2-去重与幂等 | /opportunities | `opportunities:opportunities:11` | 已挂载 |
+| opportunities | `REQ-OPP-FORM-PAGE-GLOBAL-001` | ../商机_Demo_新增编辑页.md#2-路由与初始化、../商机_Demo_新增编辑页.md#7-新增与编辑模式差异、../商机_Demo_新增编辑页.md#8.3-未保存离开确认、../商机_Demo_新增编辑页.md#9-保存交互规范、../商机_Demo_新增编辑页.md#10-加载、空态与异常 | /opportunities/new|/opportunities/:id/edit | `opportunities:opportunities-new:6` | 已挂载 |
+| opportunities | `REQ-OPP-DETAIL-PAGE-GLOBAL-001` | ../商机_Demo_详情页.md#1-页面概述、../商机_Demo_详情页.md#2-加载与权限、../商机_Demo_详情页.md#10.4-并发变化、../商机主PRD.md#8-权限设计、../商机主PRD.md#9.2-去重与幂等 | /opportunities/:id | `opportunities:opportunities-id:11` | 已挂载 |
 | customers | `REQ-CUSTOMER-LIST-PAGE-001` | ../客户_Demo_列表页.md#1-页面概述、../客户主PRD.md#1-业务背景 | /customers | `customers:customers:1` | 已挂载 |
 | customers | `REQ-CUSTOMER-LIST-FILTER-001` | ../客户_Demo_列表页.md#3-查询区、../客户字段清单.md#六、展示规则 | /customers | `customers:customers:2` | 已挂载 |
 | customers | `REQ-CUSTOMER-LIST-TABLE-001` | ../客户_Demo_列表页.md#6-表格规格、../客户字段清单.md#一、客户身份与生命周期字段、../客户字段清单.md#四、CRM 关联聚合字段 | /customers | `customers:customers:3` | 已挂载 |
@@ -86,6 +91,8 @@
 | customers | `REQ-CUSTOMER-DETAIL-ORDER-ACTIONS-001` | ../客户_Demo_详情页.md#8.3-订单交互、../客户_Demo_详情页.md#12.2-ERP 外链 | /customers/:id | `customers:customers-id:7` | 已挂载 |
 | customers | `REQ-CUSTOMER-DETAIL-FOLLOW-001` | ../客户_Demo_详情页.md#9-跟进聚合组件、../客户主PRD.md#4-业务场景 | /customers/:id | `customers:customers-id:8` | 已挂载 |
 | customers | `REQ-CUSTOMER-DETAIL-ACTIONS-001` | ../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈 | /customers/:id | `customers:customers-id:9` | 已挂载 |
+| customers | `REQ-CUSTOMER-LIST-PAGE-GLOBAL-001` | ../客户_Demo_列表页.md#1-页面概述、../客户_Demo_列表页.md#7-行内操作、../客户_Demo_列表页.md#10-分页、加载与空态、../客户主PRD.md#8-权限设计 | /customers | `customers:customers:7` | 已挂载 |
+| customers | `REQ-CUSTOMER-DETAIL-PAGE-GLOBAL-001` | ../客户_Demo_详情页.md#1-页面概述、../客户_Demo_详情页.md#2-初始化与容错、../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈、../客户主PRD.md#8-权限设计、../客户主PRD.md#9-边界与异常处理 | /customers/:id | `customers:customers-id:10` | 已挂载 |
 | contracts | `REQ-CONTRACT-LIST-VIEWS-001` | ../合同_Demo_列表页.md#1-页面概述、../合同_Demo_列表页.md#2-状态 Tab 与后台计数 | /contracts | `contracts:contracts:1` | 已挂载 |
 | contracts | `REQ-CONTRACT-LIST-FILTER-001` | ../合同_Demo_列表页.md#3-查询区、../合同字段清单.md#一、基础字段 | /contracts | `contracts:contracts:2` | 已挂载 |
 | contracts | `REQ-CONTRACT-LIST-CREATE-001` | ../合同_Demo_列表页.md#4-工具条、../合同_Demo_新增编辑页.md#2-路由与初始化 | /contracts | `contracts:contracts:3` | 已挂载 |
@@ -110,6 +117,9 @@
 | contracts | `REQ-CONTRACT-DETAIL-SIGNING-001` | ../合同_Demo_详情页.md#7-签署结果区块、../合同_Demo_详情页.md#4-五节点合同时间线 | /contracts/:id | `contracts:contracts-id:6` | 已挂载 |
 | contracts | `REQ-CONTRACT-DETAIL-ACTIONS-001` | ../合同_Demo_详情页.md#10-底部操作矩阵、../合同主PRD.md#5.4-动作能力矩阵 | /contracts/:id | `contracts:contracts-id:7` | 已挂载 |
 | contracts | `REQ-CONTRACT-DETAIL-DIALOG-001` | ../合同_Demo_详情页.md#11.3-作废、../合同主PRD.md#6-核心业务规则 | /contracts/:id | `contracts:contracts-id:8` | 已挂载 |
+| contracts | `REQ-CONTRACT-LIST-PAGE-GLOBAL-001` | ../合同_Demo_列表页.md#1-页面概述、../合同_Demo_列表页.md#8-并发与失败反馈、../合同_Demo_列表页.md#9-分页、加载与空态、../合同主PRD.md#8-权限设计 | /contracts | `contracts:contracts:8` | 已挂载 |
+| contracts | `REQ-CONTRACT-FORM-PAGE-GLOBAL-001` | ../合同_Demo_新增编辑页.md#1-页面概述、../合同_Demo_新增编辑页.md#2-路由与初始化、../合同_Demo_新增编辑页.md#4-字段控件规格、../合同_Demo_新增编辑页.md#9-保存交互规范、../合同_Demo_新增编辑页.md#10-未保存离开、../合同_Demo_新增编辑页.md#11-加载、异常与空态 | /contracts/new|/contracts/:id/edit | `contracts:contracts-new:6` | 已挂载 |
+| contracts | `REQ-CONTRACT-DETAIL-PAGE-GLOBAL-001` | ../合同_Demo_详情页.md#1-页面概述、../合同_Demo_详情页.md#2-初始化与权限、../合同_Demo_详情页.md#10-底部操作矩阵、../合同_Demo_详情页.md#11-动作弹窗、../合同主PRD.md#8-权限设计、../合同主PRD.md#9.1-并发控制 | /contracts/:id | `contracts:contracts-id:9` | 已挂载 |
 | visits | `REQ-VISIT-LIST-PAGE-001` | ../拜访计划Demo_列表页.md#1-页面布局、../拜访计划主PRD.md#10.1-列表页 | /visits | `visits:visits:1` | 已挂载 |
 | visits | `REQ-VISIT-LIST-TABS-001` | ../拜访计划主PRD.md#4.2-主状态、执行结果和异常标识、../拜访计划Demo_列表页.md#5-状态、Tag 与空态 | /visits | `visits:visits:2` | 已挂载 |
 | visits | `REQ-VISIT-LIST-FILTER-001` | ../拜访计划Demo_列表页.md#2-顶部操作、../拜访计划主PRD.md#10.1-列表页 | /visits | `visits:visits:3` | 已挂载 |
@@ -135,6 +145,9 @@
 | visits | `REQ-VISIT-DETAIL-CHECKIN-SNAPSHOT-001` | ../拜访计划Demo_详情页.md#7-签到结果区块、../拜访计划字段清单.md#3.执行字段 | /visits/:id | `visits:visits-id:7` | 已挂载 |
 | visits | `REQ-VISIT-DETAIL-CHECKIN-001` | ../拜访计划Demo_详情页.md#2-顶部摘要与动作、../拜访计划主PRD.md#8-PC Web 签到与定位边界 | /visits/:id | `visits:visits-id:8` | 已挂载 |
 | visits | `REQ-VISIT-DETAIL-ACTIONS-001` | ../拜访计划Demo_详情页.md#2-顶部摘要与动作、../拜访计划Demo_详情页.md#5-弹窗、Toast 与失败态、../拜访计划主PRD.md#9-状态动作权限与失败处理矩阵 | /visits/:id | `visits:visits-id:9` | 已挂载 |
+| visits | `REQ-VISIT-LIST-PAGE-GLOBAL-001` | ../拜访计划Demo_列表页.md#1-页面布局、../拜访计划Demo_列表页.md#5-状态、Tag 与空态、../拜访计划主PRD.md#9-状态动作权限与失败处理矩阵、../拜访计划主PRD.md#10.1-列表页 | /visits | `visits:visits:9` | 已挂载 |
+| visits | `REQ-VISIT-FORM-PAGE-GLOBAL-001` | ../拜访计划Demo_新增编辑页.md#1-页面布局、../拜访计划Demo_新增编辑页.md#3-新增流程、../拜访计划Demo_新增编辑页.md#4-编辑流程、../拜访计划Demo_新增编辑页.md#5-校验与错误状态、../拜访计划主PRD.md#9-状态动作权限与失败处理矩阵 | /visits/new|/visits/:id/edit | `visits:visits-new:5` | 已挂载 |
+| visits | `REQ-VISIT-DETAIL-PAGE-GLOBAL-001` | ../拜访计划Demo_详情页.md#1-页面布局、../拜访计划Demo_详情页.md#2-顶部摘要与动作、../拜访计划Demo_详情页.md#5-弹窗、Toast 与失败态、../拜访计划主PRD.md#9-状态动作权限与失败处理矩阵、../拜访计划主PRD.md#10.3-详情页 | /visits/:id | `visits:visits-id:10` | 已挂载 |
 | targets | `REQ-TARGET-LIST-PAGE-001` | ../业绩目标_Demo_列表页.md#1-页面概述、../业绩目标主PRD.md#3-对象定位 | /targets | `targets:targets:1` | 已挂载 |
 | targets | `REQ-TARGET-LIST-OVERVIEW-001` | ../业绩目标_Demo_列表页.md#6-表格规格、../业绩目标字段清单.md#三、实时进度字段 | /targets | `targets:targets:2` | 已挂载 |
 | targets | `REQ-TARGET-LIST-TABLE-001` | ../业绩目标_Demo_列表页.md#6-表格规格、../业绩目标字段清单.md#一、基础字段、../业绩目标字段清单.md#二、销售归属字段 | /targets | `targets:targets:3` | 已挂载 |
@@ -151,3 +164,5 @@
 | targets | `REQ-TARGET-FORM-OPP-001` | ../业绩目标_Demo_新增编辑页.md#4.4-商机目标数、../业绩目标字段清单.md#一、基础字段 | /targets/new | `targets:targets-new:2` | 已挂载 |
 | targets | `REQ-TARGET-FORM-AMOUNT-001` | ../业绩目标_Demo_新增编辑页.md#4.5-赢单目标金额、../业绩目标字段清单.md#三、实时进度字段 | /targets/new | `targets:targets-new:2` | 已挂载 |
 | targets | `REQ-TARGET-FORM-FOOTER-001` | ../业绩目标_Demo_新增编辑页.md#10-底部操作、../业绩目标_Demo_新增编辑页.md#11-保存 | /targets/new | `targets:targets-new:3` | 已挂载 |
+| targets | `REQ-TARGET-LIST-PAGE-GLOBAL-001` | ../业绩目标_Demo_列表页.md#1-页面概述、../业绩目标_Demo_列表页.md#11-分页、加载与空态、../业绩目标主PRD.md#8-权限设计、../业绩目标主PRD.md#9.1-并发控制、../业绩目标主PRD.md#6.3-结算与防漂移规则 | /targets | `targets:targets:9` | 已挂载 |
+| targets | `REQ-TARGET-FORM-PAGE-GLOBAL-001` | ../业绩目标_Demo_新增编辑页.md#2-路由与初始化、../业绩目标_Demo_新增编辑页.md#7-唯一性预检、../业绩目标_Demo_新增编辑页.md#9-月内调整确认、../业绩目标_Demo_新增编辑页.md#10-底部操作栏、../业绩目标_Demo_新增编辑页.md#11-保存交互规范、../业绩目标_Demo_新增编辑页.md#12-未保存离开、../业绩目标_Demo_新增编辑页.md#13-加载、异常与空态 | /targets/new | `targets:targets-new:4` | 已挂载 |

@@ -23,7 +23,9 @@
     { "id": "REQ-CUSTOMER-DETAIL-ORDERS-001", "source": "../客户_Demo_详情页.md#8-ERP 关联订单表格、../客户字段清单.md#五、跨模块关联与展示规则", "page": "/customers/:id" },
     { "id": "REQ-CUSTOMER-DETAIL-ORDER-ACTIONS-001", "source": "../客户_Demo_详情页.md#8.3-订单交互、../客户_Demo_详情页.md#12.2-ERP 外链", "page": "/customers/:id" },
     { "id": "REQ-CUSTOMER-DETAIL-FOLLOW-001", "source": "../客户_Demo_详情页.md#9-跟进聚合组件、../客户主PRD.md#4-业务场景", "page": "/customers/:id" },
-    { "id": "REQ-CUSTOMER-DETAIL-ACTIONS-001", "source": "../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈", "page": "/customers/:id" }
+    { "id": "REQ-CUSTOMER-DETAIL-ACTIONS-001", "source": "../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈", "page": "/customers/:id" },
+    { "id": "REQ-CUSTOMER-LIST-PAGE-GLOBAL-001", "source": "../客户_Demo_列表页.md#1-页面概述、../客户_Demo_列表页.md#7-行内操作、../客户_Demo_列表页.md#10-分页、加载与空态、../客户主PRD.md#8-权限设计", "page": "/customers" },
+    { "id": "REQ-CUSTOMER-DETAIL-PAGE-GLOBAL-001", "source": "../客户_Demo_详情页.md#1-页面概述、../客户_Demo_详情页.md#2-初始化与容错、../客户_Demo_详情页.md#11-底部操作栏、../客户_Demo_详情页.md#12-二次确认与反馈、../客户主PRD.md#8-权限设计、../客户主PRD.md#9-边界与异常处理", "page": "/customers/:id" }
   ],
   "annotations": [
     { "id": "1", "type": "page", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户列表页面", "target": { "selector": "[data-anno='customers-list-page-header']", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "1", "sourceRefs": ["REQ-CUSTOMER-LIST-PAGE-001"], "order": 1 },
@@ -40,6 +42,8 @@
     { "id": "6", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 关联订单区块", "target": { "selector": "[data-anno='customer-detail-erp-orders']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "6", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ORDERS-001"], "order": 6 },
     { "id": "7", "type": "interaction", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "ERP 订单查看动作", "target": { "selector": "[data-anno='customer-detail-erp-order-actions']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "7", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ORDER-ACTIONS-001"], "order": 7 },
     { "id": "8", "type": "page", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "CRM 聚合跟进时间线", "target": { "selector": "[data-anno='customer-detail-follow-up']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "8", "sourceRefs": ["REQ-CUSTOMER-DETAIL-FOLLOW-001"], "order": 8 },
-    { "id": "9", "type": "interaction", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "客户详情底部操作", "target": { "selector": "[data-anno='customer-detail-action-bar']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "9", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ACTIONS-001"], "order": 9 }
+    { "id": "9", "type": "interaction", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "客户详情底部操作", "target": { "selector": "[data-anno='customer-detail-action-bar']", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "9", "sourceRefs": ["REQ-CUSTOMER-DETAIL-ACTIONS-001"], "order": 9 },
+    { "id": "7", "type": "page-global", "page": "#/customers", "routeMatcher": "^.*#/customers$", "moduleName": "客户列表本页规则", "target": { "selector": "", "fallbackSelectors": [] }, "markdownFile": "pages/customers-list.md", "blockId": "7", "sourceRefs": ["REQ-CUSTOMER-LIST-PAGE-GLOBAL-001"], "order": 7 },
+    { "id": "10", "type": "page-global", "page": "#/customers/:id", "routeMatcher": "^.*#/customers/[^/]+$", "moduleName": "客户详情本页规则", "target": { "selector": "", "fallbackSelectors": [] }, "markdownFile": "pages/customer-detail.md", "blockId": "10", "sourceRefs": ["REQ-CUSTOMER-DETAIL-PAGE-GLOBAL-001"], "order": 10 }
   ]
 }
