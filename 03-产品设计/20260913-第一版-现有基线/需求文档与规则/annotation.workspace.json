@@ -14,6 +14,6 @@
     "zIndexBase": 2147480000,
     "initialMode": "preview"
   },
-  "output": "../front-prototype/public/annotation-kit/annotation.bundle.json",
+  "output": "../../../99-产品原型prototype/public/annotation-kit/annotation.bundle.json",
   "coverage": "annotation-coverage.md"
 }

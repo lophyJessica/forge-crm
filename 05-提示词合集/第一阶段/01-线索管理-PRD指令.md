@@ -3,9 +3,9 @@
 ## 线索主PRD
 
 ```plaintext
-Context: forge-crm 线索管理模块。基于京东CRM实战经验。读取 context/01-04。
+Context: forge-crm 线索管理模块。基于京东CRM实战经验。读取 01-全局背景信息/01-业务背景与项目范围.md 至 01-全局背景信息/04-核心业务流程详解.md。
 
-Request: 创建 prd-docs/线索管理/线索主PRD.md:
+Request: 创建 03-产品设计/20260913-第一版-现有基线/需求文档与规则/线索管理/线索主PRD.md:
 - 业务背景:线索是CRM入口,解决"从哪来/是不是目标/谁来跟/跟了没"
 - In Scope:录入/导入/去重/分配/超时回收/转客户/AI评分
 - 状态机: DRAFT→PENDING_ASSIGN→ASSIGNED→FOLLOWING→CONVERTED/ABANDONED
