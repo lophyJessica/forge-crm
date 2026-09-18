@@ -194,6 +194,7 @@ Each annotation block's **detail content** must be organized into **tab pages** 
 - `全部` = combined rendering of all populated tabs (页面内容+交互说明+业务规则+字段说明+待确认)
 - Content under each tab uses the grouped item-list format (`分组标题` + `- 项名：描述`) from Annotation Content Structure Standard
 - Each tab's content must be accurate to the PRD: 交互说明 covers click/state behaviors, 业务规则 covers validation/permissions/exceptions, 字段说明 covers field-level rules
+- **字段说明优先从「字段清单详细稿 TSV」生成完整多列 Excel 表**（13 列：字段所属分组/字段名称/字段类型/字段来源/字段说明/必填性/新增页/编辑页/列表展示/可筛选/详情展示/取值说明/备注），逐列忠于 TSV、无值列保留 `-`、每表下方标来源（如 `来源：线索字段清单（详细稿）.tsv`）；无 TSV 的模块退化 4 列表格并标注"待补字段清单 TSV"
 - Tab filter (`type` classification) remains: page/interaction/rule/field/pending — the detail tabs provide richer in-block organization
 
 Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
