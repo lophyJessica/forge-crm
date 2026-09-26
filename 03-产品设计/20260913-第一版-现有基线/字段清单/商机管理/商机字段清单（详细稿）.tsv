@@ -1,0 +1,17 @@
+字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
+基础信息字段	商机编号	文本	系统生成	商机唯一标识	系统自动	不展示	只读	是(168px)	是(Input)	是	`OPP{YYYYMMDD}-{4位序号}`	
+基础信息字段	商机名称	文本	用户填写	商机标题	必填	Input	Input	是(200px)	是(Input)	是	文本,上限100字符	
+基础信息字段	关联客户	单选	用户选择，数据来源为 CRM 客户快照（正式档案 SSOT 为 ERP）	用于展示、权限校验和商机归属；不以客户名称作为跨系统关联键	必填	SelectWithSearch	SelectWithSearch	是(160px)	是(SelectWithSearch)	是	SelectWithSearch,从可见的 CRM 客户快照选择	保存 `crmCustomerId`、`erpCustomerId`、`customerSnapshotVersion` 和 `customerSnapshotSyncTime`；`crmCustomerId`: CRM 内部关联标识；用于 CRM 客户快照关联与权限校验；`erpCustomerId`: 下推 ERP 订单时使用的客户标识；正式客户档案 SSOT 为 ERP，CRM 不创建客户主数据；`customerSnapshotVersion`: 商机保存时引用的客户快照版本；下推前校验版本仍有效；`customerSnapshotSyncTime`: 客户快照最近一次从 ERP 同步的时间；快照过期时阻断下推
+基础信息字段	关联商品	对象集合	用户选择，数据来源为 ERP 商品查询（价格/主数据 SSOT 为 ERP）	关联的 ERP 商品及数量、价格快照	条件必填	商品明细工具区	商品明细工具区	否	否	是	商品明细对象集合,至少 1 行时才能推进到需求确认后的阶段	商品主数据不可在 CRM 新建或修改；明细结构见“商品明细对象”；`erpProductId`: 下推 ERP 订单时使用的商品标识；价格/主数据 SSOT 为 ERP；`productCode`: 商品编码快照；不以商品名称作为跨系统关联键；`productNameSnapshot`: 商品名称历史展示值；ERP 商品名称变更不改写历史商机；`unitPriceSnapshot`: 行商品价格快照；CRM 不允许直接改价；`lineAmount`: 商品行小计；不接受用户直接输入；`priceVersion`: 价格快照版本；下推时随商品必要快照传递；`availabilityStatus`: ERP 当前可用性；已失效历史行保留，新引用阻断
+基础信息字段	商机阶段	单选(枚举)	系统生成	当前阶段	系统自动	不展示	只读	是(120px)	是(Select)	是	INITIAL_CONTACT=初步接触, NEEDS_CONFIRM=需求确认, PROPOSAL=方案报价, NEGOTIATION=商务谈判, CONTRACT=合同签订, WON=赢单, LOST=输单	状态机驱动
+基础信息字段	预计金额	数字	用户填写	预估成交金额(元)	选填	NumberInput	NumberInput	是(140px)	否	是	数字,上限 99999999.99,保留2位小数	推进到报价阶段建议填写
+基础信息字段	预计成交日期	日期	用户填写	预计签单日期	选填	DatePicker	DatePicker	是(140px)	是(DateRange)	是	DatePicker	
+基础信息字段	需求描述	多行文本	用户填写	客户需求简述	推进到需求确认时必填	Textarea	Textarea	否	否	是	Textarea,上限 1000 字符	
+基础信息字段	AI 成交概率	数字	系统计算	AI 预测的成交概率	系统自动	不展示	不展示	是(120px)	是(Range)	是	0-100%,整数	
+基础信息字段	输单原因	单选	用户填写	输单时填写的复盘原因	输单时必填	不展示	不展示	否	否	是	Textarea,上限 500 字符	
+基础信息字段	合同编号	文本	系统生成	关联的合同编号	系统自动	不展示	只读	否	否	是	由在线合同模块回写	CONTRACT 阶段回写；`CONTRACT_LINK_STATUS`: 合同与商机联动子状态；只记录联动进度，不替代或修改商机主状态
+系统字段	创建人	文本	系统生成	商机创建人	系统自动	不展示	只读	否	是(Select)	是	当前登录用户	
+系统字段	创建时间	日期	系统生成	创建时间	系统自动	不展示	只读	是(160px)	是(DateRange)	是	`YYYY-MM-DD HH:mm:ss`	
+系统字段	阶段变更时间	日期	系统生成	最近一次阶段变更时间	系统自动	不展示	只读	是(160px)	否	是	`YYYY-MM-DD HH:mm:ss`	
+系统字段	赢单时间	日期	系统生成	商机推进到 WON 阶段的时间	系统自动	不展示	不展示	否	否	是	`YYYY-MM-DD HH:mm:ss`	
+商品明细对象	`quantity`	文本	用户填写	商品数量	必填	NumberInput	NumberInput	否	否	是	正数,大于 0,支持 2 位小数	数量不是商品主数据；非法值阻断保存
