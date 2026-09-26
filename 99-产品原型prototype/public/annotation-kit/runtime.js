@@ -711,7 +711,8 @@ function setPopupContent(container, annotation) {
     stop(event);
     syncDetails(!details.classList.contains('is-open'));
   });
-  syncDetails(wasOpen);
+  // 点角标(徽章)弹出的内容默认展开: 首次打开即展开全部,不用点"展开详细说明"(2026-09用户定)
+  syncDetails(wasOpen || true);
 }
 
 function setMarkdownContent(container, markdown) {
