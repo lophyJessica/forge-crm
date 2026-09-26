@@ -159,7 +159,7 @@ Annotation detail content must be **structured as grouped item lists**, NOT long
 ### 1. Structure per annotation block
 ```
 需求描述：【模块名】              ← title (module name)
-来源：xxx.md#章节                 ← source line (gray code box)
+> {描述}                          ← description line: auto-extracted from 页面内容 first item
 分组标题 A                        ← behavior group (small heading)
 - 项名1：描述（一句话）          ← item: name + description (one line each)
 - 项名2：描述
@@ -172,9 +172,9 @@ Annotation detail content must be **structured as grouped item lists**, NOT long
 - Split content into **behavior groups** (e.g. 页签通用行为 / 状态说明 / 显示样式 / 交互规则), each with a small heading
 - Under each group, write **item lists** as `- 项名：描述` — one rule point per item, concise one-line description
 - Do NOT write long paragraph prose for rules that can be itemized
-- Keep 来源 line at top (gray code box)
+- **描述行(`> 描述`)必须自动提取，不手写**：用 `scripts/extract_desc.py` 生成——它取该块"### 页面内容"小节的首个要点句(`- xxx`)，无要点则取首个 #### 标题，再无则取块内首个要点。描述永远来自正文(正文来自PRD)，可追溯、可持续；块内容改，重跑脚本即 follow。不给评审人看文件章节溯源——**不要写 `> 来源：xxx.md#章节` 行**（评审看不懂，2026-09 用户纠正：\"来源于别人看不懂\"）。sourceRefs 保留在 config 里供 compile REQ 覆盖校验和内部溯源，但不展示。
 - Long content: items can be further grouped; the panel supports expand/collapse per item group
-- Reference format: title → source → group headings → `- 项名：描述` item lists (see panel UI reference)
+- Reference format: title → description → group headings → `- 项名：描述` item lists (see panel UI reference)
 
 ## Annotation Detail Tab Standard (Mandatory)
 
@@ -197,7 +197,7 @@ Each annotation block's **detail content** must be organized into **tab pages** 
 - **字段说明优先从「字段清单详细稿 TSV」生成完整多列 Excel 表**（13 列：字段所属分组/字段名称/字段类型/字段来源/字段说明/必填性/新增页/编辑页/列表展示/可筛选/详情展示/取值说明/备注），逐列忠于 TSV、无值列保留 `-`、每表下方标来源（如 `来源：线索字段清单（详细稿）.tsv`）；无 TSV 的模块退化 4 列表格并标注"待补字段清单 TSV"
 - Tab filter (`type` classification) remains: page/interaction/rule/field/pending — the detail tabs provide richer in-block organization
 
-Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Keep a readable `来源` line in each Markdown block and retain `sourceRefs` in configuration so current annotations can point back to the current PRD files and sections.
+Maintain one current annotation set for the current prototype. Update Markdown blocks in place; the runtime must display only the latest rules. Do not create or maintain changelogs, version folders, or historical annotation copies unless the user explicitly asks for them. Every block has an auto-extracted `> 描述` line (from 页面内容 first item) and retains `sourceRefs` in configuration so annotations can point back to the PRD internally (for compile REQ coverage and traceability), but the `来源` line is NOT displayed to reviewers (评审看不懂). Auto-extract descriptions with `scripts/extract_desc.py` — never hand-write them.
 
 The page annotation runtime is strictly read-only. Never add annotation editing, drafts, save APIs, or browser-to-Markdown write-back. Annotation content is changed only by editing Markdown files directly or by asking Codex to update them.
 
