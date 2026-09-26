@@ -27,7 +27,7 @@ const VPA_STATE = {
   markdownFiles: new Map(),
   panelOpen: false,
   panelType: 'all',
-  expandedCards: new Set(),
+  expandedCards: new Set(),  // 收起的卡片集合(默认全展开,用户手动"收起"才加入)
   detailTabByCard: new Map(),
   pendingIssues: loadPendingIssues(),
   pendingFilter: 'all',
@@ -1163,7 +1163,7 @@ function renderPanelCards(panel) {
   }
   list.innerHTML = filtered.map((annotation, index) => {
     const key = annotationKey(annotation);
-    const expanded = VPA_STATE.expandedCards.has(key);
+    const expanded = !VPA_STATE.expandedCards.has(key);  // 默认展开; 仅在用户手动"收起"时加入集合
     return `<article class="vpa-card${expanded ? ' is-expanded' : ''}" data-annotation-key="${escapeHtml(key)}">
       <button type="button" class="vpa-card-main" data-vpa-locate aria-label="定位到${escapeHtml(annotation.moduleName || annotation.id)}">
         <span class="vpa-card-number">${escapeHtml(annotation.id || index + 1)}</span>
@@ -1180,7 +1180,7 @@ function renderPanelCards(panel) {
 
   filtered.forEach((annotation) => {
     const card = list.querySelector(`[data-annotation-key="${CSS.escape(annotationKey(annotation))}"]`);
-    if (!card || !VPA_STATE.expandedCards.has(annotationKey(annotation))) return;
+    if (!card || VPA_STATE.expandedCards.has(annotationKey(annotation))) return;
     setTabbedMarkdownContent(card.querySelector('.vpa-card-details'), getAnnotationMarkdown(annotation));
   });
 }
