@@ -1,0 +1,22 @@
+{
+    "workbench.colorTheme": "Default Light Modern",
+    "workbench.auxiliaryActivityBar.location": "default",
+    "claudeCode.preferredLocation": "panel",
+    "claudeCode.useTerminal": true,
+    "claudeCode.environmentVariables": [
+        {
+            "name": "ANTHROPIC_BASE_URL",
+            "value": "https://api.deepseek.com/anthropic"
+        },
+        {
+            "name": "ANTHROPIC_API_KEY",
+            "value": "sk-5405a3111f184751bec4b5d3c7fa29f8"
+        }
+    ],
+    "git.autofetch": true,
+    "git.autoStash": true,
+    "python.languageServer": "Default",
+    "explorer.confirmDelete": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "editor.accessibilitySupport": "off"
+}

@@ -1,0 +1,24 @@
+# Antigravity IDE 插件清单
+# Markdown & 文档支持
+bierner.markdown-mermaid
+zaaack.markdown-editor
+mechatroner.rainbow-csv
+muhammad-ahmad.xlsx-viewer
+tomoki1207.pdf
+
+# AI 辅助工具
+anthropic.claude-code
+openai.chatgpt
+
+# 编程语言 & 语法支持
+golang.go
+llvm-vs-code-extensions.vscode-clangd
+meta.pyrefly
+ms-python.debugpy
+ms-python.python
+ms-python.vscode-python-envs
+shopify.ruby-lsp
+vue.volar
+
+# 本地化
+ms-ceintl.vscode-language-pack-zh-hans
