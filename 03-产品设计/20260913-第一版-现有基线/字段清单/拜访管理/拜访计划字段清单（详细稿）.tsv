@@ -34,7 +34,6 @@
 反馈字段	下一步负责人（nextActionOwner）	文本	用户填写	下一步行动负责人用户标识	条件必填	UserSelect	UserSelect	否		是	有 nextAction 时必填；默认当前负责人	通过用户 ID 关联负责人
 反馈字段	跟进记录ID（followUpRecordId）	文本	系统自动	自动生成的跟进记录稳定 ID	条件自动	不展示	只读	否		是	FollowUpRecord 稳定 ID；无下一步为 NULL	-
 反馈字段	未生成跟进原因（followUpCreateSkippedReason）	文本	系统自动	未生成跟进记录的原因	条件自动	不展示	只读	否		是	NO_NEXT_ACTION 或失败原因	-
-反馈字段	反馈审核状态（feedbackReviewStatus）	单选	系统/主管动作	拜访反馈审核状态	系统自动	不展示	只读	否		是	DRAFT=草稿；NOT_REQUIRED=无需审核；PENDING=待审核；RETURNED=反馈退回；ACCEPTED=已接受	反馈字段中的状态展示；与计划字段同一业务字段
 反馈字段	退回原因（returnReason）	多行文本	主管填写	反馈被退回的原因	条件必填	不展示	不展示	否		是	反馈退回必填	-
 反馈字段	反馈版本（feedbackVersion）	数字	系统自动	拜访反馈版本号	系统自动	不展示	只读	否		审计	每次保存/补充递增；原版本只读	-
 反馈字段	补充反馈原因（feedbackSupplementReason）	多行文本	主管填写	完成后补充反馈的原因	条件必填	不展示	不展示	否		是	完成后补充必填	-
