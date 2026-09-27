@@ -1,9 +1,9 @@
 字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
 公海视图列表列	线索编号（leadNo）	文本	继承线索	线索唯一标识	不适用	不展示	只读	是	是(Input)	是	LEAD{YYYYMMDD}-{4位序号}	继承线索字段；页面展示线索编号
-公海视图列表列	公司名称（companyName）	文本	继承线索	线索所属公司		不展示	只读	是	是(Input)	是	文本,上限100字符	继承线索字段
-公海视图列表列	线索来源（leadSource）	单选	继承线索	线索获取渠道		不展示	只读	是	是(Select)	是	ONLINE=官网, ACTIVITY=线下活动, EXHIBITION=展会, REFERRAL=转介绍, IMPORT=批量导入, OTHER=其他	继承线索枚举
-公海视图列表列	所属行业（industry）	单选	继承线索	所在行业		不展示	只读	是	是(Select)	是	MANUFACTURING=制造业, RETAIL=零售, HEALTHCARE=医疗, FINANCE=金融, IT=信息技术, OTHER=其他	类型继承线索详细稿
-公海视图列表列	AI评分（aiScore）	数字	继承线索	AI评分模型输出		不展示	只读	是	是(Range)	是	0-100整数	类型继承线索详细稿；数值字段
+公海视图列表列	公司名称（companyName）	文本	继承线索	线索所属公司	必填	不展示	只读	是	是(Input)	是	文本,上限100字符	继承线索字段；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认
+公海视图列表列	线索来源（leadSource）	单选	继承线索	线索获取渠道	必填	不展示	只读	是	是(Select)	是	ONLINE=官网, ACTIVITY=线下活动, EXHIBITION=展会, REFERRAL=转介绍, IMPORT=批量导入, OTHER=其他	继承线索枚举；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认
+公海视图列表列	所属行业（industry）	单选	继承线索	所在行业	选填	不展示	只读	是	是(Select)	是	MANUFACTURING=制造业, RETAIL=零售, HEALTHCARE=医疗, FINANCE=金融, IT=信息技术, OTHER=其他	类型继承线索详细稿；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认
+公海视图列表列	AI评分（aiScore）	数字	继承线索	AI评分模型输出	不适用	不展示	只读	是	是(Range)	是	0-100整数	类型继承线索详细稿；数值字段；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认
 公海视图列表列	入池时间（poolEnteredTime）	日期时间	系统计算	进入当前公海池的时间	不适用	不展示	只读	是	是(DateRange)	是	PENDING_ASSIGN=创建时间, ABANDONED=放弃时间	-
-公海视图列表列	放弃原因（abandonReason）	多行文本	继承线索	放弃时填写的理由		不展示	只读	是	否	是	Textarea，至少15字；仅 ABANDONED 入池的展示	继承线索字段；类型继承线索详细稿
-公海视图列表列	操作（actions）	文本	—	认领按钮		不展示	只读	是			认领	非数据字段；列表动作列
+公海视图列表列	放弃原因（abandonReason）	多行文本	继承线索	放弃时填写的理由	条件必填	不展示	只读	是	否	是	Textarea，至少15字；仅 ABANDONED 入池的展示	继承线索字段；类型继承线索详细稿；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认
+公海视图列表列	操作（actions）	文本	—	认领按钮	不适用	不适用	不适用	是	否	否	认领	非数据字段；列表动作列；页面/规则对账：公海管理/annotations/pages/lead-pool.md#lead-pool-table-fields；待确认；页面/规则对账：公海_Demo_列表页.md#1-页面概述（公海无新增表单）；待确认；页面/规则对账：公海_Demo_列表页.md#1-页面概述（公海无编辑）；待确认；页面/规则对账：公海_Demo_列表页.md#9-详情查看（操作为列表动作）；待确认；页面/规则对账：公海_Demo_列表页.md#3.2-控件详细规格；待确认

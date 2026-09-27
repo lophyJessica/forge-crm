@@ -101,6 +101,42 @@
 - 公司名称只能用于展示和搜索，禁止作为商机、合同、拜访、跟进、订单或同步事件的关联键。
 - 客户生命周期状态使用 `PROSPECT/ACTIVE/DISABLED/MERGED`；快照同步处理状态使用 `PENDING_RECEIVE/VALIDATING/AVAILABLE/SYNC_FAILED`，两套状态禁止混用。一期潜在客户由线索对象承载，客户对象只接收 ERP 已建档客户。
 
+#### 3.1.1 字段定义总览（TSV投影）
+
+本节仅投影《客户字段清单》详细稿 TSV，保证主 PRD 可独立阅读。字段名称、类型、必填性、来源和说明以 TSV 为唯一权威；本节不新增字段，不替代页面交互规则。
+
+| # | 字段名称 | 字段类型 | 必填性 | 字段来源 | 字段说明 |
+|---:|---|---|---|---|---|
+| 1 | CRM客户标识（crmCustomerId） | 文本 | 不适用 | CRM 生成 | CRM 客户快照记录的稳定唯一标识 |
+| 2 | ERP客户标识（erpCustomerId） | 文本 | 不适用 | ERP 同步 | ERP 正式客户档案标识，跨系统关联主键；CRM 不生成、不修改 |
+| 3 | 客户生命周期状态（customerLifecycleStatus） | 单选 | 不适用 | ERP 同步 | ERP 客户生命周期状态；ERP 为状态 SSOT，CRM 只读 |
+| 4 | 客户编号（customerNo） | 文本 | 不适用 | ERP 同步 | 页面展示字段，值等同 ERP 客户标识；ERP 客户编码 |
+| 5 | 公司名称（companyName） | 文本 | 不适用 | ERP 同步 | 客户公司名 |
+| 6 | 联系人（contactName） | 文本 | 不适用 | ERP 同步 | 联系人姓名 |
+| 7 | 手机号（mobile） | 文本 | 不适用 | ERP 同步 | 联系电话 |
+| 8 | 所属行业（industry） | 单选 | 不适用 | ERP 同步 | 客户所属行业（ERP 快照） |
+| 9 | 所在地区（region） | 级联选择 | 不适用 | ERP 同步 | 客户所在地区（ERP 快照） |
+| 10 | 客户等级（customerLevel） | 单选 | 不适用 | ERP 同步 | 客户等级 |
+| 11 | 信用额度（creditLimit） | 数字 | 不适用 | ERP 同步 | 客户信用额度 |
+| 12 | 客户创建时间（customerCreatedTime） | 日期时间 | 不适用 | ERP 同步 | ERP 正式客户档案创建时间，仅用于审计和辅助展示 |
+| 13 | 快照版本（snapshotVersion） | 文本 | 不适用 | CRM 记录 | CRM 当前持久化快照版本 |
+| 14 | 快照更新时间（snapshotUpdatedAt） | 日期时间 | 不适用 | CRM 记录 | CRM 最近一次成功写入快照的时间 |
+| 15 | ERP来源版本（sourceVersion） | 文本 | 不适用 | ERP 事件 | 最近处理的 ERP 来源版本，用于乱序消息保护 |
+| 16 | 最近成功同步时间（lastSuccessfulSyncAt） | 日期时间 | 不适用 | CRM 记录 | 最近一次成功接收并写入 ERP 快照的时间 |
+| 17 | 最近同步尝试时间（lastAttemptAt） | 日期时间 | 不适用 | CRM 记录 | 最近一次同步尝试时间 |
+| 18 | 同步状态（syncStatus） | 单选 | 不适用 | CRM 计算 | CRM 客户快照同步处理状态 |
+| 19 | 同步错误码（syncErrorCode） | 文本 | 不适用 | CRM 记录 | 最近一次失败的机器可读错误码 |
+| 20 | 同步错误信息（syncErrorMessage） | 多行文本 | 不适用 | CRM 记录 | 最近一次失败的用户可理解错误摘要 |
+| 21 | 来源事件ID（sourceEventId） | 文本 | 不适用 | ERP 事件 | 最近处理的 ERP 事件唯一标识 |
+| 22 | 重试次数（retryCount） | 数字 | 不适用 | CRM 记录 | 当前同步任务已重试次数 |
+| 23 | ERP客户状态（erpCustomerStatus） | 单选 | 不适用 | ERP 同步 | ERP 返回的客户状态；CRM 只读 |
+| 24 | 关联商机数（opportunityCount） | 数字 | 不适用 | 系统计算 | 该客户下商机数量 |
+| 25 | 最近商机阶段（latestOpportunityStage） | 单选 | 不适用 | 系统计算 | 最近一个商机的阶段 |
+| 26 | 最近跟进时间（latestFollowUpTime） | 日期时间 | 不适用 | 系统计算 | CRM侧最近跟进 |
+| 27 | AI流失风险（aiChurnRisk） | 单选 | 不适用 | 系统计算 | 客户 AI 流失风险 |
+| 28 | 关联订单数（orderCount） | 数字 | 不适用 | 系统计算 | 从ERP同步的订单数 |
+| 29 | 累计成交金额（totalWonAmount） | 数字 | 不适用 | ERP 订单聚合 | ERP 已确认成交订单金额合计；订单 SSOT 在 ERP，不使用 CRM WON 商机金额作为成交事实 |
+
 #### 3.2 系统链路图
 
 ```mermaid

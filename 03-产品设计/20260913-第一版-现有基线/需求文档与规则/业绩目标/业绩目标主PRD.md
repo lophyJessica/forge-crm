@@ -100,6 +100,88 @@
 | 统计维度 | 一期仅销售ID + 目标月份；团队/区域不生成目标对象 |
 | 默认排序 | 销售ID升序；本模块例外于通用创建时间倒序规范 |
 
+#### 3.1.1 字段定义总览（TSV投影）
+
+本节仅投影《业绩目标字段清单》详细稿 TSV，保证主 PRD 可独立阅读。字段名称、类型、必填性、来源和说明以 TSV 为唯一权威；本节不新增字段，不替代页面交互规则。
+
+| # | 字段名称 | 字段类型 | 必填性 | 字段来源 | 字段说明 |
+|---:|---|---|---|---|---|
+| 1 | 目标编号（targetNo） | 文本 | 系统自动 | 系统生成 TGT{YYYYMM}-{销售ID} | 目标记录唯一编号 |
+| 2 | 销售（salespersonId） | 文本 | 必填 | 用户填写，保存销售ID | 目标所属销售 |
+| 3 | 目标月份（targetMonth） | 日期 | 必填 | 用户填写 YYYY-MM | 目标统计月份 |
+| 4 | 线索目标数（leadTargetCount） | 数字 | 必填 | 用户填写 | 当月线索转化目标数量 |
+| 5 | 商机目标数（opportunityTargetCount） | 数字 | 必填 | 用户填写 | 当月商机目标数量 |
+| 6 | 赢单目标金额（wonAmountTarget） | 数字 | 必填 | 用户填写 | 当月赢单目标金额 |
+| 7 | 目标创建时间（createdTime） | 日期时间 | 系统自动 | 系统生成 | 目标创建时间 |
+| 8 | 创建人（createdBy） | 文本 | 系统自动 | 系统生成 | 目标创建人 |
+| 9 | 目标状态（targetStatus） | 单选 | 系统自动 | 系统生成 ACTIVE/ACHIEVED/UNACHIEVED | 目标主状态 |
+| 10 | 销售ID（salesId） | 文本 | 必填 | 销售主数据映射 | 销售主数据稳定标识 |
+| 11 | 销售姓名快照（salesNameSnapshot） | 文本 | 系统自动 | 创建/调整时销售主数据 | 创建或调整时的销售姓名快照 |
+| 12 | 团队快照（teamSnapshot） | 文本 | 系统自动 | 创建/结算时销售主数据 | 创建或结算时的团队快照 |
+| 13 | 区域快照（regionSnapshot） | 文本 | 系统自动 | 创建/结算时销售主数据 | 创建或结算时的区域快照 |
+| 14 | 当前销售姓名（currentSalesName） | 文本 | 系统自动 | 销售主数据实时读取 | 销售主数据当前姓名 |
+| 15 | 当前线索转化数（currentLeadConversionCount） | 数字 | 系统自动 | CRM 线索转客户事件聚合 | 当前线索转化数量 |
+| 16 | 当前商机数（currentOpportunityCount） | 数字 | 系统自动 | CRM 商机创建事件聚合 | 当前商机数量 |
+| 17 | 当前 CRM WON 金额（currentCrmWonAmount） | 数字 | 系统自动 | CRM 商机 WON 事件聚合 | 当前 CRM WON 金额 |
+| 18 | 当前 ERP 确认订单金额（currentErpConfirmedOrderAmount） | 数字 | 系统自动 | ERP 已确认订单事件聚合 | 当前 ERP 已确认订单金额 |
+| 19 | 金额差异（amountDifference） | 数字 | 系统自动 | 当前 CRM WON 金额 - 当前 ERP 确认订单金额 | CRM WON 金额与 ERP 确认订单金额差额 |
+| 20 | 实时聚合时间（realtimeAggregationTime） | 日期时间 | 系统自动 | 聚合任务完成时间 | 最近一次实时聚合完成时间 |
+| 21 | 实时值版本（realtimeValueVersion） | 文本 | 系统自动 | 聚合任务版本 | 实时聚合结果版本 |
+| 22 | 来源事件ID（sourceEventId） | 文本 | 必填 | 来源系统事件 | 被归集事件的唯一标识 |
+| 23 | 来源事件类型（sourceEventType） | 单选 | 必填 | CRM/ERP 事件 | 被归集事件的来源类型 |
+| 24 | 事件时间（eventTime） | 日期时间 | 必填 | 来源系统 | 来源系统事件发生时间 |
+| 25 | 事件销售ID（eventSalesId） | 文本 | 必填 | 事件发生时责任销售 | 事件发生时的责任销售标识 |
+| 26 | 事件金额（eventAmount） | 数字 | 条件必填 | CRM WON/ERP 订单事件 | 来源事件金额 |
+| 27 | 事件币种（eventCurrency） | 文本 | 必填 | 来源系统 | 来源事件币种 |
+| 28 | 事件是否计入（eventIncluded） | 单选 | 系统自动 | 归集规则计算 | 事件是否计入目标归集 |
+| 29 | 去重状态（deduplicationStatus） | 单选 | 系统自动 | NEW/COUNTED/DUPLICATE/REJECTED | 事件去重处理状态 |
+| 30 | 去重键（deduplicationKey） | 文本 | 系统自动 | 来源事件ID或订单事实键 | 事件或订单事实的去重键 |
+| 31 | 到达时间（arrivedTime） | 日期时间 | 系统自动 | 接入任务时间 | 事件到达接入任务的时间 |
+| 32 | 结算版本（settlementVersion） | 文本 | 结算成功时必填 | 结算任务生成 | 结算任务生成的版本 |
+| 33 | 结算截止时间（settlementCutoffTime） | 日期时间 | 结算任务生成 | 目标月末 Asia/Shanghai | 结算使用的截止时间 |
+| 34 | 结算时间（settledTime） | 日期时间 | 结算成功时必填 | 结算成功时间 | 结算成功时间 |
+| 35 | 锁定时间（lockedTime） | 日期时间 | 结算启动时生成 | 结算锁生效时间 | 结算锁生效时间 |
+| 36 | 锁状态（lockStatus） | 单选 | 系统自动 | UNLOCKED/LOCKED | 结算锁状态 |
+| 37 | 结算快照目标值（settlementTargetValueSnapshot） | 文本 | 结算成功时必填 | 结算时目标值 | 结算成功时的目标值快照 |
+| 38 | 结算快照线索转化数（settlementLeadConversionCountSnapshot） | 数字 | 结算成功时必填 | 结算截止前聚合值 | 结算截止前线索转化数快照 |
+| 39 | 结算快照商机数（settlementOpportunityCountSnapshot） | 数字 | 结算成功时必填 | 结算截止前聚合值 | 结算截止前商机数快照 |
+| 40 | 结算快照 CRM WON 金额（settlementCrmWonAmountSnapshot） | 数字 | 结算成功时必填 | 截止前 CRM 聚合值 | 结算截止前 CRM WON 金额快照 |
+| 41 | 结算快照 ERP 确认订单金额（settlementErpConfirmedOrderAmountSnapshot） | 数字 | 结算成功时必填 | 截止前 ERP 聚合值 | 结算截止前 ERP 确认订单金额快照 |
+| 42 | 结算快照金额差异（settlementAmountDifferenceSnapshot） | 数字 | 结算成功时必填 | 两个快照金额之差 | 结算快照 CRM WON 金额与 ERP 确认订单金额差额 |
+| 43 | 结算处理状态（settlementProcessingStatus） | 单选 | 系统自动 | 系统生成 NOT_STARTED/PROCESSING/SUCCESS/FAILED/RETRYING | 结算任务处理状态 |
+| 44 | 失败原因（failureReason） | 多行文本 | FAILED 时必填 | 结算任务错误 | 结算任务失败原因 |
+| 45 | 结算任务编号（settlementTaskNo） | 文本 | 结算启动时必填 | 结算调度生成 | 结算调度任务编号 |
+| 46 | 截止时间（deadline） | 日期时间 | 必填 | 结算任务生成 | 结算任务截止时间 |
+| 47 | 最近结算时间（lastSettlementTime） | 日期时间 | 系统自动 | 最近一次尝试时间 | 最近一次结算尝试时间 |
+| 48 | 重试次数（retryCount） | 数字 | 系统自动 | 结算任务累计 | 结算任务累计重试次数 |
+| 49 | 补偿状态（compensationStatus） | 单选 | 系统自动 | NOT_REQUIRED/PENDING/RUNNING/COMPLETED | 结算任务补偿状态 |
+| 50 | 结算幂等键（settlementIdempotencyKey） | 文本 | 系统生成 | 目标编号 + 目标月份 | 结算任务业务幂等键 |
+| 51 | 结算错误码（settlementErrorCode） | 文本 | FAILED 时条件必填 | 技术任务返回 | 结算任务技术错误码 |
+| 52 | 调整原因（adjustmentReason） | 单选 | 调整时必填 | 操作者填写 | 目标调整原因 |
+| 53 | 调整人（adjustedBy） | 文本 | 调整时必填 | 当前登录用户 | 执行目标调整的用户 |
+| 54 | 调整时间（adjustedTime） | 日期时间 | 调整时必填 | 系统生成 | 目标调整时间 |
+| 55 | 调整前目标值（targetValueBeforeAdjustment） | 文本 | 调整时必填 | 系统留痕 | 调整前目标值快照 |
+| 56 | 调整后目标值（targetValueAfterAdjustment） | 文本 | 调整时必填 | 保存结果 | 调整后目标值快照 |
+| 57 | 调整版本（adjustmentVersion） | 数字 | 调整时必填 | 保存时递增 | 目标调整版本 |
+| 58 | 版本号（version） | 数字 | 必填 | 乐观锁/结算并发 | 并发控制数据版本 |
+| 59 | 差异审计编号（discrepancyAuditNo） | 文本 | 有差异时必填 | 差异检测生成 | 差异审计记录编号 |
+| 60 | 差异审计时间（discrepancyAuditTime） | 日期时间 | 有差异时必填 | 差异检测时间 | 差异检测时间 |
+| 61 | 差异来源（discrepancySource） | 单选 | 有差异时必填 | 晚到/取消/修正/转组等 | 差异产生来源 |
+| 62 | CRM商机ID（crmOpportunityId） | 文本 | CRM WON 事件时必填 | CRM 商机 | CRM 商机稳定标识 |
+| 63 | CRM WON事件ID（crmWonEventId） | 文本 | CRM WON 事件时必填 | CRM 商机事件 | CRM WON 事件标识 |
+| 64 | CRM WON时间（crmWonTime） | 日期时间 | CRM WON 事件时必填 | CRM 商机事件 | CRM 商机赢单事件时间 |
+| 65 | CRM WON金额（crmWonAmount） | 数字 | CRM WON 事件时必填 | CRM 商机事件 | CRM 商机赢单金额 |
+| 66 | ERP订单ID（erpOrderId） | 文本 | ERP 订单事件时必填 | ERP 销售订单 | ERP 销售订单稳定标识 |
+| 67 | ERP订单确认事件ID（erpOrderConfirmationEventId） | 文本 | ERP 订单事件时必填 | ERP 订单事件 | ERP 订单确认事件标识 |
+| 68 | ERP订单确认时间（erpOrderConfirmationTime） | 日期时间 | ERP 订单事件时必填 | ERP 订单事件 | ERP 订单确认事件时间 |
+| 69 | ERP订单状态（erpOrderStatus） | 单选 | ERP 订单事件时必填 | ERP 订单 | ERP 订单状态 |
+| 70 | ERP确认订单金额（erpConfirmedOrderAmount） | 数字 | ERP 订单事件时必填 | ERP 订单 | ERP 确认订单金额 |
+| 71 | ERP拆单/合单关联ID（erpSplitMergeRelationId） | 文本 | 有拆合单时必填 | ERP 订单 | ERP 拆单或合单关联标识 |
+| 72 | ERP取消/退款金额（erpCancellationRefundAmount） | 数字 | 有修正时必填 | ERP 订单修正 | ERP 取消或退款金额 |
+| 73 | ERP修正版本（erpCorrectionVersion） | 文本 | 有修正时必填 | ERP 订单版本 | ERP 订单修正版本 |
+| 74 | 币种（currency） | 文本 | 必填 | CRM/ERP 来源 | CRM/ERP 金额币种 |
+| 75 | 含税标识（taxIncludedFlag） | 文本 | 必填 | CRM/ERP 来源 | CRM/ERP 金额含税标识 |
+
 #### 3.2 系统链路图
 
 ```mermaid
