@@ -1,0 +1,14 @@
+[
+    // 1. 从源码切换到当前标签页预览
+    {
+        "key": "ctrl+q",
+        "command": "markdown.showPreview",
+        "when": "editorTextFocus && editorLangId == 'markdown'"
+    },
+    // 2. 从预览模式切回源码（官方命令 markdown.showSource 与官方活动 Webview ID）
+    {
+        "key": "ctrl+q",
+        "command": "markdown.showSource",
+        "when": "activeWebviewPanelId == 'markdown.preview' || activeCustomEditorId == 'vscode.markdown.preview.editor'"
+    }
+]
