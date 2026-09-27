@@ -1,34 +1,34 @@
 字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
 基础信息字段	商机编号（opportunityNo）	文本	系统生成	商机唯一标识	系统自动	不展示	只读	是(168px)	是(Input)	是	OPP{YYYYMMDD}-{4位序号}	系统自动生成业务唯一标识
-基础信息字段	商机名称（opportunityName）	文本	用户填写	商机标题	必填	Input	Input	是(200px)	是(Input)	是	文本,上限100字符	-
-基础信息字段	关联客户（customerId）	文本	用户选择，数据来源为 CRM 客户快照（正式档案 SSOT 为 ERP）	用于展示、权限校验和商机归属；不以客户名称作为跨系统关联键	必填	SelectWithSearch	SelectWithSearch	是(160px)	是(SelectWithSearch)	是	SelectWithSearch,从可见的 CRM 客户快照选择	通过 ID 关联客户；关联快照必须保留 CRM/ERP 标识和版本
-基础信息字段	CRM客户标识（crmCustomerId）	文本	系统带出	CRM 客户快照标识	系统自动	不展示	只读	否	否	是	CRM 内部关联标识	CRM 内部关联与权限校验使用；不作为跨系统主键
-基础信息字段	ERP客户标识（erpCustomerId）	文本	系统带出	ERP 客户档案标识	系统自动	不展示	只读	否	否	是	ERP 客户档案标识	下推 ERP 订单时使用；正式客户档案 SSOT 为 ERP
-基础信息字段	客户快照版本（customerSnapshotVersion）	文本	系统带出	商机保存时引用的 CRM 客户快照版本	系统自动	不展示	只读	否	否	是	CRM 客户快照版本号	下推前校验版本仍有效
-基础信息字段	客户快照同步时间（customerSnapshotSyncTime）	日期时间	系统生成	客户快照最近一次从 ERP 同步的时间	系统自动	不展示	只读	否	否	是	YYYY-MM-DD HH:mm:ss	快照过期时阻断下推
+基础信息字段	商机名称（opportunityName）	文本	用户填写	商机标题	必填	Input	Input	是(220px)	是(Input)	是	文本,上限100字符	列表宽度按 Demo 规格修正；来源：需求文档与规则/商机管理/前端Demo_PRD合集/商机_Demo_列表页.md#6.2；原型实际列未标注宽度；待确认
+基础信息字段	关联客户（customerId）	文本	用户选择，数据来源为 CRM 客户快照（正式档案 SSOT 为 ERP）	用于展示、权限校验和商机归属；不以客户名称作为跨系统关联键	必填	SelectWithSearch	SelectWithSearch	是(180px)	否	是	SelectWithSearch,从可见的 CRM 客户快照选择	通过 ID 关联客户；列表宽度按 Demo 规格修正；实际原型筛选区仅提供关键词、阶段和创建人，来源：需求文档与规则/商机管理/前端Demo_PRD合集/商机_Demo_列表页.md#3.2、annotations/pages/opportunities-list.md#筛选字段，待确认；关联快照必须保留 CRM/ERP 标识和版本
+基础信息字段	CRM客户标识（crmCustomerId）	文本	系统带出	CRM 客户快照标识	系统自动	不展示	只读	否	否	否	CRM 内部关联标识	CRM 内部关联与权限校验使用；实际原型详情未展示技术标识；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#商机基本信息卡片，待确认；不作为跨系统主键
+基础信息字段	ERP客户标识（erpCustomerId）	文本	系统带出	ERP 客户档案标识	系统自动	不展示	只读	否	否	否	ERP 客户档案标识	下推 ERP 订单时使用；实际原型详情未展示 ERP 客户标识；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认；正式客户档案 SSOT 为 ERP
+基础信息字段	客户快照版本（customerSnapshotVersion）	文本	系统带出	商机保存时引用的 CRM 客户快照版本	系统自动	不展示	只读	否	否	否	CRM 客户快照版本号	下推前校验版本仍有效；实际原型详情未展示；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+基础信息字段	客户快照同步时间（customerSnapshotSyncTime）	日期时间	系统生成	客户快照最近一次从 ERP 同步的时间	系统自动	不展示	只读	否	否	否	YYYY-MM-DD HH:mm:ss	快照过期时阻断下推；实际原型详情未展示客户快照技术字段；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#商机基本信息卡片，待确认
 基础信息字段	关联商品（productLines）	对象集合	用户选择，数据来源为 ERP 商品查询（价格/主数据 SSOT 为 ERP）	关联的 ERP 商品及数量、价格快照	条件必填	商品明细工具区	商品明细工具区	否	否	是	商品明细对象集合,至少 1 行时才能推进到需求确认后的阶段	商品明细字段独立列出；商品主数据不可在 CRM 新建或修改
 基础信息字段	商机阶段（opportunityStage）	单选	系统生成	当前阶段	系统自动	不展示	只读	是(120px)	是(Select)	是	INITIAL_CONTACT=初步接触, NEEDS_CONFIRM=需求确认, PROPOSAL=方案报价, NEGOTIATION=商务谈判, CONTRACT=合同签订, WON=赢单, LOST=输单	状态机驱动；状态变更必须通过动作按钮触发
 基础信息字段	预计金额（expectedAmount）	数字	用户填写	预估成交金额(元)	选填	NumberInput	NumberInput	是(140px)	否	是	数字,上限 99999999.99,保留2位小数	推进到报价阶段建议填写
-基础信息字段	预计成交日期（expectedCloseDate）	日期	用户填写	预计签单日期	选填	DatePicker	DatePicker	是(140px)	是(DateRange)	是	DatePicker	-
+基础信息字段	预计成交日期（expectedCloseDate）	日期	用户填写	预计签单日期	选填	DatePicker	DatePicker	是(144px)	否	是	DatePicker	列表宽度按 Demo 规格修正；实际原型筛选区未提供日期范围控件；来源：需求文档与规则/商机管理/前端Demo_PRD合集/商机_Demo_列表页.md#3.2、annotations/pages/opportunities-list.md#筛选字段，待确认
 基础信息字段	需求描述（requirementDescription）	多行文本	用户填写	客户需求简述	推进到需求确认时必填	Textarea	Textarea	否	否	是	Textarea,上限 1000 字符	-
-基础信息字段	AI成交概率（aiWinProbability）	数字	系统计算	AI 预测的成交概率	系统自动	不展示	不展示	是(120px)	是(Range)	是	0-100%,整数	-
+基础信息字段	AI成交概率（aiWinProbability）	数字	系统计算	AI 预测的成交概率	系统自动	不展示	不展示	是(128px)	否	是	0-100%,整数	列表宽度按 Demo 规格修正；实际原型筛选区未提供概率范围控件；来源：需求文档与规则/商机管理/前端Demo_PRD合集/商机_Demo_列表页.md#3.2、annotations/pages/opportunities-list.md#筛选字段，待确认
 基础信息字段	输单原因（lostReason）	多行文本	用户填写	输单时填写的复盘原因	输单时必填	不展示	不展示	否	否	是	Textarea,上限 500 字符	输单动作时填写
 基础信息字段	合同编号（contractNo）	文本	系统生成	关联的合同编号	系统自动	不展示	只读	否	否	是	由在线合同模块回写	CONTRACT 阶段回写
-基础信息字段	合同联动状态（CONTRACT_LINK_STATUS）	单选	合同模块事件/系统记录	合同与商机联动子状态	系统自动	不展示	只读	否	否	是	DRAFT/PENDING_SIGN/SIGNED_PENDING_SYNC/SYNC_FAILED/VOIDED/MANUAL_RETRY	只记录联动进度，不替代或修改商机主状态
+基础信息字段	合同联动状态（CONTRACT_LINK_STATUS）	单选	合同模块事件/系统记录	合同与商机联动子状态	系统自动	不展示	只读	否	否	否	DRAFT/PENDING_SIGN/SIGNED_PENDING_SYNC/SYNC_FAILED/VOIDED/MANUAL_RETRY	只记录联动进度，不替代或修改商机主状态；Demo定义详情只读区块，但实际原型未展示合同联动子状态；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
 系统字段	创建人（createdBy）	文本	系统生成	商机创建人	系统自动	不展示	只读	否	是(Select)	是	当前登录用户	-
-系统字段	创建时间（createdTime）	日期时间	系统生成	创建时间	系统自动	不展示	只读	是(160px)	是(DateRange)	是	YYYY-MM-DD HH:mm:ss	-
-系统字段	阶段变更时间（stageChangedTime）	日期时间	系统生成	最近一次阶段变更时间	系统自动	不展示	只读	是(160px)	否	是	YYYY-MM-DD HH:mm:ss	-
-系统字段	赢单时间（wonTime）	日期时间	系统生成	商机推进到 WON 阶段的时间	系统自动	不展示	不展示	否	否	是	YYYY-MM-DD HH:mm:ss	-
-商品明细对象	ERP商品标识（erpProductId）	文本	ERP 商品查询	ERP 商品标识	系统带出	只读	只读	否	否	是	ERP 商品标识	下推 ERP 订单时使用
+系统字段	创建时间（createdTime）	日期时间	系统生成	创建时间	系统自动	不展示	只读	是(176px)	否	是	YYYY-MM-DD HH:mm:ss	列表宽度按 Demo 规格修正；实际原型筛选区未提供创建时间范围控件；来源：需求文档与规则/商机管理/前端Demo_PRD合集/商机_Demo_列表页.md#3.2、annotations/pages/opportunities-list.md#筛选字段，待确认
+系统字段	阶段变更时间（stageChangedTime）	日期时间	系统生成	最近一次阶段变更时间	系统自动	不展示	只读	否	否	否	YYYY-MM-DD HH:mm:ss	Demo定义列表/详情展示，但实际原型列表与详情未展示；来源：需求文档与规则/商机管理/annotations/pages/opportunities-list.md#待确认、opportunity-detail.md#待确认，待确认
+系统字段	赢单时间（wonTime）	日期时间	系统生成	商机推进到 WON 阶段的时间	系统自动	不展示	不展示	否	否	否	YYYY-MM-DD HH:mm:ss	Demo定义详情展示，但实际原型未展示；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+商品明细对象	ERP商品标识（erpProductId）	文本	ERP 商品查询	ERP 商品标识	系统带出	只读	只读	否	否	否	ERP 商品标识	下推 ERP 订单时使用；实际原型商品表未展示 ERP 标识；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
 商品明细对象	商品编码（productCode）	文本	ERP 商品查询	商品编码快照	系统带出	只读	只读	否	否	是	ERP 商品编码	不以商品名称作为跨系统关联键
 商品明细对象	商品名称快照（productNameSnapshot）	文本	ERP 商品查询	商品名称历史展示值	系统带出	只读	只读	否	否	是	商品名称文本快照	ERP 商品名称变更不改写历史商机
 商品明细对象	数量（quantity）	数字	用户填写	商品数量	必填	NumberInput	NumberInput	否	否	是	正数,大于 0,支持 2 位小数	数量不是商品主数据；非法值阻断保存
 商品明细对象	商品单价快照（unitPriceSnapshot）	数字	ERP 商品查询	行商品价格快照	系统带出	只读	只读	否	否	是	ERP 返回的只读单价,保留2位小数	CRM 不允许直接改价
 商品明细对象	商品行小计（lineAmount）	数字	系统计算	商品行小计	系统自动	只读	只读	否	否	是	lineAmount = quantity × unitPriceSnapshot,按金额规则保留2位小数	不接受用户直接输入
-商品明细对象	价格版本（priceVersion）	文本	ERP 商品查询	价格快照版本	系统带出	只读	只读	否	否	是	ERP 价格版本标识	下推时随商品必要快照传递
-商品明细对象	商品可用状态（availabilityStatus）	单选	ERP 商品查询	ERP 当前可用性	系统带出	只读	只读	否	否	是	AVAILABLE/UNAVAILABLE	已失效历史行保留，新引用阻断
-ERP订单同步结果字段集	ERP订单同步状态（ERP_ORDER_SYNC_STATUS）	单选	系统生成	ERP 销售订单草稿同步结果	系统自动	不展示	只读	否	否	是	NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING	WON 后触发；重试不改变商机主状态，沿用同一幂等键
-ERP订单同步结果字段集	ERP订单草稿编号（ERP_ORDER_ID）	文本	ERP 返回	ERP 返回的订单草稿标识	条件生成	不展示	只读	否	否	是	ERP 销售订单草稿编号；未返回时为空	仅作 CRM 关联展示，正式订单 SSOT 为 ERP
-ERP订单同步结果字段集	ERP订单同步失败原因（ERP_ORDER_SYNC_ERROR）	多行文本	ERP 返回/系统记录	最近一次同步失败原因	失败时生成	不展示	只读	否	否	是	errorCode、errorMessage及失败节点	成功后清空当前失败提示但保留审计日志
-ERP订单同步结果字段集	ERP订单同步时间（ERP_ORDER_SYNC_TIME）	日期时间	系统生成	最近一次同步请求或结果时间	同步尝试后生成	不展示	只读	否	否	是	YYYY-MM-DD HH:mm:ss	处理中也记录请求时间
-ERP订单同步结果字段集	ERP订单幂等键（ERP_ORDER_IDEMPOTENCY_KEY）	文本	系统生成	ERP 下推重试使用的业务幂等键	系统自动	不展示	只读	否	否	是	商机级稳定幂等键	同一商机重试必须复用，不允许重复建单
+商品明细对象	价格版本（priceVersion）	文本	ERP 商品查询	价格快照版本	系统带出	只读	只读	否	否	否	ERP 价格版本标识	下推时随商品必要快照传递；实际原型商品表未展示价格版本；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+商品明细对象	商品可用状态（availabilityStatus）	单选	ERP 商品查询	ERP 当前可用性	系统带出	只读	只读	否	否	否	AVAILABLE/UNAVAILABLE	已失效历史行保留，新引用阻断；实际原型商品表未展示可用状态；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+ERP订单同步结果字段集	ERP订单同步状态（ERP_ORDER_SYNC_STATUS）	单选	系统生成	ERP 销售订单草稿同步结果	系统自动	不展示	只读	否	否	否	NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING	WON 后触发；重试不改变商机主状态，沿用同一幂等键；Demo定义赢单详情展示，实际原型未展示同步结果区块；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+ERP订单同步结果字段集	ERP订单草稿编号（ERP_ORDER_ID）	文本	ERP 返回	ERP 返回的订单草稿标识	条件生成	不展示	只读	否	否	否	ERP 销售订单草稿编号；未返回时为空	仅作 CRM 关联展示，正式订单 SSOT 为 ERP；Demo定义赢单详情展示，实际原型未展示同步结果区块；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+ERP订单同步结果字段集	ERP订单同步失败原因（ERP_ORDER_SYNC_ERROR）	多行文本	ERP 返回/系统记录	最近一次同步失败原因	失败时生成	不展示	只读	否	否	否	errorCode、errorMessage及失败节点	成功后清空当前失败提示但保留审计日志；Demo定义失败详情展示，实际原型未展示同步结果区块；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+ERP订单同步结果字段集	ERP订单同步时间（ERP_ORDER_SYNC_TIME）	日期时间	系统生成	最近一次同步请求或结果时间	同步尝试后生成	不展示	只读	否	否	否	YYYY-MM-DD HH:mm:ss	处理中也记录请求时间；Demo定义赢单详情展示，实际原型未展示同步结果区块；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
+ERP订单同步结果字段集	ERP订单幂等键（ERP_ORDER_IDEMPOTENCY_KEY）	文本	系统生成	ERP 下推重试使用的业务幂等键	系统自动	不展示	只读	否	否	否	商机级稳定幂等键	同一商机重试必须复用，不允许重复建单；实际原型未展示技术幂等键；来源：需求文档与规则/商机管理/annotations/pages/opportunity-detail.md#待确认，待确认
