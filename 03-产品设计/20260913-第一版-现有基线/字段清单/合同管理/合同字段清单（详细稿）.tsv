@@ -1,50 +1,50 @@
 字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
-基础字段	合同编号	文本	系统生成		系统自动			是(168px)	是(Input)	是	`CT{YYYYMMDD}-{4位序号}`	
-基础字段	合同名称	文本	用户填写		必填			是(200px)	是(Input)	是	文本,上限100字符	
-基础字段	关联客户	文本	系统带出		必填			是(160px)	是(Select)	是	从商机继承	
-基础字段	关联商机	文本	系统带出		必填			是(160px)	否	是	商机编号	
-基础字段	合同金额	数字	用户填写		必填			是(140px)	否	是	金额数值，2位小数；必须同时记录币种、含税标识和税率	
-基础字段	合同状态	单选(枚举)	系统生成		系统自动			是(100px)	是(Select)	是	DRAFT/PENDING_SIGN/SIGNED/ARCHIVED/VOIDED	
-基础字段	签署日期	日期	系统生成		系统自动			是(140px)	是(DateRange)	是	外部 `signedAt` 转展示日期；不是 CRM 接收时间	
-金额与来源字段	合同金额币种	文本	用户填写/外部签署结果		必填			是(Tag)	是(Select)	是	一期固定 `CNY`（人民币）；非 `CNY` 在创建/提交签署时阻断并提示“一期仅支持人民币结算”，不做汇率换算	
-金额与来源字段	合同含税标识	单选(枚举)	用户填写/外部签署结果		必填			是(Tag)	是(Select)	是	`TAX_INCLUDED`=含税, `TAX_EXCLUDED`=不含税	
-金额与来源字段	合同税率	数字	用户填写/ERP结果		条件必填			否	否	是	百分比数值；以签署输入和 ERP 返回分别留痕	
-金额与来源字段	商机预计金额	数字	CRM 商机		系统带出			否	否	是	商机预测值，仅用于预测复盘，不等同合同金额	
-金额与来源字段	ERP 订单金额	数字	ERP 返回		系统返回			是(140px)	否	是	ERP 按价格、税率计算的正式金额，只读展示	
-金额与来源字段	金额差异原因	单选	用户填写/系统记录		条件必填			否	否	是	金额不一致时记录差异原因	
-外部签署结果字段	外部合同标识	文本	外部签署平台		提交签署后			是(180px)	是(Input)	是	`externalContractId`；Mock 阶段使用 Mock 标识	
-外部签署结果字段	签署事件标识	文本	外部签署平台		事件接收后			否	是(Input)	是	`eventId`，同一事件只处理一次	
-外部签署结果字段	签署事件类型	单选	外部签署平台		事件接收后			否	是(Select)	是	`eventType` 按《合同主PRD》事件契约执行	
-外部签署结果字段	签署状态	单选(枚举)	外部签署平台		事件接收后			是(Tag)	是(Select)	是	`SIGNED/FAILED/REJECTED/EXPIRED`	
-外部签署结果字段	签署确认金额	数字	外部签署平台		合法签署完成后			否	否	是	`signedAmount`；合法完成事件的签署金额快照	
-外部签署结果字段	签署日期时间	日期	外部签署平台		合法签署完成后			是(160px)	是(DateRange)	是	`signedAt`，外部确认签署时间	
-外部签署结果字段	事件接收时间	日期	CRM 系统		事件接收后			否	是(DateRange)	是	`receivedAt`，CRM 收到事件时间	
-外部签署结果字段	事件契约版本	文本	外部签署平台		事件接收后			否	否	是	`eventVersion`	
-外部签署结果字段	签署人来源	单选(枚举)	系统记录		事件接收后			否	是(Select)	是	`EXTERNAL_PARTY`=客户方外部签署人, `CRM_MOCK_OPERATOR`=CRM Mock 操作人	
-外部签署结果字段	签署主体标识	文本	外部签署平台		事件接收后			否	否	是	客户方主体标识；Mock 不得填为内部操作人	
-外部签署结果字段	事件来源	单选	系统记录		事件接收后			否	是(Select)	是	`EXTERNAL_PLATFORM` 或 `CRM_MOCK`	
-外部签署结果字段	外部请求标识	文本	外部签署平台/CRM		提交签署后			否	是(Input)	是	`externalRequestId`；重新发起签署时生成新标识	
-外部签署结果字段	Mock 操作人	文本	CRM 用户		Mock 事件时必填			否	否	是	主管/管理员执行 Mock 事件的用户标识	
-外部签署结果字段	Mock 操作时间	日期	CRM 系统		Mock 事件时必填			否	是(DateRange)	是	`mockedAt`；不覆盖外部 `signedAt`	
-作废、归档与商机联动字段	作废原因	单选	用户填写		作废时必填			否	否	是	动作原因；按本清单校验	
-作废、归档与商机联动字段	作废时间	日期	CRM 系统		作废后自动			否	是(DateRange)	是	`YYYY-MM-DD HH:mm:ss`	
-作废、归档与商机联动字段	作废人	文本	CRM 用户		作废后自动			否	是(Select)	是	执行作废动作的用户	
-作废、归档与商机联动字段	归档时间	日期	CRM 系统		归档后自动			否	是(DateRange)	是	`YYYY-MM-DD HH:mm:ss`	
-作废、归档与商机联动字段	归档人	文本	CRM 用户		归档后自动			否	是(Select)	是	执行归档动作的主管/管理员	
-作废、归档与商机联动字段	归档原因	单选	用户填写		归档时必填			否	否	是	归档说明	
-作废、归档与商机联动字段	归档结果	单选(枚举)	CRM 系统		归档后自动			否	是(Select)	是	`SUCCESS/FAILED`	
-作废、归档与商机联动字段	作废联动状态	单选(枚举)	CRM 系统		作废后自动			是(Tag)	是(Select)	是	`SUCCESS/FAILED/COMPENSATING`	
-作废、归档与商机联动字段	`OPPORTUNITY_SYNC_STATUS`（商机联动状态）	单选(枚举)	CRM 系统		签署后自动			是(Tag)	是(Select)	是	`PENDING/SUCCESS/FAILED/COMPENSATING`	
-作废、归档与商机联动字段	商机联动失败原因	单选	CRM 系统		失败时生成			否	否	是	用户可读失败原因摘要	
-作废、归档与商机联动字段	商机回退目标阶段	单选	CRM 规则		作废联动时生成			否	否	是	固定 `NEGOTIATION`	
-ERP 订单同步与审计字段	`ERP_ORDER_SYNC_STATUS`（ERP订单同步状态）	单选(枚举)	CRM/ERP		签署后自动			是(Tag)	是(Select)	是	`NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING`；`QUERYING` 仅为 `PROCESSING` 的“查单中”子标签	
-ERP 订单同步与审计字段	`PERFORMANCE_SYNC_STATUS`（业绩同步状态）	单选(枚举)	CRM 系统		ERP 订单结果可用后			是(Tag)	是(Select)	是	`NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING`	
-ERP 订单同步与审计字段	ERP 同步状态编号	文本	CRM 系统		节点执行后			否	是(Input)	是	节点结果编号/错误编号	
-ERP 订单同步与审计字段	ERP 订单编号	文本	ERP 返回		成功后返回			是(180px)	是(Input)	是	ERP 正式订单标识；只读	
-ERP 订单同步与审计字段	ERP 请求时间	日期	CRM 系统		发起下推后			否	是(DateRange)	是	`YYYY-MM-DD HH:mm:ss`	
-ERP 订单同步与审计字段	ERP 完成时间	日期	ERP 返回		ERP 返回后			否	是(DateRange)	是	`YYYY-MM-DD HH:mm:ss`	
-ERP 订单同步与审计字段	ERP 失败原因	单选	ERP/CRM		失败时生成			否	否	是	用户可读失败原因摘要	
-ERP 订单同步与审计字段	幂等键摘要	文本	CRM 系统		节点发起时			否	否	是	仅保存脱敏摘要，不保存完整密钥	
-ERP 订单同步与审计字段	补偿状态	单选(枚举)	CRM 系统		失败节点自动生成			是(Tag)	是(Select)	是	`NONE/PENDING/RETRYING/SUCCESS/EXHAUSTED`	
-ERP 订单同步与审计字段	重试次数	文本	CRM 系统		失败或重试时			否	否	是	非负整数	
-ERP 订单同步与审计字段	审计日志编号	文本	CRM 系统		每次动作			否	是(Input)	是	审计记录唯一标识	
+基础字段	合同编号（contractNo）	文本	系统生成	合同唯一标识	系统自动			是(168px)	是(Input)	是	CT{YYYYMMDD}-{4位序号}	系统自动生成业务唯一标识
+基础字段	合同名称（contractName）	文本	用户填写	合同业务名称	必填			是(200px)	是(Input)	是	文本,上限100字符	-
+基础字段	关联客户（customerId）	文本	系统带出	从商机继承的客户标识	必填			是(160px)	是(Select)	是	从商机继承	通过 ID 关联客户；不以客户名称作为关联键
+基础字段	关联商机（opportunityNo）	文本	系统带出	来源商机编号	必填			是(160px)	否	是	商机编号	-
+基础字段	合同金额（contractAmount）	数字	用户填写	合同业务金额	必填			是(140px)	否	是	金额数值，2位小数；必须同时记录币种、含税标识和税率	-
+基础字段	合同状态（contractStatus）	单选	系统生成	合同主状态	系统自动			是(100px)	是(Select)	是	DRAFT=草稿/PENDING_SIGN=待签署/SIGNED=已签署/ARCHIVED=已归档/VOIDED=已作废	状态由动作按钮驱动
+基础字段	签署日期（signedDate）	日期	系统生成	外部平台确认的签署日期	系统自动			是(140px)	是(DateRange)	是	外部 signedAt 转展示日期；不是 CRM 接收时间	-
+金额与来源字段	合同金额币种（currency）	单选	用户填写/外部签署结果	合同金额使用的币种	必填			是(Tag)	是(Select)	是	一期固定 CNY（人民币）；非 CNY 在创建/提交签署时阻断并提示“一期仅支持人民币结算”，不做汇率换算	-
+金额与来源字段	合同含税标识（taxIncludedFlag）	单选	用户填写/外部签署结果	合同金额是否含税	必填			是(Tag)	是(Select)	是	TAX_INCLUDED=含税,TAX_EXCLUDED=不含税	-
+金额与来源字段	合同税率（taxRate）	数字	用户填写/ERP结果	合同税率，分别留存签署输入和 ERP 返回	条件必填			否	否	是	百分比数值；以签署输入和 ERP 返回分别留痕	-
+金额与来源字段	商机预计金额（opportunityExpectedAmount）	数字	CRM 商机	商机预测金额	系统带出			否	否	是	商机预测值，仅用于预测复盘，不等同合同金额	-
+金额与来源字段	ERP订单金额（erpOrderAmount）	数字	ERP 返回	ERP 按价格、税率计算的正式金额	系统返回			是(140px)	否	是	ERP 按价格、税率计算的正式金额，只读展示	ERP 金额为正式订单事实
+金额与来源字段	金额差异原因（amountDifferenceReason）	单选	用户填写/系统记录	合同金额与 ERP 金额不一致时的原因	条件必填			否	否	是	金额不一致时记录差异原因	源 Markdown 未列完整原因枚举，英文名待确认
+外部签署结果字段	外部合同标识（externalContractId）	文本	外部签署平台	外部签署平台的合同标识	提交签署后			是(180px)	是(Input)	是	externalContractId；Mock 阶段使用 Mock 标识	-
+外部签署结果字段	签署事件标识（eventId）	文本	外部签署平台	外部签署事件唯一标识	事件接收后			否	是(Input)	是	eventId，同一事件只处理一次	幂等去重使用
+外部签署结果字段	签署事件类型（eventType）	单选	外部签署平台	外部签署事件类型	事件接收后			否	是(Select)	是	eventType 按《合同主PRD》事件契约执行	枚举待合同主PRD确认
+外部签署结果字段	签署状态（signingStatus）	单选	外部签署平台	外部签署处理状态	事件接收后			是(Tag)	是(Select)	是	SIGNED/FAILED/REJECTED/EXPIRED	-
+外部签署结果字段	签署确认金额（signedAmount）	数字	外部签署平台	合法签署完成后的签署金额快照	合法签署完成后			否	否	是	signedAmount；合法完成事件的签署金额快照	-
+外部签署结果字段	签署日期时间（signedAt）	日期时间	外部签署平台	外部确认签署时间	合法签署完成后			是(160px)	是(DateRange)	是	signedAt，外部确认签署时间	不被 receivedAt 或 mockedAt 覆盖
+外部签署结果字段	事件接收时间（receivedAt）	日期时间	CRM 系统	CRM 收到外部事件的时间	事件接收后			否	是(DateRange)	是	receivedAt，CRM 收到事件时间	不等于外部 signedAt
+外部签署结果字段	事件契约版本（eventVersion）	文本	外部签署平台	外部事件契约版本	事件接收后			否	否	是	eventVersion	-
+外部签署结果字段	签署人来源（signerSource）	单选	系统记录	签署人来源类型	事件接收后			否	是(Select)	是	EXTERNAL_PARTY=客户方外部签署人, CRM_MOCK_OPERATOR=CRM Mock 操作人	Mock 操作人不等于真实签署人
+外部签署结果字段	签署主体标识（signerSubjectId）	文本	外部签署平台	客户方签署主体标识	事件接收后			否	否	是	客户方主体标识；Mock 不得填为内部操作人	-
+外部签署结果字段	事件来源（eventSource）	单选	系统记录	签署事件来源	事件接收后			否	是(Select)	是	EXTERNAL_PLATFORM 或 CRM_MOCK	-
+外部签署结果字段	外部请求标识（externalRequestId）	文本	外部签署平台/CRM	提交签署请求的外部标识	提交签署后			否	是(Input)	是	externalRequestId；重新发起签署时生成新标识	-
+外部签署结果字段	Mock操作人（mockOperator）	文本	CRM 用户	执行 Mock 事件的 CRM 用户标识	Mock 事件时必填			否	否	是	主管/管理员执行 Mock 事件的用户标识	-
+外部签署结果字段	Mock操作时间（mockedAt）	日期时间	CRM 系统	执行 Mock 事件的时间	Mock 事件时必填			否	是(DateRange)	是	mockedAt；不覆盖外部 signedAt	-
+作废、归档与商机联动字段	作废原因（voidReason）	单选	用户填写	合同作废动作原因	作废时必填			否	否	是	动作原因；按本清单校验	源 Markdown 未列完整原因枚举，英文名待确认
+作废、归档与商机联动字段	作废时间（voidedTime）	日期时间	CRM 系统	合同作废时间	作废后自动			否	是(DateRange)	是	YYYY-MM-DD HH:mm:ss	-
+作废、归档与商机联动字段	作废人（voidedBy）	文本	CRM 用户	执行作废动作的用户	作废后自动			否	是(Select)	是	执行作废动作的用户	-
+作废、归档与商机联动字段	归档时间（archivedTime）	日期时间	CRM 系统	合同归档时间	归档后自动			否	是(DateRange)	是	YYYY-MM-DD HH:mm:ss	-
+作废、归档与商机联动字段	归档人（archivedBy）	文本	CRM 用户	执行归档动作的主管或管理员	归档后自动			否	是(Select)	是	执行归档动作的主管/管理员	-
+作废、归档与商机联动字段	归档原因（archiveReason）	单选	用户填写	合同归档说明	归档时必填			否	否	是	归档说明	源 Markdown 未列完整原因枚举，单选/自由说明待确认
+作废、归档与商机联动字段	归档结果（archiveResult）	单选	CRM 系统	合同归档处理结果	归档后自动			否	是(Select)	是	SUCCESS/FAILED	-
+作废、归档与商机联动字段	作废联动状态（voidSyncStatus）	单选	CRM 系统	作废后的跨对象联动状态	作废后自动			是(Tag)	是(Select)	是	SUCCESS/FAILED/COMPENSATING	英文名待确认：voidSyncStatus/voidLinkStatus
+作废、归档与商机联动字段	商机联动状态（OPPORTUNITY_SYNC_STATUS）	单选	CRM 系统	合同与商机联动状态	签署后自动			是(Tag)	是(Select)	是	PENDING/SUCCESS/FAILED/COMPENSATING	-
+作废、归档与商机联动字段	商机联动失败原因（opportunitySyncFailureReason）	多行文本	CRM 系统	商机联动失败原因摘要	失败时生成			否	否	是	用户可读失败原因摘要	-
+作废、归档与商机联动字段	商机回退目标阶段（opportunityRollbackStage）	单选	CRM 规则	商机作废联动时的回退目标阶段	作废联动时生成			否	否	是	固定 NEGOTIATION	-
+ERP 订单同步与审计字段	ERP订单同步状态（ERP_ORDER_SYNC_STATUS）	单选	CRM/ERP	ERP 订单同步状态	签署后自动			是(Tag)	是(Select)	是	NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING；QUERYING 仅为 PROCESSING 的“查单中”子标签	-
+ERP 订单同步与审计字段	业绩同步状态（PERFORMANCE_SYNC_STATUS）	单选	CRM 系统	业绩同步处理状态	ERP 订单结果可用后			是(Tag)	是(Select)	是	NOT_TRIGGERED/PROCESSING/SUCCESS/FAILED/RETRYING	-
+ERP 订单同步与审计字段	ERP同步状态编号（erpSyncStatusNo）	文本	CRM 系统	ERP 同步节点结果编号或错误编号	节点执行后			否	是(Input)	是	节点结果编号/错误编号	英文名待确认
+ERP 订单同步与审计字段	ERP订单编号（erpOrderNo）	文本	ERP 返回	ERP 正式订单标识	成功后返回			是(180px)	是(Input)	是	ERP 正式订单标识；只读	正式订单 SSOT 为 ERP
+ERP 订单同步与审计字段	ERP请求时间（erpRequestTime）	日期时间	CRM 系统	发起 ERP 下推请求的时间	发起下推后			否	是(DateRange)	是	YYYY-MM-DD HH:mm:ss	-
+ERP 订单同步与审计字段	ERP完成时间（erpCompletedTime）	日期时间	ERP 返回	ERP 返回完成时间	ERP 返回后			否	是(DateRange)	是	YYYY-MM-DD HH:mm:ss	-
+ERP 订单同步与审计字段	ERP失败原因（erpFailureReason）	多行文本	ERP/CRM	ERP 同步失败原因摘要	失败时生成			否	否	是	用户可读失败原因摘要	-
+ERP 订单同步与审计字段	幂等键摘要（idempotencyKeySummary）	文本	CRM 系统	脱敏后的幂等键摘要	节点发起时			否	否	是	仅保存脱敏摘要，不保存完整密钥	-
+ERP 订单同步与审计字段	补偿状态（compensationStatus）	单选	CRM 系统	失败节点的补偿处理状态	失败节点自动生成			是(Tag)	是(Select)	是	NONE/PENDING/RETRYING/SUCCESS/EXHAUSTED	-
+ERP 订单同步与审计字段	重试次数（retryCount）	数字	CRM 系统	ERP 同步失败或重试次数	失败或重试时			否	否	是	非负整数	-
+ERP 订单同步与审计字段	审计日志编号（auditLogNo）	文本	CRM 系统	审计记录唯一标识	每次动作			否	是(Input)	是	审计记录唯一标识	-

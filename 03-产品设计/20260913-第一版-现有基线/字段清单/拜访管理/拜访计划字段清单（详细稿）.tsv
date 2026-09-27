@@ -1,12 +1,66 @@
 字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
-基础字段	拜访编号	文本	系统生成		系统自动			是			`VS{YYYYMMDD}-{4位序号}`	
-基础字段	关联对象类型	单选	用户选择/继承		必填			是			枚举值: `LEAD` / `OPPORTUNITY` / `CUSTOMER`	
-基础字段	关联对象ID	文本	系统带出/继承		必填			是			对应关联实体的唯一编码	
-基础字段	拜访标题	文本	用户填写		必填			是			文本,上限100字符	
-基础字段	拜访方式	单选	用户填写		必填			是			上门/电话/视频	
-基础字段	计划拜访时间	日期	用户填写		必填			是			`YYYY-MM-DD HH:mm`	
-基础字段	拜访地址	文本	用户填写		选填			否			文本,选填	
-基础字段	拜访状态	单选(枚举)	系统生成		系统自动			是			PLANNED/CHECKED_IN/COMPLETED/CANCELLED	
-基础字段	签到时间	日期	系统生成		系统自动			是			`YYYY-MM-DD HH:mm`	
-基础字段	签到地址	文本	系统生成		系统自动(签到后必填)			否(详情展示是)			签到时系统定位自动获取(如: Forge科技园B座1楼)	
-基础字段	拜访内容	多行文本	用户填写		条件必填			否			Textarea, CHECKED_IN→COMPLETED 时必填	
+计划字段	拜访编号（visitId）	文本	系统自动	拜访计划唯一标识	系统自动	不展示	只读	是			VS{YYYYMMDD}-{4位序号}	-
+计划字段	拜访标题（title）	文本	用户填写	拜访计划标题	必填	Input	Input	是			文本，≤100 字符	-
+计划字段	拜访方式（visitMethod）	单选	用户填写	拜访执行方式	必填	Radio/Select	Radio/Select	是			ONSITE=上门 / PHONE=电话 / VIDEO=视频	-
+计划字段	计划开始时间（plannedStartAt）	日期时间	用户填写	计划拜访开始时间	必填	DateTimePicker	DateTimePicker	是			带时区时间；不得早于当前时间（历史补录除外）	-
+计划字段	计划结束时间（plannedEndAt）	日期时间	用户填写	计划拜访结束时间	必填	DateTimePicker	DateTimePicker	是			plannedEndAt > plannedStartAt；默认时长60分钟	-
+计划字段	拜访地址（address）	文本	用户填写	拜访地址	条件必填	Input/Textarea	Input/Textarea	否			ONSITE 建议填写；≤255字符	-
+计划字段	负责人（assigneeId）	文本	用户填写	拜访负责人用户标识	必填	UserSelect	UserSelect	是			用户 ID；默认当前销售；主管可分配团队成员	通过用户 ID 关联负责人
+计划字段	拜访状态（primaryStatus）	单选	动作接口	拜访主状态	系统自动	不展示	只读	是			PLANNED=已计划 / CHECKED_IN=已签到 / COMPLETED=已完成 / CANCELLED=已取消	状态由动作按钮写入，表单不可直接编辑
+计划字段	执行结果（executionResult）	单选	动作接口	拜访执行结果	系统自动	不展示	只读	是			NOT_STARTED=未开始 / MISSED=未到访 / RESCHEDULED=已改期	状态由动作按钮写入
+计划字段	反馈审核状态（feedbackReviewStatus）	单选	系统/主管动作	拜访反馈审核状态	系统自动	不展示	只读	是			DRAFT=草稿 / NOT_REQUIRED=无需审核 / PENDING=待审核 / RETURNED=反馈退回 / ACCEPTED=已接受	计划字段中的状态展示
+计划字段	是否超时（overdueFlag）	单选	系统计算	拜访是否超过计划结束时间且未签到	系统自动	不展示	只读	是			now > plannedEndAt && checkInAt IS NULL；true/false	不自动变更主状态
+计划字段	来源（source）	单选	系统/动作	拜访计划来源	系统自动	不展示	只读	否			NORMAL=正常 / BACKFILL=历史补录	-
+计划字段	改期来源拜访（rescheduledFromVisitId）	文本	改期动作	新拜访关联的原拜访稳定 ID	条件必填	不展示	只读	否			原拜访稳定 ID；新单填写	-
+计划字段	改期后拜访（rescheduledToVisitId）	文本	改期动作	原拜访关联的新拜访稳定 ID	条件必填	不展示	只读	否			新拜访稳定 ID；原单填写	-
+执行字段	签到时间（checkInAt）	日期时间	签到动作	服务端生成的签到时间	条件自动	不展示	只读	是		是	服务端生成；未签到显示 —；已签到后取消保留	-
+执行字段	完成时间（completedAt）	日期时间	完成动作	服务端生成的完成时间	条件自动	不展示	只读	否		是	服务端生成；COMPLETED 必填；未完成显示 —	-
+执行字段	实际执行人（actualExecutorId）	文本	签到动作	实际到访执行人用户标识	条件自动	不展示	只读	否		是	普通签到为负责人；代签为实际到访人	通过用户 ID 关联执行人
+执行字段	签到方式（checkInMethod）	单选	签到/补录动作	签到方式	条件自动	不展示	只读	否		是	SELF=本人 / PROXY=代签 / BACKFILL=历史补录	-
+执行字段	签到来源（locationSource）	单选	签到动作	签到定位来源	条件自动	不展示	只读	否		是	BROWSER=浏览器 / NONE=无定位 / MOCK=Mock	-
+执行字段	定位可靠性（locationReliability）	单选	签到动作	签到定位可靠性	条件自动	不展示	只读	否		是	REAL=真实 / UNAVAILABLE=不可用 / MOCK=Mock	-
+执行字段	纬度（latitude）	数字	浏览器/Mock	签到纬度坐标	条件自动	不展示	只读	否		是	浏览器定位坐标；不可用/电话/视频为 NULL	-
+执行字段	经度（longitude）	数字	浏览器/Mock	签到经度坐标	条件自动	不展示	只读	否		是	浏览器定位坐标；不可用/电话/视频为 NULL	-
+执行字段	定位精度（accuracyMeters）	数字	浏览器/Mock	签到定位精度，单位米	条件自动	不展示	只读	否		是	米；无可靠定位为 NULL	-
+执行字段	定位授权结果（authorizationResult）	单选	浏览器/系统	浏览器定位授权结果	系统自动	不展示	只读	否		是	GRANTED=已授权 / DENIED=已拒绝 / UNSUPPORTED=不支持 / TIMEOUT=超时 / NOT_REQUESTED=未请求	-
+执行字段	定位失败原因（locationFailureReason）	文本	签到动作	定位失败原因	条件填写	不展示	只读	否		是	拒绝、不支持、超时、精度不足等；无失败为 NULL	-
+执行字段	客户端上报时间（clientReportedAt）	日期时间	浏览器	客户端上报时间，仅用于诊断	选填	不展示	只读	否		否	仅诊断；不参与状态判定	-
+执行字段	客户未出现（customerNoShowFlag）	单选	反馈动作	客户是否未出现	条件	不展示	只读	否		是	true 时 visitResult=CUSTOMER_NO_SHOW	源组件 Switch/Tag；布尔值按单选表达
+反馈字段	拜访结果（visitResult）	单选	用户填写	本次拜访结果	完成必填	Select	Select	否		是	SUCCESS=成功 / CUSTOMER_NO_SHOW=客户未出现 / CANCELLED_BY_CUSTOMER=客户取消 / NO_PROGRESS=无进展 / OTHER=其他	CHECKED_IN 可编辑；完成后仅补充
+反馈字段	客户意向（customerIntent）	单选	用户填写	客户意向等级	建议必填	Select	Select	否		是	HIGH=高 / MEDIUM=中 / LOW=低 / UNKNOWN=未知	CHECKED_IN 可编辑；完成后仅补充
+反馈字段	拜访反馈（feedbackContent）	多行文本	用户填写	拜访事实、客户诉求和异议	完成必填	Textarea	Textarea	否		是	≤2000字符；事实、客户诉求和异议	CHECKED_IN 可编辑；完成后仅补充
+反馈字段	下一步行动（nextAction）	多行文本	用户填写	拜访后的下一步行动	条件必填	Textarea	Textarea	否		是	≤500字符；无下一步需填跳过原因	CHECKED_IN 可编辑；完成后仅补充
+反馈字段	下次跟进时间（nextFollowUpAt）	日期时间	用户填写	下一次跟进时间	条件必填	DateTimePicker	DateTimePicker	否		是	有 nextAction 时必填；不得早于完成时间	CHECKED_IN 可编辑；完成后仅补充
+反馈字段	下一步负责人（nextActionOwner）	文本	用户填写	下一步行动负责人用户标识	条件必填	UserSelect	UserSelect	否		是	有 nextAction 时必填；默认当前负责人	通过用户 ID 关联负责人
+反馈字段	跟进记录ID（followUpRecordId）	文本	系统自动	自动生成的跟进记录稳定 ID	条件自动	不展示	只读	否		是	FollowUpRecord 稳定 ID；无下一步为 NULL	-
+反馈字段	未生成跟进原因（followUpCreateSkippedReason）	文本	系统自动	未生成跟进记录的原因	条件自动	不展示	只读	否		是	NO_NEXT_ACTION 或失败原因	-
+反馈字段	反馈审核状态（feedbackReviewStatus）	单选	系统/主管动作	拜访反馈审核状态	系统自动	不展示	只读	否		是	DRAFT=草稿；NOT_REQUIRED=无需审核；PENDING=待审核；RETURNED=反馈退回；ACCEPTED=已接受	反馈字段中的状态展示；与计划字段同一业务字段
+反馈字段	退回原因（returnReason）	多行文本	主管填写	反馈被退回的原因	条件必填	不展示	不展示	否		是	反馈退回必填	-
+反馈字段	反馈版本（feedbackVersion）	数字	系统自动	拜访反馈版本号	系统自动	不展示	只读	否		审计	每次保存/补充递增；原版本只读	-
+反馈字段	补充反馈原因（feedbackSupplementReason）	多行文本	主管填写	完成后补充反馈的原因	条件必填	不展示	不展示	否		是	完成后补充必填	-
+关联字段	关联对象类型（relatedObjectType）	单选	用户填写	拜访关联对象类型	必填	Radio/Select	Radio/Select	是			LEAD=线索 / OPPORTUNITY=商机 / CUSTOMER=客户	-
+关联字段	关联对象ID（relatedObjectId）	文本	用户选择	拜访关联对象稳定 ID	必填	ObjectSelect	ObjectSelect	否			稳定 ID；禁止名称关联	通过稳定 ID 关联对象
+关联字段	关联对象名称快照（relatedObjectNameSnapshot）	文本	系统自动	关联对象名称历史快照	系统自动	不展示	只读	是			创建/更换时保存；名称变更不覆盖历史	-
+关联字段	关联对象状态快照（relatedObjectStatusSnapshot）	单选	系统自动	关联对象状态历史快照	系统自动	不展示	只读	否		是	创建和每次动作校验时记录	-
+关联字段	继承客户ID（inheritedCustomerId）	文本	系统自动	关联商机继承的客户稳定 ID	条件自动	不展示	只读	否		否	关联商机时从商机客户关系继承；不计第二主对象	通过客户稳定 ID 关联
+关联字段	继承客户名称快照（inheritedCustomerNameSnapshot）	文本	系统自动	继承客户名称快照	条件自动	不展示	只读	否		否	用于客户时间线展示	-
+关联字段	转化后客户ID（convertedToCustomerId）	文本	ERP/CRM同步	线索转客户后的客户稳定 ID	条件自动	不展示	只读	否		否	线索转客户时建立映射；不改原关联	通过客户稳定 ID 关联
+关联字段	关联更换原因（associationChangeReason）	多行文本	用户填写	关联对象更换原因	条件必填	不展示	不展示	否		否	仅主管/管理员更换未执行对象时必填	-
+关联字段	关联变更日志（associationChangeLog）	对象集合	系统自动	关联对象变更历史日志	系统自动	不展示	只读	否		是	前后 Type/ID/NameSnapshot/StatusSnapshot、原因、操作者、时间	JSON/Timeline 结构
+异常与审计字段	取消原因（cancelReason）	多行文本	取消动作	拜访取消原因	取消必填	不展示	不展示	否		是	CUSTOMER_CANCELLED / SALES_CANCELLED / OPPORTUNITY_LOST / DUPLICATE / OTHER + 说明	组合控件：Select + Textarea
+异常与审计字段	改期原因（rescheduleReason）	多行文本	改期动作	拜访改期原因	改期必填	不展示	不展示	否		是	客户改期、销售冲突、资源不足、其他 + 说明	组合控件：Select + Textarea
+异常与审计字段	未到访原因（missedReason）	多行文本	未到访动作	未到访原因	必填	不展示	不展示	否		是	NO_SHOW / COULD_NOT_CHECK_IN / CUSTOMER_UNAVAILABLE / OTHER + 说明	组合控件：Select + Textarea
+异常与审计字段	代签原因（proxyReason）	多行文本	代签动作	主管或管理员代签原因	必填	不展示	不展示	否		审计	主管/管理员代签必填	-
+异常与审计字段	历史补录原因（backfillReason）	多行文本	补录动作	历史拜访补录原因	必填	不展示	不展示	否		审计	说明实际发生时间、来源和证据	-
+异常与审计字段	执行异常（executionException）	对象集合	系统/动作	拜访执行异常枚举集合	系统自动	不展示	只读	是			NONE / CHECK_IN_FAILED / CUSTOMER_NO_SHOW / OVERTIME / FEEDBACK_PENDING / FOLLOW_UP_PENDING	可并存枚举数组
+异常与审计字段	标记未到访时间（missedAt）	日期时间	未到访动作	标记未到访的时间	条件自动	不展示	只读	否		详情/审计	服务端生成；未标记为 MISSED 显示 —	-
+异常与审计字段	改期时间（rescheduledAt）	日期时间	改期动作	拜访改期时间	条件自动	不展示	只读	否		详情/审计	服务端生成；未改期显示 —	-
+异常与审计字段	取消时间（cancelledAt）	日期时间	取消动作	拜访取消时间	条件自动	不展示	只读	否		详情/审计	服务端生成；未取消显示 —	-
+异常与审计字段	幂等标识（idempotencyKey）	文本	系统自动	拜访动作幂等标识	系统自动	不展示	只读	否		否	visit:{visitId}:{action}:{version}；签到/改期/跟进分别唯一	-
+异常与审计字段	操作ID（operationId）	文本	系统自动	动作请求操作标识	系统自动	不展示	只读	否		审计	每次动作请求唯一	-
+异常与审计字段	操作日志ID（auditLogId）	文本	系统自动	关联操作日志标识	系统自动	不展示	只读	否		是	关联操作日志；不可删除	-
+异常与审计字段	数据版本（version）	数字	系统自动	拜访数据乐观锁版本	系统自动	不展示	只读	否		否	乐观锁；冲突时阻断写入	-
+异常与审计字段	创建人（createdBy）	文本	系统自动	拜访记录创建人	系统自动	不展示	只读	否		是	审计字段	-
+异常与审计字段	创建时间（createdAt）	日期时间	系统自动	拜访记录创建时间	系统自动	不展示	只读	否		是	审计字段	-
+异常与审计字段	更新人（updatedBy）	文本	系统自动	拜访记录最后更新人	系统自动	不展示	只读	否		是	审计字段	-
+异常与审计字段	更新时间（updatedAt）	日期时间	系统自动	拜访记录最后更新时间	系统自动	不展示	只读	否		是	审计字段	-

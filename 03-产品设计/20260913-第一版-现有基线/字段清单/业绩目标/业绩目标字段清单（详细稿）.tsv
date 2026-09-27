@@ -1,76 +1,76 @@
 字段所属分组	字段名称	字段类型	字段来源	字段说明	必填性	新增页	编辑页	列表展示	可筛选	详情展示	取值说明	备注
-基础字段	目标编号	文本	系统生成 `TGT{YYYYMM}-{销售ID}`		系统自动			是				
-基础字段	销售	文本	用户填写，保存销售ID		必填			是				
-基础字段	目标月份	日期	用户填写 `YYYY-MM`		必填			是				
-基础字段	线索目标数	数字	用户填写		必填			是				
-基础字段	商机目标数	数字	用户填写		必填			是				
-基础字段	赢单目标金额	数字	用户填写		必填			是				
-基础字段	目标创建时间	日期	系统生成		系统自动			否				
-基础字段	创建人	文本	系统生成		系统自动			否				
-基础字段	目标状态	单选	系统生成 ACTIVE/ACHIEVED/UNACHIEVED		系统自动			是				
-销售归属字段	销售ID	文本	销售主数据映射		必填			是				
-销售归属字段	销售姓名快照	文本	创建/调整时销售主数据		系统自动			是				
-销售归属字段	团队快照	文本	创建/结算时销售主数据		系统自动			否；详情可见				
-销售归属字段	区域快照	文本	创建/结算时销售主数据		系统自动			否；详情可见				
-销售归属字段	当前销售姓名	文本	销售主数据实时读取		系统自动			可选				
-实时进度字段	当前线索转化数	文本	CRM 线索转客户事件聚合		系统自动			是				
-实时进度字段	当前商机数	文本	CRM 商机创建事件聚合		系统自动			是				
-实时进度字段	当前 CRM WON 金额	数字	CRM 商机 WON 事件聚合		系统自动			是				
-实时进度字段	当前 ERP 确认订单金额	数字	ERP 已确认订单事件聚合		系统自动			是				
-实时进度字段	金额差异	文本	`当前 CRM WON 金额 - 当前 ERP 确认订单金额`		系统自动			是				
-实时进度字段	实时聚合时间	日期	聚合任务完成时间		系统自动			是				
-实时进度字段	实时值版本	文本	聚合任务版本		系统自动			否				
-事件归集字段	来源事件ID	文本	来源系统事件		必填			明细可见				
-事件归集字段	来源事件类型	单选	CRM/ERP 事件		必填			明细可见				
-事件归集字段	事件时间	日期	来源系统		必填			明细可见				
-事件归集字段	事件销售ID	文本	事件发生时责任销售		必填			明细可见				
-事件归集字段	事件金额	数字	CRM WON/ERP 订单事件		条件必填			明细可见				
-事件归集字段	事件币种	文本	来源系统		必填			明细可见				
-事件归集字段	事件是否计入	文本	归集规则计算		系统自动			明细可见				
-事件归集字段	去重状态	单选	`NEW/COUNTED/DUPLICATE/REJECTED`		系统自动			明细可见				
-事件归集字段	去重键	文本	来源事件ID或订单事实键		系统自动			否				
-事件归集字段	到达时间	日期	接入任务时间		系统自动			差异审计可见				
-结算快照字段	结算版本	文本	结算任务生成		结算成功时必填			是				
-结算快照字段	结算截止时间	日期	目标月末 `Asia/Shanghai`		结算任务生成			详情可见				
-结算快照字段	结算时间	日期	结算成功时间		结算成功时必填			是				
-结算快照字段	锁定时间	日期	结算锁生效时间		结算启动时生成			详情可见				
-结算快照字段	锁状态	单选	`UNLOCKED/LOCKED`		系统自动			锁图标				
-结算快照字段	结算快照目标值	文本	结算时目标值		结算成功时必填			详情可见				
-结算快照字段	结算快照线索转化数	文本	结算截止前聚合值		结算成功时必填			是				
-结算快照字段	结算快照商机数	文本	结算截止前聚合值		结算成功时必填			是				
-结算快照字段	结算快照 CRM WON 金额	数字	截止前 CRM 聚合值		结算成功时必填			是				
-结算快照字段	结算快照 ERP 确认订单金额	数字	截止前 ERP 聚合值		结算成功时必填			是				
-结算快照字段	结算快照金额差异	文本	两个快照金额之差		结算成功时必填			是				
-结算任务异常字段	结算处理状态	单选	系统生成 `NOT_STARTED/PROCESSING/SUCCESS/FAILED/RETRYING`		系统自动			是				
-结算任务异常字段	失败原因	单选	结算任务错误		FAILED 时必填			Tooltip/详情				
-结算任务异常字段	结算任务编号	文本	结算调度生成		结算启动时必填			详情可见				
-结算任务异常字段	截止时间	日期	结算任务生成		必填			详情可见				
-结算任务异常字段	最近结算时间	日期	最近一次尝试时间		系统自动			是				
-结算任务异常字段	重试次数	文本	结算任务累计		系统自动			详情可见				
-结算任务异常字段	补偿状态	单选	`NOT_REQUIRED/PENDING/RUNNING/COMPLETED`		系统自动			是				
-结算任务异常字段	结算幂等键	文本	`目标编号 + 目标月份`		系统生成			否				
-结算任务异常字段	结算错误码	文本	技术任务返回		FAILED 时条件必填			详情可见				
-审计字段	调整原因	单选	操作者填写		调整时必填			详情可见				
-审计字段	调整人	文本	当前登录用户		调整时必填			详情可见				
-审计字段	调整时间	日期	系统生成		调整时必填			详情可见				
-审计字段	调整前目标值	文本	系统留痕		调整时必填			详情可见				
-审计字段	调整后目标值	文本	保存结果		调整时必填			详情可见				
-审计字段	调整版本	文本	保存时递增		调整时必填			详情可见				
-审计字段	版本号	文本	乐观锁/结算并发		必填			否				
-审计字段	差异审计编号	文本	差异检测生成		有差异时必填			详情可见				
-审计字段	差异审计时间	日期	差异检测时间		有差异时必填			详情可见				
-审计字段	差异来源	单选	晚到/取消/修正/转组等		有差异时必填			详情可见				
-跨系统来源字段	CRM 商机ID	文本	CRM 商机		CRM WON 事件时必填			明细可见				
-跨系统来源字段	CRM WON 事件ID	文本	CRM 商机事件		CRM WON 事件时必填			明细可见				
-跨系统来源字段	CRM WON 时间	日期	CRM 商机事件		CRM WON 事件时必填			明细可见				
-跨系统来源字段	CRM WON 金额	数字	CRM 商机事件		CRM WON 事件时必填			明细可见				
-跨系统来源字段	ERP 订单ID	文本	ERP 销售订单		ERP 订单事件时必填			明细可见				
-跨系统来源字段	ERP 订单确认事件ID	文本	ERP 订单事件		ERP 订单事件时必填			明细可见				
-跨系统来源字段	ERP 订单确认时间	日期	ERP 订单事件		ERP 订单事件时必填			明细可见				
-跨系统来源字段	ERP 订单状态	单选	ERP 订单		ERP 订单事件时必填			明细可见				
-跨系统来源字段	ERP 确认订单金额	数字	ERP 订单		ERP 订单事件时必填			明细可见				
-跨系统来源字段	ERP 拆单/合单关联ID	文本	ERP 订单		有拆合单时必填			明细可见				
-跨系统来源字段	ERP 取消/退款金额	数字	ERP 订单修正		有修正时必填			差异审计可见				
-跨系统来源字段	ERP 修正版本	文本	ERP 订单版本		有修正时必填			差异审计可见				
-跨系统来源字段	币种	文本	CRM/ERP 来源		必填			是				
-跨系统来源字段	含税标识	文本	CRM/ERP 来源		必填			详情可见				
+基础字段	目标编号（targetNo）	文本	系统生成 TGT{YYYYMM}-{销售ID}	目标记录唯一编号	系统自动			是				目标对象粒度为销售ID+目标月份
+基础字段	销售（salespersonId）	文本	用户填写，保存销售ID	目标所属销售	必填			是				英文名待确认：源同时定义销售和销售ID
+基础字段	目标月份（targetMonth）	日期	用户填写 YYYY-MM	目标统计月份	必填			是			YYYY-MM	同一销售同一月份最多一条
+基础字段	线索目标数（leadTargetCount）	数字	用户填写	当月线索转化目标数量	必填			是			非负整数；最大 999,999	0 表示本月不要求该指标
+基础字段	商机目标数（opportunityTargetCount）	数字	用户填写	当月商机目标数量	必填			是			非负整数；最大 999,999	0 表示本月不要求该指标
+基础字段	赢单目标金额（wonAmountTarget）	数字	用户填写	当月赢单目标金额	必填			是			0.00-999,999,999.99 CNY；最多2位小数	0 表示本月不要求金额
+基础字段	目标创建时间（createdTime）	日期时间	系统生成	目标创建时间	系统自动			否			YYYY-MM-DD HH:mm:ss	-
+基础字段	创建人（createdBy）	文本	系统生成	目标创建人	系统自动			否			当前登录用户	-
+基础字段	目标状态（targetStatus）	单选	系统生成 ACTIVE/ACHIEVED/UNACHIEVED	目标主状态	系统自动			是			ACTIVE=进行中, ACHIEVED=已达成, UNACHIEVED=未达成	状态只能由创建成功或月末结算动作产生
+销售归属字段	销售ID（salesId）	文本	销售主数据映射	销售主数据稳定标识	必填			是			销售ID	统计维度为销售ID+目标月份
+销售归属字段	销售姓名快照（salesNameSnapshot）	文本	创建/调整时销售主数据	创建或调整时的销售姓名快照	系统自动			是			销售姓名快照	销售改名不改变销售ID和历史归属
+销售归属字段	团队快照（teamSnapshot）	文本	创建/结算时销售主数据	创建或结算时的团队快照	系统自动			否		详情可见		团队是权限范围，不是统计维度
+销售归属字段	区域快照（regionSnapshot）	文本	创建/结算时销售主数据	创建或结算时的区域快照	系统自动			否		详情可见		团队/区域不生成独立团队目标
+销售归属字段	当前销售姓名（currentSalesName）	文本	销售主数据实时读取	销售主数据当前姓名	系统自动			可选				销售改名不改变销售ID
+实时进度字段	当前线索转化数（currentLeadConversionCount）	数字	CRM 线索转客户事件聚合	当前线索转化数量	系统自动			是			非负整数	实时值只用于 ACTIVE 目标展示
+实时进度字段	当前商机数（currentOpportunityCount）	数字	CRM 商机创建事件聚合	当前商机数量	系统自动			是			非负整数	实时值只用于 ACTIVE 目标展示
+实时进度字段	当前 CRM WON 金额（currentCrmWonAmount）	数字	CRM 商机 WON 事件聚合	当前 CRM WON 金额	系统自动			是			来源金额，保留2位小数	CRM WON 金额用于经营分析
+实时进度字段	当前 ERP 确认订单金额（currentErpConfirmedOrderAmount）	数字	ERP 已确认订单事件聚合	当前 ERP 已确认订单金额	系统自动			是			来源金额，保留2位小数	ERP 确认订单金额是订单 SSOT
+实时进度字段	金额差异（amountDifference）	数字	当前 CRM WON 金额 - 当前 ERP 确认订单金额	CRM WON 金额与 ERP 确认订单金额差额	系统自动			是			当前 CRM WON 金额 - 当前 ERP 确认订单金额	用于经营分析与差异审计
+实时进度字段	实时聚合时间（realtimeAggregationTime）	日期时间	聚合任务完成时间	最近一次实时聚合完成时间	系统自动			是			YYYY-MM-DD HH:mm:ss	-
+实时进度字段	实时值版本（realtimeValueVersion）	文本	聚合任务版本	实时聚合结果版本	系统自动			否				-
+事件归集字段	来源事件ID（sourceEventId）	文本	来源系统事件	被归集事件的唯一标识	必填			否		明细可见		重复投递只保留一次 COUNTED 事实
+事件归集字段	来源事件类型（sourceEventType）	单选	CRM/ERP 事件	被归集事件的来源类型	必填			否		明细可见	CRM/ERP 事件	-
+事件归集字段	事件时间（eventTime）	日期时间	来源系统	来源系统事件发生时间	必填			否		明细可见	来源系统事件时间	按事件时间归属月份
+事件归集字段	事件销售ID（eventSalesId）	文本	事件发生时责任销售	事件发生时的责任销售标识	必填			否		明细可见	销售ID	按事件销售ID归属销售
+事件归集字段	事件金额（eventAmount）	数字	CRM WON/ERP 订单事件	来源事件金额	条件必填			否		明细可见	CRM WON/ERP 订单事件金额	-
+事件归集字段	事件币种（eventCurrency）	文本	来源系统	来源事件币种	必填			否		明细可见	来源系统币种	一期金额口径为 CNY
+事件归集字段	事件是否计入（eventIncluded）	单选	归集规则计算	事件是否计入目标归集	系统自动			否		明细可见	是/否	英文名待确认；六类标准无布尔型，按单选表达
+事件归集字段	去重状态（deduplicationStatus）	单选	NEW/COUNTED/DUPLICATE/REJECTED	事件去重处理状态	系统自动			否		明细可见	NEW/COUNTED/DUPLICATE/REJECTED	-
+事件归集字段	去重键（deduplicationKey）	文本	来源事件ID或订单事实键	事件或订单事实的去重键	系统自动			否		否		-
+事件归集字段	到达时间（arrivedTime）	日期时间	接入任务时间	事件到达接入任务的时间	系统自动			否		差异审计可见	YYYY-MM-DD HH:mm:ss	晚到事件只生成差异审计
+结算快照字段	结算版本（settlementVersion）	文本	结算任务生成	结算任务生成的版本	结算成功时必填			是			结算版本	同一目标结算成功只能有一个结算版本
+结算快照字段	结算截止时间（settlementCutoffTime）	日期时间	目标月末 Asia/Shanghai	结算使用的截止时间	结算任务生成			否		详情可见	目标月末 Asia/Shanghai	重试必须复用原结算截止时间
+结算快照字段	结算时间（settledTime）	日期时间	结算成功时间	结算成功时间	结算成功时必填			是			YYYY-MM-DD HH:mm:ss	-
+结算快照字段	锁定时间（lockedTime）	日期时间	结算锁生效时间	结算锁生效时间	结算启动时生成			否		详情可见	YYYY-MM-DD HH:mm:ss	结算锁后目标值、当前值、状态、归属快照只读
+结算快照字段	锁状态（lockStatus）	单选	UNLOCKED/LOCKED	结算锁状态	系统自动			否			UNLOCKED/LOCKED	页面使用锁图标表达
+结算快照字段	结算快照目标值（settlementTargetValueSnapshot）	文本	结算时目标值	结算成功时的目标值快照	结算成功时必填			否		详情可见		结构待确认：源未说明是否为复合目标值
+结算快照字段	结算快照线索转化数（settlementLeadConversionCountSnapshot）	数字	结算截止前聚合值	结算截止前线索转化数快照	结算成功时必填			是			非负整数	-
+结算快照字段	结算快照商机数（settlementOpportunityCountSnapshot）	数字	结算截止前聚合值	结算截止前商机数快照	结算成功时必填			是			非负整数	-
+结算快照字段	结算快照 CRM WON 金额（settlementCrmWonAmountSnapshot）	数字	截止前 CRM 聚合值	结算截止前 CRM WON 金额快照	结算成功时必填			是			来源金额，保留2位小数	-
+结算快照字段	结算快照 ERP 确认订单金额（settlementErpConfirmedOrderAmountSnapshot）	数字	截止前 ERP 聚合值	结算截止前 ERP 确认订单金额快照	结算成功时必填			是			来源金额，保留2位小数	结算主判定使用 ERP 确认订单金额
+结算快照字段	结算快照金额差异（settlementAmountDifferenceSnapshot）	数字	两个快照金额之差	结算快照 CRM WON 金额与 ERP 确认订单金额差额	结算成功时必填			是			两个快照金额之差	-
+结算任务异常字段	结算处理状态（settlementProcessingStatus）	单选	系统生成 NOT_STARTED/PROCESSING/SUCCESS/FAILED/RETRYING	结算任务处理状态	系统自动			是			NOT_STARTED/PROCESSING/SUCCESS/FAILED/RETRYING	PROCESSING/RETRYING=结算中；FAILED=结算异常；不覆盖目标主状态
+结算任务异常字段	失败原因（failureReason）	多行文本	结算任务错误	结算任务失败原因	FAILED 时必填			否		Tooltip/详情		源未定义失败原因枚举，保留为文本摘要
+结算任务异常字段	结算任务编号（settlementTaskNo）	文本	结算调度生成	结算调度任务编号	结算启动时必填			否		详情可见		-
+结算任务异常字段	截止时间（deadline）	日期时间	结算任务生成	结算任务截止时间	必填			否		详情可见	YYYY-MM-DD HH:mm:ss	-
+结算任务异常字段	最近结算时间（lastSettlementTime）	日期时间	最近一次尝试时间	最近一次结算尝试时间	系统自动			是			YYYY-MM-DD HH:mm:ss	-
+结算任务异常字段	重试次数（retryCount）	数字	结算任务累计	结算任务累计重试次数	系统自动			否		详情可见	非负整数	-
+结算任务异常字段	补偿状态（compensationStatus）	单选	NOT_REQUIRED/PENDING/RUNNING/COMPLETED	结算任务补偿状态	系统自动			是			NOT_REQUIRED/PENDING/RUNNING/COMPLETED	-
+结算任务异常字段	结算幂等键（settlementIdempotencyKey）	文本	目标编号 + 目标月份	结算任务业务幂等键	系统生成			否		否	目标编号 + 目标月份	-
+结算任务异常字段	结算错误码（settlementErrorCode）	文本	技术任务返回	结算任务技术错误码	FAILED 时条件必填			否		详情可见		-
+审计字段	调整原因（adjustmentReason）	单选	操作者填写	目标调整原因	调整时必填			否		详情可见		源未列完整原因枚举，英文名待确认
+审计字段	调整人（adjustedBy）	文本	当前登录用户	执行目标调整的用户	调整时必填			否		详情可见	当前登录用户	-
+审计字段	调整时间（adjustedTime）	日期时间	系统生成	目标调整时间	调整时必填			否		详情可见	YYYY-MM-DD HH:mm:ss	-
+审计字段	调整前目标值（targetValueBeforeAdjustment）	文本	系统留痕	调整前目标值快照	调整时必填			否		详情可见		结构待确认：源未说明是否为复合目标值
+审计字段	调整后目标值（targetValueAfterAdjustment）	文本	保存结果	调整后目标值快照	调整时必填			否		详情可见		结构待确认：源未说明是否为复合目标值
+审计字段	调整版本（adjustmentVersion）	数字	保存时递增	目标调整版本	调整时必填			否		详情可见	非负整数，保存时递增	-
+审计字段	版本号（version）	数字	乐观锁/结算并发	并发控制数据版本	必填			否		否	非负整数	乐观锁/结算并发使用
+审计字段	差异审计编号（discrepancyAuditNo）	文本	差异检测生成	差异审计记录编号	有差异时必填			否		详情可见		-
+审计字段	差异审计时间（discrepancyAuditTime）	日期时间	差异检测时间	差异检测时间	有差异时必填			否		详情可见	YYYY-MM-DD HH:mm:ss	-
+审计字段	差异来源（discrepancySource）	单选	晚到/取消/修正/转组等	差异产生来源	有差异时必填			否		详情可见	晚到/取消/修正/转组等	-
+跨系统来源字段	CRM商机ID（crmOpportunityId）	文本	CRM 商机	CRM 商机稳定标识	CRM WON 事件时必填			否		明细可见		-
+跨系统来源字段	CRM WON事件ID（crmWonEventId）	文本	CRM 商机事件	CRM WON 事件标识	CRM WON 事件时必填			否		明细可见		-
+跨系统来源字段	CRM WON时间（crmWonTime）	日期时间	CRM 商机事件	CRM 商机赢单事件时间	CRM WON 事件时必填			否		明细可见	YYYY-MM-DD HH:mm:ss	-
+跨系统来源字段	CRM WON金额（crmWonAmount）	数字	CRM 商机事件	CRM 商机赢单金额	CRM WON 事件时必填			否		明细可见	来源金额，保留2位小数	-
+跨系统来源字段	ERP订单ID（erpOrderId）	文本	ERP 销售订单	ERP 销售订单稳定标识	ERP 订单事件时必填			否		明细可见		-
+跨系统来源字段	ERP订单确认事件ID（erpOrderConfirmationEventId）	文本	ERP 订单事件	ERP 订单确认事件标识	ERP 订单事件时必填			否		明细可见		-
+跨系统来源字段	ERP订单确认时间（erpOrderConfirmationTime）	日期时间	ERP 订单事件	ERP 订单确认事件时间	ERP 订单事件时必填			否		明细可见	YYYY-MM-DD HH:mm:ss	-
+跨系统来源字段	ERP订单状态（erpOrderStatus）	单选	ERP 订单	ERP 订单状态	ERP 订单事件时必填			否		明细可见		源未列状态枚举
+跨系统来源字段	ERP确认订单金额（erpConfirmedOrderAmount）	数字	ERP 订单	ERP 确认订单金额	ERP 订单事件时必填			否		明细可见	来源金额，保留2位小数	-
+跨系统来源字段	ERP拆单/合单关联ID（erpSplitMergeRelationId）	文本	ERP 订单	ERP 拆单或合单关联标识	有拆合单时必填			否		明细可见		英文名待确认
+跨系统来源字段	ERP取消/退款金额（erpCancellationRefundAmount）	数字	ERP 订单修正	ERP 取消或退款金额	有修正时必填			否		差异审计可见	来源金额，保留2位小数	-
+跨系统来源字段	ERP修正版本（erpCorrectionVersion）	文本	ERP 订单版本	ERP 订单修正版本	有修正时必填			否		差异审计可见		-
+跨系统来源字段	币种（currency）	文本	CRM/ERP 来源	CRM/ERP 金额币种	必填			是			一期金额口径为 CNY	源未定义独立枚举
+跨系统来源字段	含税标识（taxIncludedFlag）	文本	CRM/ERP 来源	CRM/ERP 金额含税标识	必填			否		详情可见		源未定义独立枚举
